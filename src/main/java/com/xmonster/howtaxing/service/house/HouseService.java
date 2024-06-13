@@ -308,6 +308,8 @@ public class HouseService {
                             .bdMgtSn(houseRegistRequest.getBdMgtSn())
                             .admCd(houseRegistRequest.getAdmCd())
                             .rnMgtSn(houseRegistRequest.getRnMgtSn())
+                            .ownerCnt(1)
+                            .userProportion(100)
                             .isMoveInRight(houseRegistRequest.getIsMoveInRight())
                             .sourceType(TWO)
                             .build());
