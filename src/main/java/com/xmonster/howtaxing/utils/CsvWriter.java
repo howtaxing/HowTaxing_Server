@@ -12,12 +12,19 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
-public class CsvWriter implements ItemWriter<HousePubLandPriceInfo> {
+public class CsvWriter implements ItemWriter<HousePubLandPriceInfoDto> {
 
     private final HousePubLandPriceInfoRepository housePubLandPriceInfoRepository;
 
     @Override
-    public void write(List<? extends HousePubLandPriceInfo> list) throws Exception {
-        housePubLandPriceInfoRepository.saveAll(new ArrayList<HousePubLandPriceInfo>(list));
+    public void write(List<? extends HousePubLandPriceInfoDto> list) throws Exception {
+        List<HousePubLandPriceInfo> housePubLandPriceInfoList = new ArrayList<>();
+
+        list.forEach(getHousePubLandPriceInfoDto -> {
+            HousePubLandPriceInfo housePubLandPriceInfo = getHousePubLandPriceInfoDto.toEntity();
+            housePubLandPriceInfoList.add(housePubLandPriceInfo);
+        });
+
+        housePubLandPriceInfoRepository.saveAll(housePubLandPriceInfoList);
     }
 }
