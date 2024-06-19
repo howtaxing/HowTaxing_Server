@@ -10,21 +10,21 @@ spring:
           google:
             client-id: 797361358853-j9mpkpnq9bgrnmahi46dgkb5loufk5bg.apps.googleusercontent.com
             client-secret: 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
-            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            redirect-uri: http://localhost/login/oauth2/code/google
             authorization-grant-type: authorization_code
             scope: profile, email
           naver:
             client-id: orG8AAE8iHfRSoiySAbv
             client-secret: DEn_pJGqup
-            redirect-uri: http://localhost:8080/login/oauth2/code/naver
+            redirect-uri: http://localhost/login/oauth2/code/naver
             authorization-grant-type: authorization_code
             #scope: name, email, profile_image
             scope: email
             client-name: Naver
           kakao:
-            client-id: e094e49e35c61a9da896785b6fee020a
-            client-secret: 6Qvz921cor0U3ojymxvPEBM7MhoISSB4
-            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            client-id: d022d183c0104d262e8d8f3ad5383630
+            client-secret: GQ0sMOJKhBNa6etqzFQQfUGc1g6d9hVu
+            redirect-uri: http://localhost/login/oauth2/code/kakao
             client-authentication-method: POST
             authorization-grant-type: authorization_code
             scope: account_email
@@ -53,21 +53,21 @@ spring:
           google:
             client-id: 797361358853-j9mpkpnq9bgrnmahi46dgkb5loufk5bg.apps.googleusercontent.com
             client-secret: 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
-            redirect-uri: http://devapp.how-taxing.com:8080/login/oauth2/code/google
+            redirect-uri: http://devapp.how-taxing.com/login/oauth2/code/google
             authorization-grant-type: authorization_code
             scope: profile, email
           naver:
             client-id: orG8AAE8iHfRSoiySAbv
             client-secret: DEn_pJGqup
-            redirect-uri: http://devapp.how-taxing.com:8080/login/oauth2/code/naver
+            redirect-uri: http://devapp.how-taxing.com/login/oauth2/code/naver
             authorization-grant-type: authorization_code
             #scope: name, email, profile_image
             scope: email
             client-name: Naver
           kakao:
-            client-id: e094e49e35c61a9da896785b6fee020a
-            client-secret: 6Qvz921cor0U3ojymxvPEBM7MhoISSB4
-            redirect-uri: http://devapp.how-taxing.com:8080/login/oauth2/code/kakao
+            client-id: d022d183c0104d262e8d8f3ad5383630
+            client-secret: GQ0sMOJKhBNa6etqzFQQfUGc1g6d9hVu
+            redirect-uri: http://devapp.how-taxing.com/login/oauth2/code/kakao
             client-authentication-method: POST
             authorization-grant-type: authorization_code
             scope: account_email
@@ -96,21 +96,21 @@ spring:
           google:
             client-id: 797361358853-j9mpkpnq9bgrnmahi46dgkb5loufk5bg.apps.googleusercontent.com
             client-secret: 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
-            redirect-uri: http://13.125.194.154:8080/login/oauth2/code/google
+            redirect-uri: http://app.how-taxing.com/login/oauth2/code/google
             authorization-grant-type: authorization_code
             scope: profile, email
           naver:
             client-id: orG8AAE8iHfRSoiySAbv
             client-secret: DEn_pJGqup
-            redirect-uri: http://13.125.194.154:8080/login/oauth2/code/naver
+            redirect-uri: http://app.how-taxing.com/login/oauth2/code/naver
             authorization-grant-type: authorization_code
             #scope: name, email, profile_image
             scope: email
             client-name: Naver
           kakao:
-            client-id: e094e49e35c61a9da896785b6fee020a
-            client-secret: 6Qvz921cor0U3ojymxvPEBM7MhoISSB4
-            redirect-uri: http://13.125.194.154:8080/login/oauth2/code/kakao
+            client-id: d022d183c0104d262e8d8f3ad5383630
+            client-secret: GQ0sMOJKhBNa6etqzFQQfUGc1g6d9hVu
+            redirect-uri: http://app.how-taxing.com/login/oauth2/code/kakao
             client-authentication-method: POST
             authorization-grant-type: authorization_code
             scope: account_email

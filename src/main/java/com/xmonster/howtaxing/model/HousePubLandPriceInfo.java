@@ -3,6 +3,7 @@ package com.xmonster.howtaxing.model;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -13,11 +14,11 @@ import java.time.LocalDate;
 @Getter
 @Setter
 // CSV 등록용(20240407 현재 기준 미사용)
-public class HousePubLandPriceInfo extends DateEntity {
+public class HousePubLandPriceInfo implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column
-    private Long housePubLandPriceId;   // 주택ID
+    private Long housePubLandPriceId;   // 주택공시가격ID
 
     private String baseYear;            // 기준연도
     private String baseMonth;           // 기준월

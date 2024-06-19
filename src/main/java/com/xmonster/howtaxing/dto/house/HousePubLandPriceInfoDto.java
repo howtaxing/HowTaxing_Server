@@ -1,5 +1,6 @@
 package com.xmonster.howtaxing.dto.house;
 
+import com.xmonster.howtaxing.model.HousePubLandPriceInfo;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -30,4 +31,29 @@ public class HousePubLandPriceInfoDto {
     private String complexCode;         // 단지코드
     private String dongCode;            // 동코드
     private String hoCode;              // 호코드
+
+    public HousePubLandPriceInfo toEntity(){
+        return HousePubLandPriceInfo.builder()
+                .baseYear(this.baseYear)
+                .baseMonth(this.baseMonth)
+                .legalDstCode(this.legalDstCode)
+                .roadAddr(this.roadAddr)
+                .siDo(this.siDo)
+                .siGunGu(this.siGunGu)
+                .eupMyun(this.eupMyun)
+                .dongRi(this.dongRi)
+                .specialLandCode(this.specialLandCode)
+                .bonNo(this.bonNo)
+                .bueNo(this.bueNo)
+                .specialLandName(this.specialLandName)
+                .complexName(this.complexName)
+                .dongName(this.dongName)
+                .hoName(this.hoName)
+                .area(this.area)
+                .pubLandPrice(this.pubLandPrice)
+                .complexCode(this.complexCode)
+                .dongCode(this.dongCode)
+                .hoCode(this.hoCode)
+                .build();
+    }
 }

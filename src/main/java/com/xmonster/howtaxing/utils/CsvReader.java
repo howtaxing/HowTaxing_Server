@@ -21,14 +21,18 @@ public class CsvReader {
         FlatFileItemReader<HousePubLandPriceInfoDto> flatFileItemReader = new FlatFileItemReader<>();
         flatFileItemReader.setResource(new ClassPathResource("/csv/PubLandPriceInfo_2023.csv"));
         flatFileItemReader.setLinesToSkip(1); // header line skip
-        flatFileItemReader.setEncoding("UTF-8"); // encoding
+        //flatFileItemReader.setEncoding("UTF-8"); // encoding
+        flatFileItemReader.setEncoding("EUC-KR"); // encoding
 
         /* read하는 데이터를 내부적으로 LineMapper을 통해 Mapping */
         DefaultLineMapper<HousePubLandPriceInfoDto> defaultLineMapper = new DefaultLineMapper<>();
 
         /* delimitedLineTokenizer : setNames를 통해 각각의 데이터의 이름 설정 */
         DelimitedLineTokenizer delimitedLineTokenizer = new DelimitedLineTokenizer(",");
-        delimitedLineTokenizer.setNames("id", "name");
+        delimitedLineTokenizer.setNames(
+                "baseYear", "baseMonth", "legalDstCode", "roadAddr", "siDo", "siGunGu", "eupMyun",
+                "dongRi", "specialLandCode", "bonNo", "bueNo", "specialLandName", "complexName",
+                "dongName", "hoName", "area", "pubLandPrice", "complexCode", "dongCode", "hoCode");
         defaultLineMapper.setLineTokenizer(delimitedLineTokenizer);
 
         /* beanWrapperFieldSetMapper : Tokenizer에서 가지고온 데이터들을 VO로 바인드하는 역할 */

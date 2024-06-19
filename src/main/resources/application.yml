@@ -1,3 +1,6 @@
+server:
+  port: 80
+
 spring:
   profiles:
     group:
@@ -26,6 +29,9 @@ spring:
       test-while-idle: true
       validation-query: 'select 1'
       time-between-eviction-runs-millis: 3000
+  batch:
+    jdbc:
+      initialize-schema: always
   mvc:
     custom-uri-logging-filter:
       enabled: true

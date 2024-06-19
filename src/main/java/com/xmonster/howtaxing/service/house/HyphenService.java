@@ -56,9 +56,12 @@ public class HyphenService {
         );
     }
 
-    public Optional<HyphenUserHouseListResponse> getUserHouseInfo(String accessToken, HouseListSearchRequest houseListSearchRequest){
+    public Optional<HyphenUserHouseListResponse> getUserHouseInfo(HouseListSearchRequest houseListSearchRequest){
         Map<String, Object> headerMap = new HashMap<>();
-        headerMap.put("authorization", "Bearer " + accessToken);
+        HyphenAuthResponse hyphenAuthResponse = getAccessToken()
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈에서 AccessToken을 가져오는데 실패했습니다."));
+
+        headerMap.put("authorization", "Bearer " + hyphenAuthResponse.getAccess_token());
 
         if(houseListSearchRequest == null) throw new CustomException(ErrorCode.HOUSE_HYPHEN_INPUT_ERROR);
 
@@ -91,7 +94,10 @@ public class HyphenService {
 
     public Optional<HyphenUserResidentRegistrationResponse> getUserStayPeriodInfo(HouseStayPeriodRequest houseStayPeriodRequest){
         Map<String, Object> headerMap = new HashMap<>();
-        // TODO. headerMap 추가 필요
+        HyphenAuthResponse hyphenAuthResponse = getAccessToken()
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈에서 AccessToken을 가져오는데 실패했습니다."));
+
+        headerMap.put("authorization", "Bearer " + hyphenAuthResponse.getAccess_token());
 
         validationCheckForGetUserStayPeriodInfo(houseStayPeriodRequest);
 
@@ -117,7 +123,7 @@ public class HyphenService {
                         .loginOrgCd(houseStayPeriodRequest.getLoginOrgCd())
                         .mobileNo(houseStayPeriodRequest.getMobileNo())
                         .mobileCo(houseStayPeriodRequest.getMobileCo())
-                        .step(houseStayPeriodRequest.getStep())
+                        .step(step)
                         .stepData(houseStayPeriodRequest.getStepData())
                         .build()
         );
