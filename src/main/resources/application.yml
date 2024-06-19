@@ -43,7 +43,7 @@ spring:
     activate:
       on-profile: "dev"
   datasource:
-    url: jdbc:log4jdbc:mysql://127.0.0.1:3306/howtaxing?useSSL=false&autoReconnect=true&autoReconnection=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Seoul
+    url: jdbc:log4jdbc:mysql://172.31.36.52:3306/howtaxing?useSSL=false&autoReconnect=true&autoReconnection=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Seoul
     username: root
     password: Xmonster11@@
     driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
