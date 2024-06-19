@@ -61,12 +61,15 @@ public class HouseService {
         User findUser = userUtil.findCurrentUser();
 
         // 1. 하이픈 Access Token 가져오기
-        HyphenAuthResponse hyphenAuthResponse = hyphenService.getAccessToken()
+        /*HyphenAuthResponse hyphenAuthResponse = hyphenService.getAccessToken()
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈에서 AccessToken을 가져오는데 실패했습니다."));
-        String accessToken = hyphenAuthResponse.getAccess_token();
+        String accessToken = hyphenAuthResponse.getAccess_token();*/
 
         // 2. 하이픈 주택소유정보 조회 호출
-        HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(accessToken, houseListSearchRequest)
+        /*HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(accessToken, houseListSearchRequest)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));*/
+
+        HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
 
         // 3. 하이픈 보유주택조회 결과가 정상인지 체크하여, 정상인 경우 조회 결과를 정리하여 별도 DTO에 저장

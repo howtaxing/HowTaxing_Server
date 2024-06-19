@@ -2329,6 +2329,7 @@ public class CalculationSellService {
                 long taxablePrice = 0;          // 과세대상양도차익금액
                 long longDeductionPrice = 0;    // 장기보유특별공제금액
                 long sellIncomePrice = 0;       // 양도소득금액
+                long basicDeductionPrice = 0;   // 기본공제금액
                 long progDeductionPrice = 0;    // 누진공제금액
                 long totalTaxPrice = 0;         // 총납부세액
                 long retentionPeriodDay = 0;    // 보유기간(일)
@@ -2373,122 +2374,135 @@ public class CalculationSellService {
                 if(taxRateInfo != null){
                     // 세율이 상수인 경우
                     if(YES.equals(taxRateInfo.getConstYn())){
-                        sellTaxRate = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
-                        sellTaxPrice = (long)(buyPrice * sellTaxRate) - progDeductionPrice;
+                        if(sellProfitPrice != 0){
+                            // 과세대상양도차익금액
+                            taxablePrice = sellProfitPrice;
+
+                            // 기본공제금액
+                            basicDeductionPrice = BASIC_DEDUCTION_PRICE;
+
+                            // 양도소득세율
+                            sellTaxRate = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
+
+                            // 양도소득세액
+                            sellTaxPrice = (long)(buyPrice * sellTaxRate) - progDeductionPrice;
+                        }
                     }
                     // 세율이 상수가 아닌 경우(변수)
                     else{
-                        // 세율1이 비과세인지 체크(비과세대상양도차익금액 세팅여부를 확인)
-                        if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                            // 비과세대상양도차익금액
-                            if(taxRateInfo.getBasePrice() != null){
-                                nonTaxablePrice = (taxRateInfo.getBasePrice() * sellProfitPrice) / sellPrice;
+                        if(sellProfitPrice != 0){
+                            // 세율1이 비과세인지 체크(비과세대상양도차익금액 세팅여부를 확인)
+                            if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                // 비과세대상양도차익금액
+                                if(taxRateInfo.getBasePrice() != null){
+                                    nonTaxablePrice = (taxRateInfo.getBasePrice() * sellProfitPrice) / sellPrice;
+                                }
                             }
-                        }
 
-                        // 과세대상양도차익금액
-                        taxablePrice = sellProfitPrice - nonTaxablePrice;
+                            // 과세대상양도차익금액
+                            taxablePrice = sellProfitPrice - nonTaxablePrice;
 
-                        // 양도차익금액이 0보다 작으면 0으로 세팅
-                        if(taxablePrice < 0) taxablePrice = 0;
+                            // 양도차익금액이 0보다 작으면 0으로 세팅
+                            if(taxablePrice < 0) taxablePrice = 0;
 
-                        // 공제율 및 장기보유특별공제금액(공제정보가 존재하는 경우에만 계산)
-                        if(deductionInfo != null){
-                            // 공제율
-                            dedRate = calculateDeductionRate(deductionInfo, retentionPeriodYear, calculationSellResultRequest.getStayPeriodYear());
+                            // 공제율 및 장기보유특별공제금액(공제정보가 존재하는 경우에만 계산)
+                            if(deductionInfo != null){
+                                // 공제율
+                                dedRate = calculateDeductionRate(deductionInfo, retentionPeriodYear, calculationSellResultRequest.getStayPeriodYear());
 
-                            // 장기보유특별공제금액(과세대상양도차익금액 x 공제율)
-                            longDeductionPrice = (long)(taxablePrice * dedRate);
-                        }
+                                // 장기보유특별공제금액(과세대상양도차익금액 x 공제율)
+                                longDeductionPrice = (long)(taxablePrice * dedRate);
+                            }
 
-                        // 양도소득금액(과세대상양도차익금액 - 장기보유특별공제금액)
-                        sellIncomePrice = taxablePrice - longDeductionPrice;
-                        if(sellIncomePrice < 0) sellIncomePrice = 0;
+                            // 양도소득금액(과세대상양도차익금액 - 장기보유특별공제금액)
+                            sellIncomePrice = taxablePrice - longDeductionPrice;
+                            if(sellIncomePrice < 0) sellIncomePrice = 0;
 
-                        // 과세표준금액(양도소득금액 - 기본공제금액)
-                        taxableStdPrice = sellIncomePrice - BASIC_DEDUCTION_PRICE;
-                        if(taxableStdPrice < 0) taxableStdPrice = 0;
+                            // 과세표준금액(양도소득금액 - 기본공제금액)
+                            taxableStdPrice = sellIncomePrice - BASIC_DEDUCTION_PRICE;
+                            if(taxableStdPrice < 0) taxableStdPrice = 0;
 
-                        // 누진공제금액
-                        progDeductionPrice = calculateProgDeductionPrice(taxableStdPrice);
+                            // 누진공제금액
+                            progDeductionPrice = calculateProgDeductionPrice(taxableStdPrice);
 
-                        if(taxRateInfo.getTaxRate1() != null && !taxRateInfo.getTaxRate1().isBlank()){
-                            // 세율이 2개인 경우
-                            if(taxRateInfo.getTaxRate2() != null && !taxRateInfo.getTaxRate2().isBlank()){
-                                // 세율1
-                                if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                    taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
-                                }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                    taxRate1 = 0;
-                                }else if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                    taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
-                                }else{
-                                    taxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
+                            if(taxRateInfo.getTaxRate1() != null && !taxRateInfo.getTaxRate1().isBlank()){
+                                // 세율이 2개인 경우
+                                if(taxRateInfo.getTaxRate2() != null && !taxRateInfo.getTaxRate2().isBlank()){
+                                    // 세율1
+                                    if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                        taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
+                                    }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                        taxRate1 = 0;
+                                    }else if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                        taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
+                                    }else{
+                                        taxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
+                                    }
+
+                                    // 세율2
+                                    if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate2())){
+                                        taxRate2 = calculateGeneralTaxRate(taxableStdPrice);
+                                    }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate2())){
+                                        taxRate2 = 0;
+                                    }else if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                        taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
+                                    }else{
+                                        taxRate2 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate2(), ZERO));
+                                    }
+
+                                    // 추가세율1
+                                    if(taxRateInfo.getAddTaxRate1() != null && !taxRateInfo.getAddTaxRate1().isBlank()){
+                                        addTaxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getAddTaxRate1(), ZERO));
+                                    }
+
+                                    // 추가세율2
+                                    if(taxRateInfo.getAddTaxRate2() != null && !taxRateInfo.getAddTaxRate2().isBlank()){
+                                        addTaxRate2 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getAddTaxRate2(), ZERO));
+                                    }
+
+                                    finalTaxRate1 = taxRate1 + addTaxRate1;     // 최종세율1
+                                    finalTaxRate2 = taxRate2 + addTaxRate2;     // 최종세율2
+
+                                    // 사용함수
+                                    String usedFunc = StringUtils.defaultString(taxRateInfo.getUsedFunc());
+
+                                    // MAX : 세율1과 세율2 중 최대값 사용
+                                    if(MAX.equals(usedFunc)){
+                                        // 양도소득세율
+                                        sellTaxRate = Math.max(finalTaxRate1, finalTaxRate2);
+
+                                        // 양도소득세액((과세표준 x 양도소득세율) - 누진공제금액)
+                                        sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
+                                        if(sellTaxPrice < 0) sellTaxPrice = 0;
+                                    }
                                 }
+                                // 세율이 1개인 경우
+                                else{
+                                    if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                        taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
+                                    }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                        taxRate1 = 0;
+                                    }else if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                        taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
+                                    }else{
+                                        taxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
+                                    }
 
-                                // 세율2
-                                if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate2())){
-                                    taxRate2 = calculateGeneralTaxRate(taxableStdPrice);
-                                }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate2())){
-                                    taxRate2 = 0;
-                                }else if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                    taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
-                                }else{
-                                    taxRate2 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate2(), ZERO));
-                                }
+                                    // 추가세율
+                                    if(taxRateInfo.getAddTaxRate1() != null && !taxRateInfo.getAddTaxRate1().isBlank()){
+                                        addTaxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getAddTaxRate1(), ZERO));
+                                    }
 
-                                // 추가세율1
-                                if(taxRateInfo.getAddTaxRate1() != null && !taxRateInfo.getAddTaxRate1().isBlank()){
-                                    addTaxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getAddTaxRate1(), ZERO));
-                                }
+                                    // 최종세율1
+                                    finalTaxRate1 = taxRate1 + addTaxRate1;
 
-                                // 추가세율2
-                                if(taxRateInfo.getAddTaxRate2() != null && !taxRateInfo.getAddTaxRate2().isBlank()){
-                                    addTaxRate2 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getAddTaxRate2(), ZERO));
-                                }
-
-                                finalTaxRate1 = taxRate1 + addTaxRate1;     // 최종세율1
-                                finalTaxRate2 = taxRate2 + addTaxRate2;     // 최종세율2
-
-                                // 사용함수
-                                String usedFunc = StringUtils.defaultString(taxRateInfo.getUsedFunc());
-
-                                // MAX : 세율1과 세율2 중 최대값 사용
-                                if(MAX.equals(usedFunc)){
                                     // 양도소득세율
-                                    sellTaxRate = Math.max(finalTaxRate1, finalTaxRate2);
+                                    sellTaxRate = finalTaxRate1;
 
                                     // 양도소득세액((과세표준 x 양도소득세율) - 누진공제금액)
                                     sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
                                     if(sellTaxPrice < 0) sellTaxPrice = 0;
                                 }
-                            }
-                            // 세율이 1개인 경우
-                            else{
-                                if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                    taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
-                                }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                    taxRate1 = 0;
-                                }else if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                    taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
-                                }else{
-                                    taxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
-                                }
-
-                                // 추가세율
-                                if(taxRateInfo.getAddTaxRate1() != null && !taxRateInfo.getAddTaxRate1().isBlank()){
-                                    addTaxRate1 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getAddTaxRate1(), ZERO));
-                                }
-
-                                // 최종세율1
-                                finalTaxRate1 = taxRate1 + addTaxRate1;
-                                
-                                // 양도소득세율
-                                sellTaxRate = finalTaxRate1;
-                                
-                                // 양도소득세액((과세표준 x 양도소득세율) - 누진공제금액)
-                                sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
-                                if(sellTaxPrice < 0) sellTaxPrice = 0;
                             }
                         }
                     }
@@ -2507,7 +2521,7 @@ public class CalculationSellService {
                 log.info("- 과세대상양도차익금액 : " + taxablePrice);
                 log.info("- 장기보유특별공제금액 : " + longDeductionPrice);
                 log.info("- 양도소득금액 : " + sellIncomePrice);
-                log.info("- 기본공제금액 : " + BASIC_DEDUCTION_PRICE);
+                log.info("- 기본공제금액 : " + basicDeductionPrice);
                 log.info("- 과세표준금액 : " + taxableStdPrice);
                 log.info("- 양도소득세율 : " + sellTaxRate);
                 log.info("- 누진공제금액 : " + progDeductionPrice);
@@ -2528,7 +2542,7 @@ public class CalculationSellService {
                 String taxablePriceStr = Long.toString(taxablePrice);
                 String longDeductionPriceStr = Long.toString(longDeductionPrice);
                 String sellIncomePriceStr = Long.toString(sellIncomePrice);
-                String basicDeductionPriceStr = Long.toString(BASIC_DEDUCTION_PRICE);
+                String basicDeductionPriceStr = Long.toString(basicDeductionPrice);
 
                 String taxableStdPriceStr = Long.toString(taxableStdPrice);
                 String sellTaxRateStr = String.format("%.2f", sellTaxRate*100);
