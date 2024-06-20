@@ -60,15 +60,7 @@ public class HouseService {
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
 
-        // 1. 하이픈 Access Token 가져오기
-        /*HyphenAuthResponse hyphenAuthResponse = hyphenService.getAccessToken()
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈에서 AccessToken을 가져오는데 실패했습니다."));
-        String accessToken = hyphenAuthResponse.getAccess_token();*/
-
-        // 2. 하이픈 주택소유정보 조회 호출
-        /*HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(accessToken, houseListSearchRequest)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));*/
-
+        // 하이픈 주택소유정보 조회 호출
         HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
 
@@ -420,7 +412,7 @@ public class HouseService {
 
         HyphenUserResidentRegistrationResponse hyphenUserResidentRegistrationResponse
                 = hyphenService.getUserStayPeriodInfo(houseStayPeriodRequest)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
+                .orElseThrow(() -> new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR));
 
         HyphenUserResidentRegistrationData hyphenUserResidentRegistrationData
                 = hyphenUserResidentRegistrationResponse.getHyphenUserResidentRegistrationData();
@@ -1108,7 +1100,7 @@ public class HouseService {
 
         // 양도소득세 계산의 보유주택조회인 경우
         if(CALC_TYPE_SELL.equals(calcType)){
-            // 계약일자, 취득일자 또는 취득가격 데이터가 없으면 필수데이터 누락 '여'
+            // 취득계약일자, 취득일자 또는 취득금액 데이터가 없으면 필수데이터 누락 '여'
             if(house.getContractDate() == null || house.getBuyDate() == null || house.getBuyPrice() == null){
                 log.info("양도소득세 계산의 보유주택조회인 경우 - 계약일자, 취득일자 또는 취득가격 데이터가 없으면 필수데이터 누락");
                 isRequiredDataMissing = true;

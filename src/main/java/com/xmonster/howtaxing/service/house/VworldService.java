@@ -173,21 +173,21 @@ public class VworldService {
     private void validationCheckForGetPubLandPriceAndArea(VworldPubLandPriceAndAreaRequest vworldPubLandPriceAndAreaRequest){
         log.info(">>> VworldService validationCheckForGetPubLandPriceAndArea - (취득)주택 공시가격 및 전용면적 조회 유효성 체크");
 
-        if(vworldPubLandPriceAndAreaRequest == null) throw new CustomException(ErrorCode.HOUSE_JUSOGOV_INPUT_ERROR, "공시가격 및 전용면적 조회를 위한 요청 값이 입력되지 않았습니다.");
+        if(vworldPubLandPriceAndAreaRequest == null) throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "공시가격 및 전용면적 조회를 위한 요청 값이 입력되지 않았습니다.");
 
         String bdKdcd = StringUtils.defaultString(vworldPubLandPriceAndAreaRequest.getBdKdcd());
         String pnu = StringUtils.defaultString(vworldPubLandPriceAndAreaRequest.getPnu());
         
         if(EMPTY.equals(bdKdcd)){
-            throw new CustomException(ErrorCode.HOUSE_JUSOGOV_INPUT_ERROR, "공시가격 및 전용면적  조회를 위한 공동주택여부 값이 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "공시가격 및 전용면적  조회를 위한 공동주택여부 값이 입력되지 않았습니다.");
         }
 
         if(!ONE.equals(bdKdcd) && !ZERO.equals(bdKdcd)){
-            throw new CustomException(ErrorCode.HOUSE_JUSOGOV_INPUT_ERROR, "공시가격 및 전용면적  조회를 위한 공동주택여부 값이 올바르지 않습니다.");
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "공시가격 및 전용면적  조회를 위한 공동주택여부 값이 올바르지 않습니다.");
         }
 
         if(EMPTY.equals(pnu)){
-            throw new CustomException(ErrorCode.HOUSE_JUSOGOV_INPUT_ERROR, "공시가격 및 전용면적  조회를 위한 고유번호 값이 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "공시가격 및 전용면적  조회를 위한 고유번호 값이 입력되지 않았습니다.");
         }
     }
 
@@ -205,7 +205,7 @@ public class VworldService {
 
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR);
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_OUTPUT_ERROR);
         }
     }
 }
