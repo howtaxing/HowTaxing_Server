@@ -348,7 +348,7 @@ public class JusoGovService {
 
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR);
+            throw new CustomException(ErrorCode.HOUSE_JUSOGOV_OUTPUT_ERROR);
         }
     }
 }

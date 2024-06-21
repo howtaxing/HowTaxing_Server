@@ -5,6 +5,8 @@ import com.google.gson.Gson;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.house.HouseListSearchRequest;
 import com.xmonster.howtaxing.dto.house.HouseStayPeriodRequest;
+import com.xmonster.howtaxing.dto.hyphen.HyphenCommonResponse;
+import com.xmonster.howtaxing.dto.hyphen.HyphenCommonResponse.HyphenCommon;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserResidentRegistrationResponse;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserResidentRegistrationResponse.HyphenUserResidentRegistrationCommon;
 import com.xmonster.howtaxing.dto.hyphen.*;
@@ -20,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.net.SocketTimeoutException;
 import java.util.*;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
@@ -65,18 +68,24 @@ public class HyphenService {
 
         if(houseListSearchRequest == null) throw new CustomException(ErrorCode.HOUSE_HYPHEN_INPUT_ERROR);
 
-        ResponseEntity<?> response = hyphenUserOwnHouseApi.getUserOwnHouseInfo(
-            headerMap,
-            HyphenUserHouseListRequest.builder()
-                    .loginMethod(EASY)
-                    .loginOrgCd(houseListSearchRequest.getCertOrg())
-                    .bizNo(houseListSearchRequest.getRlno())
-                    .userId(houseListSearchRequest.getUserId())
-                    .userPw(houseListSearchRequest.getUserPw())
-                    .mobileNo(houseListSearchRequest.getMobileNo())
-                    .userNm(houseListSearchRequest.getUserNm())
-                    .build()
-        );
+        ResponseEntity<?> response = null;
+        try{
+            response = hyphenUserOwnHouseApi.getUserOwnHouseInfo(
+                    headerMap,
+                    HyphenUserHouseListRequest.builder()
+                            .loginMethod(EASY)
+                            .loginOrgCd(houseListSearchRequest.getCertOrg())
+                            .bizNo(houseListSearchRequest.getRlno())
+                            .userId(houseListSearchRequest.getUserId())
+                            .userPw(houseListSearchRequest.getUserPw())
+                            .mobileNo(houseListSearchRequest.getMobileNo())
+                            .userNm(houseListSearchRequest.getUserNm())
+                            .build()
+            );
+        }catch(Exception e){
+            log.error("보유주택조회 간편인증 오류 내용 : " + e.getMessage());
+            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR);
+        }
 
         log.info("hyphen user house response");
         log.info(response.toString());
@@ -85,7 +94,6 @@ public class HyphenService {
         if(response.getBody() != null)  jsonString = response.getBody().toString();
         System.out.println("jsonString : " + jsonString);
 
-        //HyphenUserHouseListResponse hyphenUserHouseListResponse = convertJsonToHouseData(jsonString);
         HyphenUserHouseListResponse hyphenUserHouseListResponse = (HyphenUserHouseListResponse) convertJsonToData(jsonString, 1);
         System.out.println("hyphenUserHouseListResponse : " + hyphenUserHouseListResponse);
 
@@ -103,30 +111,37 @@ public class HyphenService {
 
         String step = (ONE.equals(houseStayPeriodRequest.getStep())) ? "init" : "sign";
 
-        ResponseEntity<?> response = hyphenUserResidentRegistrationApi.getUserResidentRegistrationInfo(
-                headerMap,
-                HyphenUserResidentRegistrationRequest.builder()
-                        .sido(houseStayPeriodRequest.getSido())
-                        .sigg(houseStayPeriodRequest.getSigungu())
-                        .cusGb(INDVD_LOCAL)
-                        .userName(houseStayPeriodRequest.getUserName())
-                        .bizNo(houseStayPeriodRequest.getRlno())
-                        .req2Opt1(NOT_INCLUDE)
-                        .req2Opt2(INCLUDE)
-                        .req2Opt3(INCLUDE)
-                        .req2Opt4(NOT_INCLUDE)
-                        .req2Opt5(NOT_INCLUDE)
-                        .req2Opt6(NOT_INCLUDE)
-                        .req2Opt7(NOT_INCLUDE)
-                        .req2Opt8(NOT_INCLUDE)
-                        .authMethod(EASY)
-                        .loginOrgCd(houseStayPeriodRequest.getLoginOrgCd())
-                        .mobileNo(houseStayPeriodRequest.getMobileNo())
-                        .mobileCo(houseStayPeriodRequest.getMobileCo())
-                        .step(step)
-                        .stepData(houseStayPeriodRequest.getStepData())
-                        .build()
-        );
+        ResponseEntity<?> response = null;
+
+        try{
+            response = hyphenUserResidentRegistrationApi.getUserResidentRegistrationInfo(
+                    headerMap,
+                    HyphenUserResidentRegistrationRequest.builder()
+                            .sido(houseStayPeriodRequest.getSido())
+                            .sigg(houseStayPeriodRequest.getSigungu())
+                            .cusGb(INDVD_LOCAL)
+                            .userName(houseStayPeriodRequest.getUserName())
+                            .bizNo(houseStayPeriodRequest.getRlno())
+                            .req2Opt1(NOT_INCLUDE)
+                            .req2Opt2(INCLUDE)
+                            .req2Opt3(INCLUDE)
+                            .req2Opt4(NOT_INCLUDE)
+                            .req2Opt5(NOT_INCLUDE)
+                            .req2Opt6(NOT_INCLUDE)
+                            .req2Opt7(NOT_INCLUDE)
+                            .req2Opt8(NOT_INCLUDE)
+                            .authMethod(EASY)
+                            .loginOrgCd(houseStayPeriodRequest.getLoginOrgCd())
+                            .mobileNo(houseStayPeriodRequest.getMobileNo())
+                            .mobileCo(houseStayPeriodRequest.getMobileCo())
+                            .step(step)
+                            .stepData(houseStayPeriodRequest.getStepData())
+                            .build()
+            );
+        }catch(Exception e){
+            log.error("주민등록초본 간편인증 오류 내용 : " + e.getMessage());
+            throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR);
+        }
 
         log.info("hyphen user stay period response");
         log.info(response.toString());
@@ -154,7 +169,7 @@ public class HyphenService {
     }
 
     private void validationCheckForGetUserStayPeriodInfo(HouseStayPeriodRequest houseStayPeriodRequest){
-        if(houseStayPeriodRequest == null) throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR);
+        if(houseStayPeriodRequest == null) throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_INPUT_ERROR);
 
         String userName = StringUtils.defaultString(houseStayPeriodRequest.getUserName());
         String mobileNo = StringUtils.defaultString(houseStayPeriodRequest.getMobileNo());
@@ -218,8 +233,21 @@ public class HyphenService {
     }
 
     private Object convertJsonToData(String jsonString, int type) {
+        String errMsgDtl = null;
+
         try {
             ObjectMapper objectMapper = new ObjectMapper();
+
+            HyphenCommonResponse hyphenCommonResponse = objectMapper.readValue(jsonString, HyphenCommonResponse.class);
+
+            if(hyphenCommonResponse != null && hyphenCommonResponse.getHyphenCommon() != null){
+                if(YES.equals(hyphenCommonResponse.getHyphenCommon().getErrYn())){
+                    errMsgDtl = hyphenCommonResponse.getHyphenCommon().getErrMsg();
+                    log.info("errMsgDtl : " + errMsgDtl);
+                    throw new CustomException(ErrorCode.ETC_ERROR); // 하단 catch로 이동
+                }
+            }
+
             if(type == 1){
                 return objectMapper.readValue(jsonString, HyphenUserHouseListResponse.class);
             }else if(type == 2){
@@ -231,11 +259,11 @@ public class HyphenService {
         } catch (Exception e) {
             log.error(e.getMessage());
             if(type == 1){
-                throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR);
+                throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, errMsgDtl);
             }else if(type == 2){
-                throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR);
+                throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR, errMsgDtl);
             }else{
-                throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR);
+                throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, errMsgDtl);
             }
         }
     }
