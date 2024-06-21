@@ -1664,11 +1664,11 @@ public class CalculationBuyService {
                 }
 
                 String buyPriceStr = String.format("%.0f", buyPrice*proportion);
-                String buyTaxRateStr = String.format("%.2f", buyTaxRate*proportion*100);
+                String buyTaxRateStr = String.format("%.2f", buyTaxRate*100);
                 String buyTaxPriceStr = String.format("%.0f", buyTaxPrice*proportion);
-                String eduTaxRateStr = String.format("%.2f", eduTaxRate*proportion*100);
+                String eduTaxRateStr = String.format("%.2f", eduTaxRate*100);
                 String eduTaxPriceStr = String.format("%.0f", eduTaxPrice*proportion);
-                String agrTaxRateStr = String.format("%.2f", agrTaxRate*proportion*100);
+                String agrTaxRateStr = String.format("%.2f", agrTaxRate*100);
                 String agrTaxPriceStr = String.format("%.0f", agrTaxPrice*proportion);
                 String totalTaxPriceStr = String.format("%.0f", totalTaxPrice*proportion);
 
