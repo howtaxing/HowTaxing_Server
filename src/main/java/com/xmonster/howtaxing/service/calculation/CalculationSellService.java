@@ -2385,7 +2385,12 @@ public class CalculationSellService {
 
                             // 양도소득세액
                             sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
-                            if(sellTaxPrice < 0) sellTaxPrice = 0;
+                            
+                            // 양도소득세액이 0보다 작은 경우, 양도소득세율과 양도소득세액 모두 0으로 세팅
+                            if(sellTaxPrice < 0){
+                                sellTaxRate = 0;
+                                sellTaxPrice = 0;
+                            }
                         }
                     }
                     // 세율이 상수가 아닌 경우(변수)
@@ -2473,7 +2478,12 @@ public class CalculationSellService {
 
                                         // 양도소득세액((과세표준 x 양도소득세율) - 누진공제금액)
                                         sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
-                                        if(sellTaxPrice < 0) sellTaxPrice = 0;
+
+                                        // 양도소득세액이 0보다 작은 경우, 양도소득세율과 양도소득세액 모두 0으로 세팅
+                                        if(sellTaxPrice < 0){
+                                            sellTaxRate = 0;
+                                            sellTaxPrice = 0;
+                                        }
                                     }
                                 }
                                 // 세율이 1개인 경우
@@ -2501,7 +2511,12 @@ public class CalculationSellService {
 
                                     // 양도소득세액((과세표준 x 양도소득세율) - 누진공제금액)
                                     sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
-                                    if(sellTaxPrice < 0) sellTaxPrice = 0;
+
+                                    // 양도소득세액이 0보다 작은 경우, 양도소득세율과 양도소득세액 모두 0으로 세팅
+                                    if(sellTaxPrice < 0){
+                                        sellTaxRate = 0;
+                                        sellTaxPrice = 0;
+                                    }
                                 }
                             }
                         }
