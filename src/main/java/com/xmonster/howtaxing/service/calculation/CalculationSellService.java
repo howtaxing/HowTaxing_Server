@@ -2377,8 +2377,15 @@ public class CalculationSellService {
                             // 과세대상양도차익금액
                             taxablePrice = sellProfitPrice;
 
+                            // 양도소득금액(과세대상양도차익금액)
+                            sellIncomePrice = sellProfitPrice;
+
                             // 기본공제금액
                             basicDeductionPrice = BASIC_DEDUCTION_PRICE;
+
+                            // 과세표준금액(양도소득금액 - 기본공제금액)
+                            taxableStdPrice = sellIncomePrice - basicDeductionPrice;
+                            if(taxableStdPrice < 0) taxableStdPrice = 0;
 
                             // 양도소득세율
                             sellTaxRate = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
@@ -2386,8 +2393,8 @@ public class CalculationSellService {
                             // 양도소득세액
                             sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
                             
-                            // 양도소득세액이 0보다 작은 경우, 양도소득세율과 양도소득세액 모두 0으로 세팅
-                            if(sellTaxPrice < 0){
+                            // 양도소득세액이 0보다 작거나 같은 경우, 양도소득세율과 양도소득세액 모두 0으로 세팅
+                            if(sellTaxPrice <= 0){
                                 sellTaxRate = 0;
                                 sellTaxPrice = 0;
                             }
