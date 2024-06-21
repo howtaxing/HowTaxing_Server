@@ -14,7 +14,6 @@ import com.xmonster.howtaxing.utils.HouseUtil;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.asm.Advice;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -2385,7 +2384,8 @@ public class CalculationSellService {
                             sellTaxRate = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate1(), ZERO));
 
                             // 양도소득세액
-                            sellTaxPrice = (long)(buyPrice * sellTaxRate) - progDeductionPrice;
+                            sellTaxPrice = (long)(taxableStdPrice * sellTaxRate) - progDeductionPrice;
+                            if(sellTaxPrice < 0) sellTaxPrice = 0;
                         }
                     }
                     // 세율이 상수가 아닌 경우(변수)
