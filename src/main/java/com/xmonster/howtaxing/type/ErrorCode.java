@@ -41,6 +41,11 @@ public enum ErrorCode {
     HOUSE_MODIFY_ERROR(1, HttpStatus.OK, "HOUSE-015", "보유주택 수정 중 오류가 발생했습니다."),
     HOUSE_DELETE_ERROR(1, HttpStatus.OK, "HOUSE-016", "보유주택 삭제 중 오류가 발생했습니다."),
     HOUSE_DELETE_ALL_ERROR(1, HttpStatus.OK, "HOUSE-017", "보유주택 전체 삭제 중 오류가 발생했습니다."),
+    
+    /* 추가질의 항목 조회 관련 */
+    QUESTION_INPUT_ERROR(1, HttpStatus.OK, "QUESTION-001", "추가질의항목 조회를 위한 입력값이 올바르지 않습니다."),
+    QUESTION_OUTPUT_NOT_FOUND(1, HttpStatus.OK, "QUESTION-002", "추가질의항목이 존재하지 않습니다."),
+    QUESTION_OUTPUT_ERROR(1, HttpStatus.OK, "QUESTION-003", "추가질의항목 조회 중 오류가 발생했습니다."),
 
     /* 계산 관련 */
     CALCULATION_BUY_TAX_FAILED(2, HttpStatus.OK, "CALCULATION-001", "취득세 계산 중 오류가 발생했습니다."),

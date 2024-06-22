@@ -2902,13 +2902,13 @@ public class CalculationSellService {
                         result = true;
                     }
                 }
-                // n년이 된 날 이후
+                // n년이 된 날 전날 이후
                 else if(NOT_WITHIN_YST.equals(dataMethod)){
                     if(inputPeriod > variablePeriod - 1){
                         result = true;
                     }
                 }
-                // n년이 된 날 이후
+                // n년이 된 날 다음날 이후
                 else if(NOT_WITHIN_TMR.equals(dataMethod)){
                     if(inputPeriod > variablePeriod + 1){
                         result = true;
