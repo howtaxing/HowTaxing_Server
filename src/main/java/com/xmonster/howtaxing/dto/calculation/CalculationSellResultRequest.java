@@ -3,6 +3,7 @@ package com.xmonster.howtaxing.dto.calculation;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -19,5 +20,7 @@ public class CalculationSellResultRequest {
     private Boolean isWWLandLord;                   // [선택] 상생임대인여부
     private Long stayPeriodYear;                    // [선택] (양도주택)거주기간(년)
     private Long stayPeriodMonth;                   // [선택] (양도주택)거주기간(월)
-    private Map<String, Object> planAnswer;         // [선택] 계획여부답변(종전주택 2년이내 매도계획 여부 등)
+    
+    // 추가질의답변리스트
+    private List<CalculationAdditionalAnswerRequest> additionalAnswerList;
 }
