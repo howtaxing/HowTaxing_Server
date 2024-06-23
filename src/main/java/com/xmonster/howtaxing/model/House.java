@@ -19,7 +19,7 @@ public class House extends DateEntity {
     private Long houseId;               // 주택ID
     private Long userId;                // 사용자ID
 
-    private String houseType;           // 주택유형
+    private String houseType;           // 주택유형(1:아파트 2:연립,다가구 3:입주권 4:단독주택,다세대 5:분양권(주택) 6:주택)
     private String houseName;           // 주택명
     private String detailAdr;           // 상세주소
 

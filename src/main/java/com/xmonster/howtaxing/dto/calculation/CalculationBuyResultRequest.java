@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -36,8 +37,11 @@ public class CalculationBuyResultRequest {
     private Integer ownerCnt;                   // [필수] 소유자수
     private Integer userProportion;             // [필수] 본인지분비율
     private Boolean isMoveInRight;              // [필수] 입주권여부
-    private Boolean hasSellPlan;                // [필수] 양도예정여부
+    //private Boolean hasSellPlan;                // [필수] 양도예정여부
 
     private Boolean isOwnHouseCntRegist;        // [필수] 보유주택수직접입력여부
     private Integer ownHouseCnt;                // [선택] 보유주택수
+
+    // 추가질의답변리스트
+    private List<CalculationAdditionalAnswerRequest> additionalAnswerList;
 }

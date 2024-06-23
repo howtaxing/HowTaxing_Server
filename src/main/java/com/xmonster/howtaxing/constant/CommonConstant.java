@@ -1,5 +1,7 @@
 package com.xmonster.howtaxing.constant;
 
+import java.time.LocalDate;
+
 public final class CommonConstant {
 
     public final static String EMPTY = "";
@@ -103,10 +105,19 @@ public final class CommonConstant {
     public final static int PERIOD_YEAR = 365;                  // 기간(대략 1년의 일자)
     public final static int PERIOD_MONTH = 30;                  // 기간(대략 1개월의 일자)
 
-    /* 질의 데이터 코드 */
-    public final static String Q_0001 = "Q_0001";               // 질문1
-    public final static String Q_0002 = "Q_0002";               // 질문2
-    public final static String Q_0003 = "Q_0003";               // 질문3
+    /* 추가 질의 관련 데이터 코드(임시) */
+    public final static String Q_0001 = "Q_0001";
+    public final static String Q_0002 = "Q_0002";
+    public final static String Q_0003 = "Q_0003";
+    public final static String Q_0004 = "Q_0004";
+    public final static String Q_0005 = "Q_0005";
+    public final static String Q_0006 = "Q_0006";
+    public final static String Q_0007 = "Q_0007";
+    public final static String ANSWER_TYPE_SELECT = "select";
+    public final static String ANSWER_VALUE_01 = "01";
+    public final static String ANSWER_VALUE_02 = "02";
+    public final static String PERIOD_TYPE_DIAL = "PERIOD_DIAL";
+    public final static String PERIOD_TYPE_CERT = "PERIOD_CERT";
 
     /* 답변 데이터 코드 */
     public final static String A_0001 = "A_0001";               // 답변1
@@ -114,7 +125,7 @@ public final class CommonConstant {
     public final static String A_0003 = "A_0003";               // 답변3
 
     /* 공제단위 */
-    public final static String UNIT_1YEAR = "1Y";                   // 1년
+    public final static String UNIT_1YEAR = "1Y";               // 1년
 
     /* 조정대상지역 (추후 DB로 관리 예정) */
     public final static String ADJUSTMENT_TARGET_AREA1 = "용산구";

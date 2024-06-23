@@ -1,6 +1,7 @@
 package com.xmonster.howtaxing.service.calculation;
 
 import com.xmonster.howtaxing.CustomException;
+import com.xmonster.howtaxing.dto.calculation.CalculationAdditionalAnswerRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
@@ -88,7 +89,7 @@ public class CalculationBuyService {
         Integer ownerCnt = calculationBuyResultRequest.getOwnerCnt();
         Integer userProportion = calculationBuyResultRequest.getUserProportion();
         Boolean isMoveInRight = calculationBuyResultRequest.getIsMoveInRight();
-        Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
+        //Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
         Boolean isOwnHouseCntRegist = calculationBuyResultRequest.getIsOwnHouseCntRegist();
 
         if(EMPTY.equals(houseType)){
@@ -151,9 +152,9 @@ public class CalculationBuyService {
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 입주권여부 정보가 입력되지 않았습니다.");
         }
 
-        if(hasSellPlan == null){
+        /*if(hasSellPlan == null){
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 양도예정여부 정보가 입력되지 않았습니다.");
-        }
+        }*/
 
         if(isOwnHouseCntRegist == null){
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 보유주택수직접입력여부 정보가 입력되지 않았습니다.");
@@ -886,14 +887,29 @@ public class CalculationBuyService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "012")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0007.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            if(selectNo == 0){
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+            }
+
             // (사용자 입력)완공 후 n년 이내 신규주택 양도 예정 여부
-            Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
+            /*Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
 
             if(hasSellPlan){
                 selectNo = 1;
             }else{
                 selectNo = 2;
-            }
+            }*/
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -1149,14 +1165,29 @@ public class CalculationBuyService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "016")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0007.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            if(selectNo == 0){
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+            }
+
             // (사용자 입력)완공 후 n년 이내 종전 또는 신규 주택 양도 예정 여부
-            Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
+            /*Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
 
             if(hasSellPlan){
                 selectNo = 1;
             }else{
                 selectNo = 2;
-            }
+            }*/
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -1314,14 +1345,29 @@ public class CalculationBuyService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "019")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0007.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            if(selectNo == 0){
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+            }
+
             // (사용자 입력)취득후 n년 이내 종전주택 양도 에정 여부
-            Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
+            /*Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
 
             if(hasSellPlan){
                 selectNo = 1;
             }else{
                 selectNo = 2;
-            }
+            }*/
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -1664,11 +1710,11 @@ public class CalculationBuyService {
                 }
 
                 String buyPriceStr = String.format("%.0f", buyPrice*proportion);
-                String buyTaxRateStr = String.format("%.2f", buyTaxRate*proportion*100);
+                String buyTaxRateStr = String.format("%.2f", buyTaxRate*100);
                 String buyTaxPriceStr = String.format("%.0f", buyTaxPrice*proportion);
-                String eduTaxRateStr = String.format("%.2f", eduTaxRate*proportion*100);
+                String eduTaxRateStr = String.format("%.2f", eduTaxRate*100);
                 String eduTaxPriceStr = String.format("%.0f", eduTaxPrice*proportion);
-                String agrTaxRateStr = String.format("%.2f", agrTaxRate*proportion*100);
+                String agrTaxRateStr = String.format("%.2f", agrTaxRate*100);
                 String agrTaxPriceStr = String.format("%.0f", agrTaxPrice*proportion);
                 String totalTaxPriceStr = String.format("%.0f", totalTaxPrice*proportion);
 
