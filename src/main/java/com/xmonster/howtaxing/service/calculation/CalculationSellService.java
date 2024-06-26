@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -591,46 +592,18 @@ public class CalculationSellService {
             long stayPeriodYear = 0;
             long stayPeriodMonth = 0;
 
-            String stayPeriodTotalStr = EMPTY;
-            String stayPeriodYearStr = EMPTY;
-            String stayPeriodMonthStr = EMPTY;
-
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
                 if(PERIOD_TYPE_DIAL.equals(answer.getQuestionId()) || PERIOD_TYPE_CERT.equals(answer.getQuestionId())){
-                    stayPeriodTotalStr = StringUtils.defaultString(answer.getAnswerValue());
-                    if(!stayPeriodTotalStr.contains("년") && !stayPeriodTotalStr.contains("개월")){
-                        throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
-                    }else{
-                        try{
-                            // 1년 미만(ex:5개월)
-                            if(!stayPeriodTotalStr.contains("년")){
-                                stayPeriodMonthStr = stayPeriodTotalStr.replace("개월", EMPTY);
-                                stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
-                            }
-                            // 1년 이상
-                            else{
-                                // 개월 없음(ex:2년)
-                                if(!stayPeriodTotalStr.contains("개월")){
-                                    stayPeriodYearStr = stayPeriodTotalStr.replace("년", EMPTY);
-                                    stayPeriodYear = Long.parseLong(stayPeriodYearStr);
-                                }
-                                // 개월 있음(ex:2년 10개월)
-                                else{
-                                    String[] stayPeriodArr = stayPeriodTotalStr.split(SPACE);
-                                    if(stayPeriodArr.length == 2){
-                                        stayPeriodYearStr = stayPeriodArr[0];
-                                        stayPeriodMonthStr = stayPeriodArr[1];
-                                        stayPeriodYear = Long.parseLong(stayPeriodYearStr);
-                                        stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
-                                    }else{
-                                        throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
-                                    }
-                                }
-                            }
-                        }catch(NumberFormatException ne){
-                            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 올바르게 입력되지 않았습니다.");
-                        }
+
+                    Map<String, Object> stayPeriodMap = getStayPeriodYearAndMonth(answer.getAnswerValue());
+
+                    if(stayPeriodMap.containsKey(STAY_PERIOD_YEAR)){
+                        stayPeriodYear = (long)stayPeriodMap.get(STAY_PERIOD_YEAR);
+                    }
+
+                    if(stayPeriodMap.containsKey(STAY_PERIOD_MONTH)){
+                        stayPeriodMonth = (long)stayPeriodMap.get(STAY_PERIOD_MONTH);
                     }
                 }
             }
@@ -697,8 +670,20 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "012")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                // 상생임대인여부
+                if(Q_0006.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
             // 상생임대인여부
-            boolean isWWLandLord = false;
+            /*boolean isWWLandLord = false;
 
             if(calculationSellResultRequest.getIsWWLandLord() != null){
                 isWWLandLord = calculationSellResultRequest.getIsWWLandLord();
@@ -708,7 +693,7 @@ public class CalculationSellService {
                 selectNo = 1;
             }else{
                 selectNo = 2;
-            }
+            }*/
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -984,46 +969,17 @@ public class CalculationSellService {
             long stayPeriodYear = 0;
             long stayPeriodMonth = 0;
 
-            String stayPeriodTotalStr = EMPTY;
-            String stayPeriodYearStr = EMPTY;
-            String stayPeriodMonthStr = EMPTY;
-
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
                 if(PERIOD_TYPE_DIAL.equals(answer.getQuestionId()) || PERIOD_TYPE_CERT.equals(answer.getQuestionId())){
-                    stayPeriodTotalStr = StringUtils.defaultString(answer.getAnswerValue());
-                    if(!stayPeriodTotalStr.contains("년") && !stayPeriodTotalStr.contains("개월")){
-                        throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
-                    }else{
-                        try{
-                            // 1년 미만(ex:5개월)
-                            if(!stayPeriodTotalStr.contains("년")){
-                                stayPeriodMonthStr = stayPeriodTotalStr.replace("개월", EMPTY);
-                                stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
-                            }
-                            // 1년 이상
-                            else{
-                                // 개월 없음(ex:2년)
-                                if(!stayPeriodTotalStr.contains("개월")){
-                                    stayPeriodYearStr = stayPeriodTotalStr.replace("년", EMPTY);
-                                    stayPeriodYear = Long.parseLong(stayPeriodYearStr);
-                                }
-                                // 개월 있음(ex:2년 10개월)
-                                else{
-                                    String[] stayPeriodArr = stayPeriodTotalStr.split(SPACE);
-                                    if(stayPeriodArr.length == 2){
-                                        stayPeriodYearStr = stayPeriodArr[0];
-                                        stayPeriodMonthStr = stayPeriodArr[1];
-                                        stayPeriodYear = Long.parseLong(stayPeriodYearStr);
-                                        stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
-                                    }else{
-                                        throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
-                                    }
-                                }
-                            }
-                        }catch(NumberFormatException ne){
-                            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 올바르게 입력되지 않았습니다.");
-                        }
+                    Map<String, Object> stayPeriodMap = getStayPeriodYearAndMonth(answer.getAnswerValue());
+
+                    if(stayPeriodMap.containsKey(STAY_PERIOD_YEAR)){
+                        stayPeriodYear = (long)stayPeriodMap.get(STAY_PERIOD_YEAR);
+                    }
+
+                    if(stayPeriodMap.containsKey(STAY_PERIOD_MONTH)){
+                        stayPeriodMonth = (long)stayPeriodMap.get(STAY_PERIOD_MONTH);
                     }
                 }
             }
@@ -2960,6 +2916,57 @@ public class CalculationSellService {
             }
 
             return house;
+        }
+
+        // 실거주기간 입력 내용 분리(년, 월로 분리)
+        private Map<String, Object> getStayPeriodYearAndMonth(String stayPeriodStr){
+            Map<String, Object> resultMap = new HashMap<String, Object>();
+            long stayPeriodYear = 0;
+            long stayPeriodMonth = 0;
+
+            String stayPeriodTotalStr = EMPTY;
+            String stayPeriodYearStr = EMPTY;
+            String stayPeriodMonthStr = EMPTY;
+
+            stayPeriodTotalStr = StringUtils.defaultString(stayPeriodStr);
+            if(!stayPeriodTotalStr.contains("년") && !stayPeriodTotalStr.contains("개월")){
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
+            }else{
+                try{
+                    // 1년 미만(ex:5개월)
+                    if(!stayPeriodTotalStr.contains("년")){
+                        stayPeriodMonthStr = stayPeriodTotalStr.replace("개월", EMPTY);
+                        stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
+                    }
+                    // 1년 이상
+                    else{
+                        // 개월 없음(ex:2년)
+                        if(!stayPeriodTotalStr.contains("개월")){
+                            stayPeriodYearStr = stayPeriodTotalStr.replace("년", EMPTY);
+                            stayPeriodYear = Long.parseLong(stayPeriodYearStr);
+                        }
+                        // 개월 있음(ex:2년 10개월)
+                        else{
+                            String[] stayPeriodArr = stayPeriodTotalStr.split(SPACE);
+                            if(stayPeriodArr.length == 2){
+                                stayPeriodYearStr = stayPeriodArr[0];
+                                stayPeriodMonthStr = stayPeriodArr[1];
+                                stayPeriodYear = Long.parseLong(stayPeriodYearStr);
+                                stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
+                            }else{
+                                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
+                            }
+                        }
+                    }
+                }catch(NumberFormatException ne){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 올바르게 입력되지 않았습니다.");
+                }
+            }
+
+            resultMap.put("stayPeriodYear", stayPeriodYear);
+            resultMap.put("stayPeriodMonth", stayPeriodMonth);
+
+            return resultMap;
         }
     }
 }

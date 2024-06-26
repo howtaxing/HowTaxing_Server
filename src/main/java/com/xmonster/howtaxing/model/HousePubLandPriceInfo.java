@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Getter
 @Setter
-// CSV 등록용(20240407 현재 기준 미사용)
+// 주택 공시가격 및 전용면적(CSV 등록용)
 public class HousePubLandPriceInfo implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

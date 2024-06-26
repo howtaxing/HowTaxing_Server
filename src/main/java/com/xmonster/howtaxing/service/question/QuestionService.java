@@ -23,7 +23,9 @@ import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -165,7 +167,7 @@ public class QuestionService {
                                             // 양도가액 12억 초과
                                             if(sellPrice > variablePrice){
                                                 // 취득일로부터 3년이 된날 다음날 이후 매도하는 경우
-                                                if(sellDate.isAfter(sellHouse.getBuyDate().plusYears(3).plusDays(1))){
+                                                if(sellDate.isAfter(sellHouse.getBuyDate().plusYears(3).plusDays(1))) {
                                                     // Q_0004 -> Q_0005
                                                     isNeedAdditionalQuestion = true;
                                                 }
@@ -219,6 +221,16 @@ public class QuestionService {
                                         if(sellDate.isAfter(oldHouse.getBuyDate().plusYears(2))){
                                             // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우
                                             if(sellDate.isBefore(newHouse.getBuyDate().plusYears(3).plusDays(1))){
+                                                // 1주택 로직으로 이동
+                                                return getAdditionalQuestion(
+                                                        AdditionalQuestionRequest.builder()
+                                                                .calcType(CALC_TYPE_SELL)
+                                                                .sellHouseId(sellHouseId)
+                                                                .sellDate(sellDate)
+                                                                .sellPrice(sellPrice)
+                                                                .ownHouseCnt(1L)
+                                                                .build());
+                                            }else{
                                                 isNeedAdditionalQuestion = true;    // Q_0001
                                             }
                                         }
@@ -237,9 +249,40 @@ public class QuestionService {
                                                 if(sellDate.isAfter(oldHouse.getBuyDate().plusYears(2))){
                                                     // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우
                                                     if(sellDate.isBefore(newHouse.getBuyDate().plusYears(3).plusDays(1))){
+                                                        // 1주택 로직으로 이동
+                                                        return getAdditionalQuestion(
+                                                                AdditionalQuestionRequest.builder()
+                                                                        .calcType(CALC_TYPE_SELL)
+                                                                        .sellHouseId(sellHouseId)
+                                                                        .sellDate(sellDate)
+                                                                        .sellPrice(sellPrice)
+                                                                        .ownHouseCnt(1L)
+                                                                        .build());
+                                                    }else{
                                                         isNeedAdditionalQuestion = true;    // Q_0001
                                                     }
                                                 }
+                                            }
+                                        }
+                                    }
+                                }
+                                // 신규주택이 '주택'인 경우
+                                else{
+                                    // 종전주택 취득일로부터 1년이 된 날 다음날 이후 신규주택을 취득한 경우
+                                    if(newHouse.getBuyDate().isAfter(oldHouse.getBuyDate().plusYears(1).plusDays(1))){
+                                        // 종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우
+                                        if(sellDate.isAfter(oldHouse.getBuyDate().plusYears(2))){
+                                            // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우
+                                            if(sellDate.isBefore(newHouse.getBuyDate().plusYears(3).plusDays(1))){
+                                                // 1주택 로직으로 이동
+                                                return getAdditionalQuestion(
+                                                        AdditionalQuestionRequest.builder()
+                                                                .calcType(CALC_TYPE_SELL)
+                                                                .sellHouseId(sellHouseId)
+                                                                .sellDate(sellDate)
+                                                                .sellPrice(sellPrice)
+                                                                .ownHouseCnt(1L)
+                                                                .build());
                                             }
                                         }
                                     }
@@ -275,7 +318,17 @@ public class QuestionService {
                     log.info("1주택 또는 2주택자가 아니므로 추가질의항목 없음");
                 }
             }else{
-                if(Q_0004.equals(questionId)){
+                if(Q_0001.equals(questionId)){
+                    // 1주택 로직으로 이동
+                    return getAdditionalQuestion(
+                            AdditionalQuestionRequest.builder()
+                                    .calcType(CALC_TYPE_SELL)
+                                    .sellHouseId(sellHouseId)
+                                    .sellDate(sellDate)
+                                    .sellPrice(sellPrice)
+                                    .ownHouseCnt(1L)
+                                    .build());
+                }else if(Q_0004.equals(questionId)){
                     hasNextQuestion = true;
                     nextQuestionId = Q_0005;
                     nextQuestionContent = "실거주 기간을 어떻게 가져올까요?";
@@ -304,8 +357,37 @@ public class QuestionService {
                     }else{
                         throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "응답값의 범위를 벗어났습니다.");
                     }
-                }
-                else{
+                }else if(PERIOD_TYPE_DIAL.equals(questionId) || PERIOD_TYPE_CERT.equals(questionId)){
+                    long stayPeriodYear = 0;
+
+                    Map<String, Object> stayPeriodMap = getStayPeriodYearAndMonth(answerValue);
+
+                    if(stayPeriodMap.containsKey(STAY_PERIOD_YEAR)){
+                        stayPeriodYear = (long)stayPeriodMap.get(STAY_PERIOD_YEAR);
+                    }
+
+                    // 실거주기간이 2년 미만인 경우
+                    if(stayPeriodYear < 2){
+                        hasNextQuestion = true;
+                        nextQuestionId = Q_0006;
+                        nextQuestionContent = "상생임대인에 해당하시나요?";
+                        isNeedAnswer = true;
+                        answerType = ANSWER_TYPE_SELECT;
+                        answerSelectList = new ArrayList<>();
+                        answerSelectList.add(
+                                AnswerSelectListResponse.builder()
+                                        .answerValue(ANSWER_VALUE_01)
+                                        .answerContent("네")
+                                        .build()
+                        );
+                        answerSelectList.add(
+                                AnswerSelectListResponse.builder()
+                                        .answerValue(ANSWER_VALUE_02)
+                                        .answerContent("아니오")
+                                        .build()
+                        );
+                    }
+                }else{
                     log.info("다음 추가질의항목 없음, questionId : " + questionId);
                 }
             }
@@ -383,5 +465,56 @@ public class QuestionService {
 
         // 조정대상지역(용산구, 서초구, 강남구, 송파구)
         return ADJUSTMENT_TARGET_AREA1.equals(siGunGu) || ADJUSTMENT_TARGET_AREA2.equals(siGunGu) || ADJUSTMENT_TARGET_AREA3.equals(siGunGu) || ADJUSTMENT_TARGET_AREA4.equals(siGunGu);
+    }
+
+    // 실거주기간 입력 내용 분리(년, 월로 분리)
+    private Map<String, Object> getStayPeriodYearAndMonth(String stayPeriodStr){
+        Map<String, Object> resultMap = new HashMap<String, Object>();
+        long stayPeriodYear = 0;
+        long stayPeriodMonth = 0;
+
+        String stayPeriodTotalStr = EMPTY;
+        String stayPeriodYearStr = EMPTY;
+        String stayPeriodMonthStr = EMPTY;
+
+        stayPeriodTotalStr = StringUtils.defaultString(stayPeriodStr);
+        if(!stayPeriodTotalStr.contains("년") && !stayPeriodTotalStr.contains("개월")){
+            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
+        }else{
+            try{
+                // 1년 미만(ex:5개월)
+                if(!stayPeriodTotalStr.contains("년")){
+                    stayPeriodMonthStr = stayPeriodTotalStr.replace("개월", EMPTY);
+                    stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
+                }
+                // 1년 이상
+                else{
+                    // 개월 없음(ex:2년)
+                    if(!stayPeriodTotalStr.contains("개월")){
+                        stayPeriodYearStr = stayPeriodTotalStr.replace("년", EMPTY);
+                        stayPeriodYear = Long.parseLong(stayPeriodYearStr);
+                    }
+                    // 개월 있음(ex:2년 10개월)
+                    else{
+                        String[] stayPeriodArr = stayPeriodTotalStr.split(SPACE);
+                        if(stayPeriodArr.length == 2){
+                            stayPeriodYearStr = stayPeriodArr[0];
+                            stayPeriodMonthStr = stayPeriodArr[1];
+                            stayPeriodYear = Long.parseLong(stayPeriodYearStr);
+                            stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
+                        }else{
+                            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 입력되지 않았습니다.");
+                        }
+                    }
+                }
+            }catch(NumberFormatException ne){
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 실거주기간 정보가 올바르게 입력되지 않았습니다.");
+            }
+        }
+
+        resultMap.put("stayPeriodYear", stayPeriodYear);
+        resultMap.put("stayPeriodMonth", stayPeriodMonth);
+
+        return resultMap;
     }
 }
