@@ -119,6 +119,10 @@ public final class CommonConstant {
     public final static String PERIOD_TYPE_DIAL = "PERIOD_DIAL";
     public final static String PERIOD_TYPE_CERT = "PERIOD_CERT";
 
+    /* 실거주기간 관련 데이터 */
+    public final static String STAY_PERIOD_YEAR = "stayPeriodYear";
+    public final static String STAY_PERIOD_MONTH = "stayPeriodMonth";
+
     /* 답변 데이터 코드 */
     public final static String A_0001 = "A_0001";               // 답변1
     public final static String A_0002 = "A_0002";               // 답변2
