@@ -31,7 +31,9 @@ spring:
       time-between-eviction-runs-millis: 3000
   batch:
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
+    job:
+      enabled: false
   mvc:
     custom-uri-logging-filter:
       enabled: true
@@ -43,7 +45,7 @@ spring:
     activate:
       on-profile: "dev"
   datasource:
-    url: jdbc:log4jdbc:mysql://172.31.36.52:3306/howtaxing?useSSL=false&autoReconnect=true&autoReconnection=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Seoul
+    url: jdbc:log4jdbc:mysql://devapp.how-taxing.com:3306/howtaxing?useSSL=false&autoReconnect=true&autoReconnection=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Seoul
     username: root
     password: Xmonster11@@
     driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
@@ -59,7 +61,9 @@ spring:
       time-between-eviction-runs-millis: 3000
   batch:
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
+    job:
+      enabled: false
   mvc:
     custom-uri-logging-filter:
       enabled: true
