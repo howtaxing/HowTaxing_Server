@@ -500,6 +500,8 @@ public class QuestionService {
                         if(stayPeriodArr.length == 2){
                             stayPeriodYearStr = stayPeriodArr[0];
                             stayPeriodMonthStr = stayPeriodArr[1];
+                            stayPeriodYearStr = stayPeriodYearStr.replace("년", EMPTY);
+                            stayPeriodMonthStr = stayPeriodMonthStr.replace("개월", EMPTY);
                             stayPeriodYear = Long.parseLong(stayPeriodYearStr);
                             stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
                         }else{
