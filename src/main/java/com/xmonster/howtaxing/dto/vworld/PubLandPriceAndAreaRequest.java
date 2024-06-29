@@ -13,6 +13,6 @@ public class PubLandPriceAndAreaRequest {
     private String siDo;
     private String siGunGu;
     private String complexName;
-    private String dongName;        // [필수] 동명
+    private String dongName;        // [선택] 동명
     private String hoName;          // [필수] 호명
 }

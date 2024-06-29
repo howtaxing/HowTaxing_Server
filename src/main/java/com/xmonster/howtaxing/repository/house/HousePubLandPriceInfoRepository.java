@@ -11,9 +11,9 @@ import java.util.List;
 @Repository
 public interface HousePubLandPriceInfoRepository extends JpaRepository<HousePubLandPriceInfo, Long> {
     @Query("SELECT p FROM HousePubLandPriceInfo p WHERE " +
-           "(:legalDstCode IS NULL OR p.legalDstCode = :legalDstCode) AND " +
-           "(:roadAddr IS NULL OR p.roadAddr = :roadAddr) AND " +
-           "(:dongName IS NULL OR p.dongName LIKE %:dongName%) AND " +
+           "p.legalDstCode = :legalDstCode AND " +
+           "p.roadAddr = :roadAddr AND " +
+           "(:dongName IS NULL OR p.dongName LIKE :dongName%) AND " +
            "(:hoName IS NULL OR p.hoName = :hoName)")
     List<HousePubLandPriceInfo> findByConditions(
         @Param("legalDstCode") String legalDstCode,
