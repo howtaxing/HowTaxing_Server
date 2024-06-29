@@ -228,9 +228,9 @@ public class VworldService {
         if (EMPTY.equals(roadAddr)) {
             throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "도로명주소를 입력하세요.");
         }
-        // if (EMPTY.equals(dongName)) {
-        //     throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "동을 입력하세요.");
-        // }
+        if (EMPTY.equals(dongName)) {
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "동을 입력하세요.");
+        }
         if (EMPTY.equals(hoName)) {
             throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "호를 입력하세요.");
         }
