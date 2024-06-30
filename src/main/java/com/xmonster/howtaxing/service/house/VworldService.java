@@ -219,21 +219,25 @@ public class VworldService {
 
         String legalDstCode = pubLandPriceAndAreaRequest.getLegalDstCode();
         String roadAddr = pubLandPriceAndAreaRequest.getRoadAddr();
+        String complexName = pubLandPriceAndAreaRequest.getComplexName().replace(" ", "");
         String dongName = pubLandPriceAndAreaRequest.getDongName();
         String hoName = pubLandPriceAndAreaRequest.getHoName();
 
         if (EMPTY.equals(legalDstCode)) {
             throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "법정동코드를 입력하세요.");
         }
-        if (EMPTY.equals(roadAddr)) {
-            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "도로명주소를 입력하세요.");
-        }
         if (EMPTY.equals(hoName)) {
             throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "호를 입력하세요.");
         }
 
+        List<HousePubLandPriceInfo> pubLandPriceAndAreaList;
         try {
-            List<HousePubLandPriceInfo> pubLandPriceAndAreaList = housePubLandPriceInfoRepository.findByConditions(legalDstCode, roadAddr, dongName, hoName);
+            // 기존 API와의 호환을 위해 도로명주소로 먼저 검색
+            pubLandPriceAndAreaList = housePubLandPriceInfoRepository.findByConditions(legalDstCode, roadAddr, dongName, hoName);
+            if (pubLandPriceAndAreaList.isEmpty()) {
+                // 검색결과 없을 시 건물명으로 검색
+                pubLandPriceAndAreaList = housePubLandPriceInfoRepository.findByConditionsWithoutRoadAddr(legalDstCode, complexName, dongName, hoName);
+            }
 
             if (pubLandPriceAndAreaList.size() > 1) {
                 //결과값이 너무 많은 경우 예외처리

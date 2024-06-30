@@ -21,4 +21,16 @@ public interface HousePubLandPriceInfoRepository extends JpaRepository<HousePubL
         @Param("dongName") String dongName,
         @Param("hoName") String hoName
     );
+
+    @Query("SELECT p FROM HousePubLandPriceInfo p WHERE " +
+           "p.legalDstCode = :legalDstCode AND " +
+           "p.complexName LIKE :complexName% AND " +
+           "(:dongName IS NULL OR p.dongName LIKE :dongName%) AND " +
+           "(:hoName IS NULL OR p.hoName = :hoName)")
+    List<HousePubLandPriceInfo> findByConditionsWithoutRoadAddr(
+        @Param("legalDstCode") String legalDstCode,
+        @Param("complexName") String complexName,
+        @Param("dongName") String dongName,
+        @Param("hoName") String hoName
+    );
 }
