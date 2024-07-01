@@ -1115,45 +1115,56 @@ public class HouseService {
         return isRequiredDataMissing;
     }
 
-    // 청약홈에서 불러온 보유주택 누락된 정보 입력
+    // 청약홈에서 불러온 보유주택 누락된 정보 입력 - 배열순서가 일치한다는 가정
     private void fillEmptyValuesFromLists(List<DataDetail1> list1, List<DataDetail2> list2, List<DataDetail3> list3, List<House> houseList){
         log.info(">> HouseService fillEmptyValuesFromLists - 주택정보 빈값 채워넣는 로직");
 
         HyphenUserHouseResultInfo hyphenUserHouseResultInfo = new HyphenUserHouseResultInfo();
+
+        int count = 0;
         
-        // 부동산거래내역
-        for (DataDetail2 dataDetail2 : list2) {
+        // 부동산거래내역 - 제산세정보의 주택 개수만큼만 매수정보를 가져온다.
+        for (int i = 0; count < list3.size(); i++) {
+            DataDetail2 dataDetail2 = list2.get(i);
+            House house = houseList.get(i);
+            log.info("거래내역 중 {}번째 매수 주택: {}",i, dataDetail2.getAddress());
+            log.info("보유주택 중 {}번째 매수 주택: {}",i, house.getHouseName());
 
             String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
             String buyPrice = ZERO;
 
-            // 매수가격
+            // 거래유형이 매수인 경우 취득금액과 계약일자를 순서에 맞게 세팅
             if(ONE.equals(tradeType)){
                 buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
-            }
 
-            hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
-            hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
+                hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                if (house.getBuyPrice() == null) {
+                    house.setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
+                }
+                if (house.getContractDate() == null) {
+                    house.setContractDate(hyphenUserHouseResultInfo.getContractDate());
+                }
+
+                count ++;
+            }
         }
         // 재산세정보
-        for (DataDetail3 dataDetail3 : list3) {
+        for (int i = 0; i < list3.size(); i++) {
+            DataDetail3 dataDetail3 = list3.get(i);
+            House house = houseList.get(i);
+            log.info("재산세정보 {}번째 주택: {}", i, dataDetail3.getAddress());
+            log.info("보유주택 중 {}번째 매수 주택: {}",i, house.getHouseName());
+
             HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail3.getAddress());
 
             hyphenUserHouseResultInfo.setDetailAdr(houseAddressDto.getDetailAddress());
             hyphenUserHouseResultInfo.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
-        }
-        for (House house : houseList) {
             if (house.getDetailAdr() == null) {
                 house.setDetailAdr(hyphenUserHouseResultInfo.getDetailAdr());
             }
             if (house.getBuyDate() == null) {
                 house.setBuyDate(hyphenUserHouseResultInfo.getBuyDate());
-            }
-            if (house.getBuyPrice() == null) {
-                house.setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
-            }
-            if (house.getContractDate() == null) {
-                house.setContractDate(hyphenUserHouseResultInfo.getContractDate());
             }
         }
     }
