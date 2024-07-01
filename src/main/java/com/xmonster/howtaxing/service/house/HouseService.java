@@ -78,6 +78,9 @@ public class HouseService {
             this.setList1ToHouseEntity(list1, houseList);
             this.setList2ToHouseEntity(list2, houseList);
 
+            // 각 리스트를 다시 사용하여 필요한 빈 값을 채워넣기
+            this.fillEmptyValuesFromLists(list1, list2, list3, houseList);
+
             // 전체 보유주택에 사용자id 세팅
             for(House house : houseList){
                 house.setUserId(findUser.getId());
@@ -586,7 +589,8 @@ public class HouseService {
                                 .orgAdr(houseAddressDto.getAddress())
                                 .searchAdr(houseAddressDto.getSearchAddress())
                                 .houseType(SIX)
-                                .pubLandPrice(Long.parseLong(publishedPrice))
+                                .buyDate(LocalDate.parse(dataDetail1.getOwnershipChangeDate(), DateTimeFormatter.ofPattern("yyyyMMdd")))
+                                .pubLandPrice(Long.parseLong(publishedPrice)*1000)      // 공시가격(단위:천원)
                                 .area(new BigDecimal(StringUtils.defaultString(dataDetail1.getArea(), DEFAULT_DECIMAL)))
                                 .build());
             }
@@ -1109,5 +1113,48 @@ public class HouseService {
         log.info("isRequiredDataMissing : " + isRequiredDataMissing);
 
         return isRequiredDataMissing;
+    }
+
+    // 청약홈에서 불러온 보유주택 누락된 정보 입력
+    private void fillEmptyValuesFromLists(List<DataDetail1> list1, List<DataDetail2> list2, List<DataDetail3> list3, List<House> houseList){
+        log.info(">> HouseService fillEmptyValuesFromLists - 주택정보 빈값 채워넣는 로직");
+
+        HyphenUserHouseResultInfo hyphenUserHouseResultInfo = new HyphenUserHouseResultInfo();
+        
+        // 부동산거래내역
+        for (DataDetail2 dataDetail2 : list2) {
+
+            String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
+            String buyPrice = ZERO;
+
+            // 매수가격
+            if(ONE.equals(tradeType)){
+                buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
+            }
+
+            hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
+            hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+        }
+        // 재산세정보
+        for (DataDetail3 dataDetail3 : list3) {
+            HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail3.getAddress());
+
+            hyphenUserHouseResultInfo.setDetailAdr(houseAddressDto.getDetailAddress());
+            hyphenUserHouseResultInfo.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+        }
+        for (House house : houseList) {
+            if (house.getDetailAdr() == null) {
+                house.setDetailAdr(hyphenUserHouseResultInfo.getDetailAdr());
+            }
+            if (house.getBuyDate() == null) {
+                house.setBuyDate(hyphenUserHouseResultInfo.getBuyDate());
+            }
+            if (house.getBuyPrice() == null) {
+                house.setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
+            }
+            if (house.getContractDate() == null) {
+                house.setContractDate(hyphenUserHouseResultInfo.getContractDate());
+            }
+        }
     }
 }
