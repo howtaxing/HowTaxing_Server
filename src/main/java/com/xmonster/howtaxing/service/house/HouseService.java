@@ -925,12 +925,13 @@ public class HouseService {
                                     log.info(searchAddr + "주소의 검색 결과가 없습니다.(주소기반산업지원서비스)");
                                     break;
                                 }
-                                // 검색 결과가 여러 건인 경우
-                                else {
+                                // 검색 결과가 2건인 경우 : 대단지의 경우 로직에 대한 검토가 더 필요함..
+                                else if(ttcn == 2){
                                     // CASE1) 공동주택여부 판별하여 세팅
                                     for(int j = 0; j < ttcn; j++) {
                                         String bdkdCd = jusoGovRoadAdrResponse.getResults().getJuso().get(j).getBdKdcd();
                                         if (ONE.equals(bdkdCd)) {
+                                            jusoDetail = jusoGovRoadAdrResponse.getResults().getJuso().get(j);
                                             jusoDetail = houseAddressService.replaceSpecialCharactersForJusoDetail(jusoDetail);
                                             break;
                                         }
