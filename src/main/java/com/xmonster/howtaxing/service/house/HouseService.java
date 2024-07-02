@@ -883,11 +883,15 @@ public class HouseService {
         log.info(">>> HouseService searchJusoDetail - (주소기반산업지원서비스 - 도로명주소 조회) 상세 주소정보 조회");
 
         JusoDetail jusoDetail = null;
+        List<String> searchAdr = hyphenUserHouseResultInfo.getSearchAdr();
+        int count = 0;
 
-        if(hyphenUserHouseResultInfo.getSearchAdr() != null){
+        if(searchAdr != null){
+            count = Math.min(MAX_JUSO_CALL_CNT, searchAdr.size());
+
             // 주소기반산업지원서비스 도로명주소 검색은 한 건당 최대 (3)회 까지로 제한
-            for(int i=0; i<MAX_JUSO_CALL_CNT; i++){
-                if(hyphenUserHouseResultInfo.getSearchAdr().get(i) != null){
+            for(int i=0; i<count; i++){
+                if(searchAdr.get(i) != null){
                     StringBuilder searchAddr = new StringBuilder(EMPTY);
                     if(!EMPTY.contentEquals(searchAddr)){
                         searchAddr.append(SPACE);
