@@ -1129,7 +1129,7 @@ public class HouseService {
                 break;
             }
             DataDetail2 dataDetail2 = list2.get(i);
-            House house = houseList.get(i);
+            House house = houseList.get(count);
             log.info("거래내역 중 {}번째 매수 주택: {}",i, dataDetail2.getAddress());
             log.info("보유주택 중 {}번째 매수 주택: {}",i, house.getHouseName());
 
