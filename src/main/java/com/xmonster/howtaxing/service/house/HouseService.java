@@ -1125,6 +1125,9 @@ public class HouseService {
         
         // 부동산거래내역 - 제산세정보의 주택 개수만큼만 매수정보를 가져온다.
         for (int i = 0; count < list3.size(); i++) {
+            if (count >= list3.size()) {
+                break;
+            }
             DataDetail2 dataDetail2 = list2.get(i);
             House house = houseList.get(i);
             log.info("거래내역 중 {}번째 매수 주택: {}",i, dataDetail2.getAddress());
