@@ -1,5 +1,6 @@
 package com.xmonster.howtaxing.service.house;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.house.*;
@@ -51,6 +52,8 @@ public class HouseService {
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
 
+    private final ObjectMapper objectMapper;
+
     private static final int MAX_JUSO_CALL_CNT = 3; // 주소 한건 당 주소기반산업지원서비스 도로명주소 재조회 호출 건수 최대값
 
     // 보유주택 조회(하이픈-청약홈)
@@ -59,6 +62,9 @@ public class HouseService {
 
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
+
+        // 청약홈(하이픈)에서 가져와 house 테이블에 세팅한 해당 사용자의 주택 정보를 모두 삭제
+        houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
 
         // 하이픈 주택소유정보 조회 호출
         HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
@@ -141,57 +147,49 @@ public class HouseService {
         // 청약홈(하이픈)에서 가져와 house 테이블에 세팅한 해당 사용자의 주택 정보를 모두 삭제
         houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
 
+        // 하이픈 주택소유정보 테스트 json data 세팅
+        HyphenUserHouseListResponse hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+
         List<House> houseList = new ArrayList<>();
+        HyphenCommon hyphenCommon = hyphenUserHouseListResponse.getHyphenCommon();
+        List<DataDetail1> list1 = hyphenUserHouseListResponse.getHyphenData().getList1();
+        List<DataDetail2> list2 = hyphenUserHouseListResponse.getHyphenData().getList2();
+        List<DataDetail3> list3 = hyphenUserHouseListResponse.getHyphenData().getList3();
 
-        // 대경빌라
-        houseList.add(
-                House.builder()
-                        .userId(findUser.getId())
-                        .houseType(SIX)
-                        .houseName("대경빌라")
-                        .detailAdr("1동 8102호")
-                        .contractDate(LocalDate.parse("20220423", DateTimeFormatter.ofPattern("yyyyMMdd")))
-                        .balanceDate(LocalDate.parse("20220519", DateTimeFormatter.ofPattern("yyyyMMdd")))
-                        .buyDate(LocalDate.parse("20220519", DateTimeFormatter.ofPattern("yyyyMMdd")))
-                        .buyPrice(Long.parseLong("270000000"))
-                        .jibunAddr("경기도 의왕시 삼동 192-2 대경빌라")
-                        .roadAddr("경기도 의왕시 부곡중앙북5길 5")
-                        .roadAddrRef(" (삼동, 대경빌라)")
-                        .bdMgtSn("4143010300101920002009839")
-                        .admCd("4143010300")
-                        .rnMgtSn("414304403087")
-                        .area(new BigDecimal(StringUtils.defaultString("60.840", DEFAULT_DECIMAL)))
-                        .isDestruction(false)
-                        .isCurOwn(true)
-                        .ownerCnt(1)
-                        .userProportion(100)
-                        .isMoveInRight(false)
-                        .sourceType(ONE)
-                        .build());
+        if(this.isSuccessHyphenUserHouseListResponse(hyphenCommon)){
+            // 하이픈 보유주택조회 결과 List를 HouseList에 세팅(3->1->2 순서로 호출)
+            this.setList3ToHouseEntity(list3, houseList);
+            this.setList1ToHouseEntity(list1, houseList);
+            this.setList2ToHouseEntity(list2, houseList);
 
-        // 의정부역센트럴자이&위브캐슬
-        houseList.add(
-                House.builder()
-                        .userId(findUser.getId())
-                        .houseType(SIX)
-                        .houseName("의정부역센트럴자이&위브캐슬")
-                        .jibunAddr("경기도 의정부시 의정부동 723 의정부역센트럴자이&위브캐슬")
-                        .roadAddr("경기도 의정부시 경의로 130")
-                        .roadAddrRef(" (의정부동, 의정부역센트럴자이&위브캐슬)")
-                        .bdMgtSn("4115010100103800000015724")
-                        .admCd("4115010100")
-                        .rnMgtSn("411503181004")
-                        .area(new BigDecimal(StringUtils.defaultString("59.948", DEFAULT_DECIMAL)))
-                        .isDestruction(false)
-                        .isCurOwn(true)
-                        .ownerCnt(1)
-                        .userProportion(100)
-                        .isMoveInRight(false)
-                        .sourceType(ONE)
-                        .build());
+            // 각 리스트를 다시 사용하여 필요한 빈 값을 채워넣기
+            this.fillEmptyValuesFromLists(list1, list2, list3, houseList);
 
-        // house 테이블에 houseList 저장
-        houseRepository.saveAllAndFlush(houseList);
+            // 전체 보유주택에 사용자id 세팅
+            for(House house : houseList){
+                house.setUserId(findUser.getId());
+            }
+
+            // houseList 출력 테스트
+            log.info("----- houseList 출력 테스트 Start -----");
+            for(House house : houseList){
+                log.info("------------------------------------------");
+                log.info("주택유형 : " + house.getHouseType());
+                log.info("주택명 : " + house.getHouseName());
+                log.info("상세주소 : " + house.getDetailAdr());
+                log.info("사용자ID : " + house.getUserId());
+                log.info("------------------------------------------");
+            }
+            log.info("----- houseList 출력 테스트 End -----");
+
+            // 청약홈(하이픈)에서 가져와 house 테이블에 세팅한 해당 사용자의 주택 정보를 모두 삭제
+            houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
+
+            // house 테이블에 houseList 저장
+            houseRepository.saveAllAndFlush(houseList);
+        }else{
+            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈 보유주택조회 중 오류가 발생했습니다.");
+        }
 
         List<House> houseListFromDB = houseRepository.findByUserId(findUser.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
@@ -925,6 +923,19 @@ public class HouseService {
                                     log.info(searchAddr + "주소의 검색 결과가 없습니다.(주소기반산업지원서비스)");
                                     break;
                                 }
+                                // 검색 결과가 여러 건인 경우
+                                else {
+                                    // CASE1) 공동주택여부 판별하여 세팅
+                                    for(int j = 0; j < ttcn; j++) {
+                                        jusoDetail = jusoGovRoadAdrResponse.getResults().getJuso().get(j);
+
+                                        String bdkdCd = jusoDetail.getAdmCd();
+                                        if (ONE.equals(bdkdCd)) {
+                                            jusoDetail = houseAddressService.replaceSpecialCharactersForJusoDetail(jusoDetail);
+                                            break;
+                                        }
+                                    }
+                                }
                             }catch(NumberFormatException e){
                                 // TODO. 오류 처리 로직 추가
                                 log.error("검색 결과 Count 형변환(Integer) 실패");
@@ -1134,14 +1145,15 @@ public class HouseService {
             }
             DataDetail2 dataDetail2 = list2.get(i);
             House house = houseList.get(count);
-            log.info("거래내역 중 {}번째 매수 주택: {}",i, dataDetail2.getAddress());
-            log.info("보유주택 중 {}번째 매수 주택: {}",i, house.getHouseName());
 
             String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
             String buyPrice = ZERO;
 
             // 거래유형이 매수인 경우 취득금액과 계약일자를 순서에 맞게 세팅
             if(ONE.equals(tradeType)){
+                log.info("거래내역 중 {}번째 매수 주택: {}",i, dataDetail2.getAddress());
+                log.info("보유주택 중 {}번째 주택: {}",i, house.getHouseName());
+
                 buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
 
                 hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
@@ -1173,6 +1185,16 @@ public class HouseService {
             if (house.getBuyDate() == null) {
                 house.setBuyDate(hyphenUserHouseResultInfo.getBuyDate());
             }
+        }
+    }
+
+    private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse() {
+        String json = "";
+        try {
+            return objectMapper.readValue(json, HyphenUserHouseListResponse.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "Mocked HyphenUserHouseListResponse 생성 중 오류가 발생했습니다.");
         }
     }
 }
