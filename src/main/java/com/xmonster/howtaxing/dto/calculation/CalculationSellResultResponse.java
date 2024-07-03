@@ -9,6 +9,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 public class CalculationSellResultResponse {
     private int listCnt;
@@ -18,6 +19,7 @@ public class CalculationSellResultResponse {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
+    @ToString
     @Builder
     public static class CalculationSellOneResult {
         private String buyPrice;            // 취득가액

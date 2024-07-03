@@ -56,7 +56,7 @@ public class CalculationSellService {
         // 요청 데이터 유효성 검증
         validationCheckRequestData(calculationSellResultRequest);
 
-        log.info("양도소득세 계산 결과 조회 요청 : " + calculationSellResultRequest.toString());
+        log.info("(Calculation)양도소득세 계산 결과 조회 요청 : " + calculationSellResultRequest.toString());
 
         // 양도주택정보
         House house = houseRepository.findByHouseId(calculationSellResultRequest.getHouseId())
@@ -70,6 +70,8 @@ public class CalculationSellService {
             Method method = calculationBranchClass.getMethod("calculationStart", CalculationSellResultRequest.class, House.class);
 
             Object result = method.invoke(target, calculationSellResultRequest, house);
+
+            if(result != null) log.info("(Calculation)양도소득세 계산 결과 조회 응답 : " + result.toString());
 
             return ApiResponse.success(result);
 

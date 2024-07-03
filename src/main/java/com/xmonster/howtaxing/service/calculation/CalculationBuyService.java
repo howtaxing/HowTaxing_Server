@@ -55,7 +55,7 @@ public class CalculationBuyService {
         // 요청 데이터 유효성 검증
         validationCheckRequestData(calculationBuyResultRequest);
 
-        log.info("취득세 계산 결과 조회 요청 : " + calculationBuyResultRequest.toString());
+        log.info("(Calculation)취득세 계산 결과 조회 요청 : " + calculationBuyResultRequest.toString());
 
         // 분기 메소드
         try{
@@ -65,6 +65,8 @@ public class CalculationBuyService {
             Method method = calculationBranchClass.getMethod("calculationStart", CalculationBuyResultRequest.class);
 
             Object result = method.invoke(target, calculationBuyResultRequest);
+
+            if(result != null) log.info("(Calculation)취득세 계산 결과 조회 응답 : " + result.toString());
 
             return ApiResponse.success(result);
 
@@ -1635,58 +1637,67 @@ public class CalculationBuyService {
 
             /* 3. 지방교육세 계산 */
             log.info("3. 지방교육세 계산");
-            // 1주택
-            if(ownHouseCount == 1){
-                // 6억 이하
-                if(buyPrice <= SIX_HND_MIL){
-                    eduTaxRate = 0.001;                // 지방교육세율 : 0.1%
-                }
-                // 6억 초과, 9억 이하
-                else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
-                    eduTaxRate = buyTaxRate / 10;       // 지방교육세율 : 취득세율의 1/10
-                }
-                // 9억 초과
-                else{
-                    eduTaxRate = 0.003;                // 지방교육세율 : 0.3%
-                }
-            }
-            // 2주택
-            else if(ownHouseCount == 2){
-                // 조정대상지역
-                if(isAdjustmentTargetArea){
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }else{
+
+            // TODO. 취득세 중과배제 관련 임시 조치
+            // 취득주택의 공시가격이 1억 초과인 경우
+            if(calculationBuyResultRequest.getIsPubLandPriceOver100Mil()){
+                // 1주택
+                if(ownHouseCount == 1){
                     // 6억 이하
                     if(buyPrice <= SIX_HND_MIL){
-                        eduTaxRate = 0.001;            // 지방교육세율 : 0.1%
+                        eduTaxRate = 0.001;                // 지방교육세율 : 0.1%
                     }
                     // 6억 초과, 9억 이하
                     else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
-                        eduTaxRate = buyTaxRate / 10;   // 지방교육세율 : 취득세율의 1/10
+                        eduTaxRate = buyTaxRate / 10;       // 지방교육세율 : 취득세율의 1/10
                     }
                     // 9억 초과
                     else{
-                        eduTaxRate = 0.003;            // 지방교육세율 : 0.3%
+                        eduTaxRate = 0.003;                // 지방교육세율 : 0.3%
+                    }
+                }
+                // 2주택
+                else if(ownHouseCount == 2){
+                    // 조정대상지역
+                    if(isAdjustmentTargetArea){
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }else{
+                        // 6억 이하
+                        if(buyPrice <= SIX_HND_MIL){
+                            eduTaxRate = 0.001;            // 지방교육세율 : 0.1%
+                        }
+                        // 6억 초과, 9억 이하
+                        else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                            eduTaxRate = buyTaxRate / 10;   // 지방교육세율 : 취득세율의 1/10
+                        }
+                        // 9억 초과
+                        else{
+                            eduTaxRate = 0.003;            // 지방교육세율 : 0.3%
+                        }
+                    }
+                }
+                // 3주택
+                else if(ownHouseCount == 3){
+                    // 조정대상지역
+                    if(isAdjustmentTargetArea){
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }else{
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }
+                }
+                // 4주택 이상
+                else if(ownHouseCount >= 4){
+                    // 조정대상지역
+                    if(isAdjustmentTargetArea){
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }else{
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
                     }
                 }
             }
-            // 3주택
-            else if(ownHouseCount == 3){
-                // 조정대상지역
-                if(isAdjustmentTargetArea){
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }else{
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }
-            }
-            // 4주택 이상
-            else if(ownHouseCount >= 4){
-                // 조정대상지역
-                if(isAdjustmentTargetArea){
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }else{
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }
+            // 취득주택의 공시가격이 1억 이하인 경우
+            else{
+                eduTaxRate = 0.001;                         // 지방교육세율 : 0.1%
             }
 
             // 지방교육세액
@@ -1781,28 +1792,11 @@ public class CalculationBuyService {
         private double calculateGeneralTaxRate(CalculationBuyResultRequest calculationBuyResultRequest, long ownHouseCount, long buyPrice, boolean isAdjustmentTargetArea){
             double taxRate = 0;
 
-            // 1주택
-            if(ownHouseCount == 1){
-                // 6억 이하
-                if(buyPrice <= SIX_HND_MIL){
-                    // 취득세율 : 1%
-                    taxRate = 0.01;
-                }
-                // 6억 초과, 9억 이하
-                else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
-                    // 취득세율 : (((취득가액 / 1억) x 2 / 3 - 3) x 1)%
-                    taxRate = (double)((buyPrice / ONE_HND_MIL) * 2 / 3 - 3) / 100;
-                }
-                // 9억 초과
-                else{
-                    // 취득세율 : 3%
-                    taxRate = 0.03;
-                }
-            }
-            // 2주택
-            else if(ownHouseCount == 2){
-                // 조정대상지역 외(조정대상지역에 대한 취득세율은 다른 프로세스로 접근)
-                if(!isAdjustmentTargetArea){
+            // TODO. 취득세 중과배제 관련 임시 조치
+            // 취득주택의 공시가격이 1억 초과인 경우
+            if(calculationBuyResultRequest.getIsPubLandPriceOver100Mil()){
+                // 1주택
+                if(ownHouseCount == 1){
                     // 6억 이하
                     if(buyPrice <= SIX_HND_MIL){
                         // 취득세율 : 1%
@@ -1819,6 +1813,32 @@ public class CalculationBuyService {
                         taxRate = 0.03;
                     }
                 }
+                // 2주택
+                else if(ownHouseCount == 2){
+                    // 조정대상지역 외(조정대상지역에 대한 취득세율은 다른 프로세스로 접근)
+                    if(!isAdjustmentTargetArea){
+                        // 6억 이하
+                        if(buyPrice <= SIX_HND_MIL){
+                            // 취득세율 : 1%
+                            taxRate = 0.01;
+                        }
+                        // 6억 초과, 9억 이하
+                        else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                            // 취득세율 : (((취득가액 / 1억) x 2 / 3 - 3) x 1)%
+                            taxRate = (double)((buyPrice / ONE_HND_MIL) * 2 / 3 - 3) / 100;
+                        }
+                        // 9억 초과
+                        else{
+                            // 취득세율 : 3%
+                            taxRate = 0.03;
+                        }
+                    }
+                }
+            }
+            // 취득주택의 공시가격이 1억 이하인 경우
+            else{
+                // 취득세율 : 1%
+                taxRate = 0.01;
             }
 
             return taxRate;
