@@ -6,6 +6,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 public class CalculationAdditionalAnswerRequest {
     private String questionId;      // 질의ID
