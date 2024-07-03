@@ -55,6 +55,8 @@ public class CalculationBuyService {
         // 요청 데이터 유효성 검증
         validationCheckRequestData(calculationBuyResultRequest);
 
+        log.info("취득세 계산 결과 조회 요청 : " + calculationBuyResultRequest.toString());
+
         // 분기 메소드
         try{
             calculationBranchClass = Class.forName("com.xmonster.howtaxing.service.calculation.CalculationBuyService$CalculationBranch");

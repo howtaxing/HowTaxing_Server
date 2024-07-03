@@ -56,6 +56,8 @@ public class CalculationSellService {
         // 요청 데이터 유효성 검증
         validationCheckRequestData(calculationSellResultRequest);
 
+        log.info("양도소득세 계산 결과 조회 요청 : " + calculationSellResultRequest.toString());
+
         // 양도주택정보
         House house = houseRepository.findByHouseId(calculationSellResultRequest.getHouseId())
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
