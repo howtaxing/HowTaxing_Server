@@ -63,9 +63,6 @@ public class HouseService {
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
 
-        // 청약홈(하이픈)에서 가져와 house 테이블에 세팅한 해당 사용자의 주택 정보를 모두 삭제
-        houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
-
         // 하이픈 주택소유정보 조회 호출
         HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
@@ -143,9 +140,6 @@ public class HouseService {
 
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
-
-        // 청약홈(하이픈)에서 가져와 house 테이블에 세팅한 해당 사용자의 주택 정보를 모두 삭제
-        houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
 
         // 하이픈 주택소유정보 테스트 json data 세팅
         HyphenUserHouseListResponse hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
@@ -331,7 +325,7 @@ public class HouseService {
             log.error("수정 대상 주택 ID가 입력되지 않았습니다.");
             throw new CustomException(ErrorCode.HOUSE_MODIFY_ERROR, "수정 대상 주택 ID가 입력되지 않았습니다.");
         }
-
+        
         Long userId = userUtil.findCurrentUser().getId();                       // 호출 사용자 ID
         House currentHouse = houseUtil.findSelectedHouse(houseId);              // 수정 대상 주택정보(AS-IS)
         Long houseOwnUserId = null;
@@ -894,11 +888,11 @@ public class HouseService {
 
         if(searchAdr != null){
             count = Math.min(MAX_JUSO_CALL_CNT, searchAdr.size());
+            StringBuilder searchAddr = new StringBuilder(EMPTY);
 
             // 주소기반산업지원서비스 도로명주소 검색은 한 건당 최대 (3)회 까지로 제한
             for(int i=0; i<count; i++){
                 if(searchAdr.get(i) != null){
-                    StringBuilder searchAddr = new StringBuilder(EMPTY);
                     if(!EMPTY.contentEquals(searchAddr)){
                         searchAddr.append(SPACE);
                     }
@@ -931,14 +925,13 @@ public class HouseService {
                                     log.info(searchAddr + "주소의 검색 결과가 없습니다.(주소기반산업지원서비스)");
                                     break;
                                 }
-                                // 검색 결과가 여러 건인 경우
-                                else {
+                                // 검색 결과가 2건인 경우 : 대단지의 경우 로직에 대한 검토가 더 필요함..
+                                else if(ttcn == 2){
                                     // CASE1) 공동주택여부 판별하여 세팅
                                     for(int j = 0; j < ttcn; j++) {
-                                        jusoDetail = jusoGovRoadAdrResponse.getResults().getJuso().get(j);
-
-                                        String bdkdCd = jusoDetail.getAdmCd();
+                                        String bdkdCd = jusoGovRoadAdrResponse.getResults().getJuso().get(j).getBdKdcd();
                                         if (ONE.equals(bdkdCd)) {
+                                            jusoDetail = jusoGovRoadAdrResponse.getResults().getJuso().get(j);
                                             jusoDetail = houseAddressService.replaceSpecialCharactersForJusoDetail(jusoDetail);
                                             break;
                                         }
