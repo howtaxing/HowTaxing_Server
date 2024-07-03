@@ -901,7 +901,8 @@ public class CalculationBuyService {
             }
 
             if(selectNo == 0){
-                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+                log.info("3년 이내 매도계획에 대한 응답값을 받지 못함");
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "분양권/입주권 완공 후 3년 이내 매도 계획에 대한 추가 질의 값을 받지 못했습니다.");
             }
 
             // (사용자 입력)완공 후 n년 이내 신규주택 양도 예정 여부
@@ -1179,7 +1180,8 @@ public class CalculationBuyService {
             }
 
             if(selectNo == 0){
-                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+                log.info("3년 이내 매도계획에 대한 응답값을 받지 못함");
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "분양권/입주권 완공 후 3년 이내 매도 계획에 대한 추가 질의 값을 받지 못했습니다.");
             }
 
             // (사용자 입력)완공 후 n년 이내 종전 또는 신규 주택 양도 예정 여부
@@ -1359,7 +1361,8 @@ public class CalculationBuyService {
             }
 
             if(selectNo == 0){
-                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+                log.info("3년 이내 매도계획에 대한 응답값을 받지 못함");
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "분양권/입주권 완공 후 3년 이내 매도 계획에 대한 추가 질의 값을 받지 못했습니다.");
             }
 
             // (사용자 입력)취득후 n년 이내 종전주택 양도 에정 여부

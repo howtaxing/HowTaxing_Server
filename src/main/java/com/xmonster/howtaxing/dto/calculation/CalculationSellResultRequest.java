@@ -10,6 +10,7 @@ import java.util.Map;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 public class CalculationSellResultRequest {
     private Long houseId;                           // [필수] (양도)주택ID
