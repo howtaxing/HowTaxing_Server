@@ -92,7 +92,13 @@ public final class CommonConstant {
 
     /* 세율 함수 */
     public final static String MAX = "MAX";                     // 세율1과 세율2 중 최대값 사용
-    public final static String OR_LESS_MORE = "OR_LESS_MORE";   // 기준금액 이하 세율1, 기준금액 초과 세율2
+
+    /* 공제 대상 */
+    public final static String DEDUCTION_TARGET_RETENTION = "RETENTION";
+    public final static String DEDUCTION_TARGET_STAY = "STAY";
+
+    /* 공제 함수 */
+    public final static String SUM = "SUM";
 
     /* 취득세 일반세율 기준 금액 */
     public final static long ONE_HND_MIL = 100000000;           // 1억(원)

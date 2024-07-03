@@ -1549,20 +1549,11 @@ public class CalculationBuyService {
 
                             // MAX : 세율1과 세율2 중 최대값 사용
                             if(MAX.equals(usedFunc)){
+                                // 취득세율
                                 buyTaxRate = Math.max(finalTaxRate1, finalTaxRate2);
+
+                                // 취득세액(취득금액 x 취득세율)
                                 buyTaxPrice = (long) (buyPrice * buyTaxRate);
-                            }
-                            // OR_LESS_MORE : 기준금액 이하 세율1, 기준금액 초과 세율2
-                            else if(OR_LESS_MORE.equals(usedFunc)){
-                                long basePrice = taxRateInfo.getBasePrice();
-
-                                if(buyPrice > basePrice){
-                                    buyTaxPrice = (long)((basePrice * finalTaxRate1) + ((buyPrice - basePrice) * finalTaxRate2));
-                                }else{
-                                    buyTaxPrice = (long)(buyPrice * finalTaxRate1);
-                                }
-
-                                buyTaxRate = (double)(buyTaxPrice / buyPrice); // 취득세액으로 취득세율을 계산
                             }
                         }
                         // 세율이 1개인 경우

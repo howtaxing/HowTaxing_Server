@@ -71,14 +71,9 @@ public class QuestionService {
         String answerType = null;
         List<AnswerSelectListResponse> answerSelectList = null;
 
-        // 1주택 이동 로직에서 재귀호출 오류 발생해서 주석처리함...
-        //if(CALC_TYPE_BUY.equals(calcType)){
-            if(ownHouseCnt == null){
-                ownHouseCnt = getOwnHouseCount(findUser);
-            }
-        // }else if(CALC_TYPE_SELL.equals(calcType)){
-        //     ownHouseCnt = getOwnHouseCount(findUser);
-        // }
+        if(ownHouseCnt == null){
+            ownHouseCnt = getOwnHouseCount(findUser);
+        }
 
         List<CalculationProcess> calculationProcessList = null;
         String variableData = EMPTY;

@@ -168,7 +168,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             //calculationSellResultResponse = getCalculationBuyResultResponseTest();
@@ -224,7 +224,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -281,7 +281,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -338,7 +338,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -400,7 +400,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -455,7 +455,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -510,7 +510,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -565,7 +565,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -595,26 +595,16 @@ public class CalculationSellService {
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
                 if(PERIOD_TYPE_DIAL.equals(answer.getQuestionId()) || PERIOD_TYPE_CERT.equals(answer.getQuestionId())){
-
                     Map<String, Object> stayPeriodMap = getStayPeriodYearAndMonth(answer.getAnswerValue());
-
                     if(stayPeriodMap.containsKey(STAY_PERIOD_YEAR)){
                         stayPeriodYear = (long)stayPeriodMap.get(STAY_PERIOD_YEAR);
                     }
-
                     if(stayPeriodMap.containsKey(STAY_PERIOD_MONTH)){
                         stayPeriodMonth = (long)stayPeriodMap.get(STAY_PERIOD_MONTH);
                     }
+                    break;
                 }
             }
-
-            /*Long stayPeriodYear = calculationSellResultRequest.getStayPeriodYear();
-            Long stayPeriodMonth = calculationSellResultRequest.getStayPeriodMonth();
-
-            if(stayPeriodYear == null || stayPeriodMonth == null){
-                stayPeriodYear = 0L;
-                stayPeriodMonth = 0L;
-            }*/
 
             log.info("stayPeriodYear : " + stayPeriodYear + "년");
             log.info("stayPeriodMonth : " + stayPeriodMonth + "개월");
@@ -646,7 +636,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -717,7 +707,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -774,7 +764,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -831,7 +821,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -885,7 +875,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -942,7 +932,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -973,24 +963,15 @@ public class CalculationSellService {
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
                 if(PERIOD_TYPE_DIAL.equals(answer.getQuestionId()) || PERIOD_TYPE_CERT.equals(answer.getQuestionId())){
                     Map<String, Object> stayPeriodMap = getStayPeriodYearAndMonth(answer.getAnswerValue());
-
                     if(stayPeriodMap.containsKey(STAY_PERIOD_YEAR)){
                         stayPeriodYear = (long)stayPeriodMap.get(STAY_PERIOD_YEAR);
                     }
-
                     if(stayPeriodMap.containsKey(STAY_PERIOD_MONTH)){
                         stayPeriodMonth = (long)stayPeriodMap.get(STAY_PERIOD_MONTH);
                     }
+                    break;
                 }
             }
-
-            /*Long stayPeriodYear = calculationSellResultRequest.getStayPeriodYear();
-            Long stayPeriodMonth = calculationSellResultRequest.getStayPeriodMonth();
-
-            if(stayPeriodYear == null || stayPeriodMonth == null){
-                stayPeriodYear = 0L;
-                stayPeriodMonth = 0L;
-            }*/
 
             log.info("stayPeriodYear : " + stayPeriodYear + "년");
             log.info("stayPeriodMonth : " + stayPeriodMonth + "개월");
@@ -1022,7 +1003,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1079,7 +1060,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1147,7 +1128,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1225,7 +1206,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1304,7 +1285,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1370,7 +1351,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1435,7 +1416,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1500,7 +1481,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1566,7 +1547,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1631,7 +1612,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1694,7 +1675,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1759,7 +1740,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1824,7 +1805,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1885,7 +1866,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1939,7 +1920,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -1994,7 +1975,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -2056,7 +2037,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -2113,7 +2094,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -2167,7 +2148,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -2229,7 +2210,7 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
@@ -2286,14 +2267,14 @@ public class CalculationSellService {
                     throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
                 }
             }else{
-                calculationSellResultResponse = getCalculationBuyResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
             }
 
             return calculationSellResultResponse;
         }
 
         // 양도소득세 계산 결과 조회
-        private CalculationSellResultResponse getCalculationBuyResultResponse(CalculationSellResultRequest calculationSellResultRequest, String taxRateCode, String dedCode){
+        private CalculationSellResultResponse getCalculationSellResultResponse(CalculationSellResultRequest calculationSellResultRequest, String taxRateCode, String dedCode){
             log.info(">>> CalculationBranch getCalculationSellResult - 양도소득세 계산 수행");
 
             // 양도소득세 계산 결과 세팅
@@ -2434,8 +2415,21 @@ public class CalculationSellService {
 
                             // 공제율 및 장기보유특별공제금액(공제정보가 존재하는 경우에만 계산)
                             if(deductionInfo != null){
+                                long stayPeriodYear = 0;
+
+                                List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
+                                for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                                    if(PERIOD_TYPE_DIAL.equals(answer.getQuestionId()) || PERIOD_TYPE_CERT.equals(answer.getQuestionId())){
+                                        Map<String, Object> stayPeriodMap = getStayPeriodYearAndMonth(answer.getAnswerValue());
+                                        if(stayPeriodMap.containsKey(STAY_PERIOD_YEAR)){
+                                            stayPeriodYear = (long)stayPeriodMap.get(STAY_PERIOD_YEAR);
+                                        }
+                                        break;
+                                    }
+                                }
+
                                 // 공제율
-                                dedRate = calculateDeductionRate(deductionInfo, retentionPeriodYear, calculationSellResultRequest.getStayPeriodYear());
+                                dedRate = calculateDeductionRate(deductionInfo, retentionPeriodYear, stayPeriodYear);
 
                                 // 장기보유특별공제금액(과세대상양도차익금액 x 공제율)
                                 longDeductionPrice = (long)(taxablePrice * dedRate);
@@ -2618,7 +2612,7 @@ public class CalculationSellService {
                     .build();
         }
 
-        private CalculationSellResultResponse getCalculationBuyResultResponseTest(){
+        private CalculationSellResultResponse getCalculationSellResultResponseTest(){
             log.info(">>> CalculationBranch getCalculationSellResult - 양도소득세 계산 수행 테스트");
 
             // 양도소득세 계산 결과 세팅
@@ -2715,21 +2709,61 @@ public class CalculationSellService {
 
         // 공제율 계산(TODO. 거주기간 체크)
         private double calculateDeductionRate(DeductionInfo deductionInfo, Long rPeriod, Long sPeriod){
-            double dedRate = 0;
+            double dedRate1 = 0;
+            double dedRate2 = 0;
+            double finalDedRate = 0;
 
-            String unit = StringUtils.defaultString(deductionInfo.getUnit());   // 단위
-            double unitDedRate = deductionInfo.getUnitDedRate();                // 단위공제율
-            int limitYear = deductionInfo.getLimitYear();                       // 한도연수
-            double limitDedRate = deductionInfo.getLimitDedRate();              // 한도공제율
+            String dedMethod = StringUtils.defaultString(deductionInfo.getDedMethod());     // 공제함수
+
+            String dedTarget1 = StringUtils.defaultString(deductionInfo.getDedTarget1());   // 공제대상1
+            String unit1 = StringUtils.defaultString(deductionInfo.getUnit1());             // 단위1
+            double unitDedRate1 = deductionInfo.getUnitDedRate1();                          // 단위공제율1
+            int limitYear1 = deductionInfo.getLimitYear1();                                 // 한도연수1
+            double limitDedRate1 = deductionInfo.getLimitDedRate1();                        // 한도공제율1
+
+            String dedTarget2 = StringUtils.defaultString(deductionInfo.getDedTarget1());   // 공제대상2
+            String unit2 = StringUtils.defaultString(deductionInfo.getUnit1());             // 단위2
+            double unitDedRate2 = deductionInfo.getUnitDedRate1();                          // 단위공제율2
+            int limitYear2 = deductionInfo.getLimitYear1();                                 // 한도연수2
+            double limitDedRate2 = deductionInfo.getLimitDedRate1();                        // 한도공제율2
 
             long retentionPeriodYear = (rPeriod != null) ? rPeriod : 0;
             long stayPeriodYear = (sPeriod != null) ? sPeriod : 0;
 
-            if(UNIT_1YEAR.equals(unit)){
-                dedRate = Math.min(retentionPeriodYear * unitDedRate, limitDedRate);
+            if(!EMPTY.equals(dedTarget1)){
+                if(UNIT_1YEAR.equals(unit1)){
+                    if(DEDUCTION_TARGET_RETENTION.equals(dedTarget1)){
+                        dedRate1 = Math.min(retentionPeriodYear * unitDedRate1, limitDedRate1);
+                    }else if(DEDUCTION_TARGET_STAY.equals(dedTarget1)){
+                        dedRate1 = Math.min(stayPeriodYear * unitDedRate1, limitDedRate1);
+                    }
+                }
             }
 
-            return dedRate;
+            if(!EMPTY.equals(dedTarget2)){
+                if(UNIT_1YEAR.equals(unit2)){
+                    if(DEDUCTION_TARGET_RETENTION.equals(dedTarget2)){
+                        dedRate2 = Math.min(retentionPeriodYear * unitDedRate2, limitDedRate2);
+                    }else if(DEDUCTION_TARGET_STAY.equals(dedTarget2)){
+                        dedRate2 = Math.min(stayPeriodYear * unitDedRate2, limitDedRate2);
+                    }
+                }
+            }
+
+            if(!EMPTY.equals(dedMethod)){
+                if(SUM.equals(dedMethod)){
+                    // SUM : 두 공제율 합산
+                    finalDedRate = dedRate1 + dedRate2;
+                }else{
+                    finalDedRate = dedRate1;    // 기본
+                }
+            }else{
+                finalDedRate = dedRate1;        // 기본
+            }
+
+            if(finalDedRate > 1) finalDedRate = 1;  // 최종 공제율은 1을 넘지 않는다(100%)
+
+            return finalDedRate;
         }
 
         // 조정대상지역 체크(TODO. 조정대상지역 history까지 체크하여 조정지역여부 체크)
