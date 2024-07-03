@@ -1351,6 +1351,11 @@ public class CalculationBuyService {
 
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                log.info("----------------------------------------");
+                log.info("questionId : " + answer.getQuestionId());
+                log.info("answerValue : " + answer.getAnswerValue());
+                log.info("----------------------------------------");
+
                 if(Q_0007.equals(answer.getQuestionId())){
                     if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
                         selectNo = 1;
