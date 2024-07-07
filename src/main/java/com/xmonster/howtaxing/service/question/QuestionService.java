@@ -128,9 +128,9 @@ public class QuestionService {
                             // 양도주택 계약일이 특정일자(2017.08.03) 이후인 경우
                             if(sellHouse.getContractDate().isAfter(specificDate)){
                                 // 양도주택 취득일 기준 조정대상지역 기간에 해당하는 경우
-                                if(checkAdjustmentTargetArea(sellHouse.getRoadAddr(), sellHouse.getBuyDate())){
+                                if(checkAdjustmentTargetArea(sellHouse.getJibunAddr(), sellHouse.getBuyDate())){
                                     // 양도주택 계약일 기준 조정대상지역 기간에 해당하는 경우
-                                    if(checkAdjustmentTargetArea(sellHouse.getRoadAddr(), sellHouse.getContractDate())){
+                                    if(checkAdjustmentTargetArea(sellHouse.getJibunAddr(), sellHouse.getContractDate())){
                                         nextQuestionId = Q_0004;
                                     }else{
                                         nextQuestionId = Q_0008;

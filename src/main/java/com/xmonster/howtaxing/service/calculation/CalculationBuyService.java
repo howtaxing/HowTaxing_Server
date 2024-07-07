@@ -439,7 +439,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBalanceDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBalanceDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -494,7 +494,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBalanceDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBalanceDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -748,7 +748,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -966,7 +966,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1245,7 +1245,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1300,7 +1300,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1431,7 +1431,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1493,7 +1493,7 @@ public class CalculationBuyService {
             long buyPrice = calculationBuyResultRequest.getBuyPrice();
 
             // (취득주택)조정지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             log.info("- 취득주택 포함 보유주택 수 : " + ownHouseCount);
             log.info("- 취득가액 : " + buyPrice);
