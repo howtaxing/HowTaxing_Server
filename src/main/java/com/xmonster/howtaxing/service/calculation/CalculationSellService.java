@@ -6,7 +6,9 @@ import com.xmonster.howtaxing.dto.calculation.CalculationSellResultRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse.CalculationSellOneResult;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
+import com.xmonster.howtaxing.dto.house.HouseAddressDto;
 import com.xmonster.howtaxing.model.*;
+import com.xmonster.howtaxing.repository.adjustment_target_area.AdjustmentTargetAreaRepository;
 import com.xmonster.howtaxing.repository.calculation.*;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.service.house.HouseAddressService;
@@ -42,6 +44,7 @@ public class CalculationSellService {
     private final TaxRateInfoRepository taxRateInfoRepository;
     private final DeductionInfoRepository deductionInfoRepository;
     private final HouseRepository houseRepository;
+    private final AdjustmentTargetAreaRepository adjustmentTargetAreaRepository;
 
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
@@ -128,6 +131,8 @@ public class CalculationSellService {
 
             return calculationBuyResultResponse;
         }
+
+        /*============================================================ 양도소득세 계산 프로세스 START ============================================================*/
 
         /**
          * 분기번호 : 001
@@ -539,7 +544,8 @@ public class CalculationSellService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부(TODO. 취득일 기준으로 조정대상지역 체크하도록 수정)
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getRoadAddr()));
+            //boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getJibunAddr()), house.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1821,7 +1827,7 @@ public class CalculationSellService {
          * 분기설명 : (2주택)신규주택에 주민등록초본상 전입일로부터 1년이 된날 이후까지 계속 거주 계획 여부(사용자 선택)
          */
         public CalculationSellResultResponse branchNo030(CalculationSellResultRequest calculationSellResultRequest, House house){
-            log.info(">>> CalculationBranch branchNo029 - 양도소득세 분기번호 030 : 신규주택 거주 계획");
+            log.info(">>> CalculationBranch branchNo030 - 양도소득세 분기번호 030 : 신규주택 거주 계획");
 
             CalculationSellResultResponse calculationSellResultResponse;
             boolean hasNext = false;
@@ -1949,7 +1955,8 @@ public class CalculationSellService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부(TODO. 양도일 기준으로 조정대상지역 체크하도록 수정 필요)
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getRoadAddr()));
+            //boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getJibunAddr()), calculationSellResultRequest.getSellDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -2276,6 +2283,125 @@ public class CalculationSellService {
 
             return calculationSellResultResponse;
         }
+
+        /**
+         * 분기번호 : 046
+         * 분기명 : 주택보유여부
+         * 분기설명 : (1주택)양도주택의 취득 계약일 당시 주택 보유여부
+         */
+        public CalculationSellResultResponse branchNo046(CalculationSellResultRequest calculationSellResultRequest, House house){
+            log.info(">>> CalculationBranch branchNo046 - 양도소득세 분기번호 046 : 주택보유여부");
+
+            CalculationSellResultResponse calculationSellResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "046")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0008.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            if(selectNo == 0){
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 취득 계약일 당시 주택 보유여부에 대한 추가 질의 값을 받지 못했습니다.");
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationSellResultRequest.class, House.class);
+                    calculationSellResultResponse = (CalculationSellResultResponse) method.invoke(target, calculationSellResultRequest, house);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
+                }
+            }else{
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationSellResultResponse;
+        }
+
+        /**
+         * 분기번호 : 047
+         * 분기명 : 조정대상지역여부
+         * 분기설명 : (1주택)계약일 기준 조정대상지역 기간해당 여부
+         */
+        public CalculationSellResultResponse branchNo047(CalculationSellResultRequest calculationSellResultRequest, House house){
+            log.info(">>> CalculationBranch branchNo047 - 양도소득세 분기번호 047 : 조정대상지역여부");
+
+            CalculationSellResultResponse calculationSellResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "047")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            // 조정대상지역여부(TODO. 계약일 기준으로 조정대상지역 체크하도록 수정)
+            //boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getJibunAddr()), house.getContractDate());
+
+            if(isAdjustmentTargetArea){
+                selectNo = 1;
+            }else{
+                selectNo = 2;
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationSellResultRequest.class, House.class);
+                    calculationSellResultResponse = (CalculationSellResultResponse) method.invoke(target, calculationSellResultRequest, house);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
+                }
+            }else{
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationSellResultResponse;
+        }
+
+        /*============================================================ 양도소득세 계산 프로세스 END ============================================================*/
 
         // 양도소득세 계산 결과 조회
         private CalculationSellResultResponse getCalculationSellResultResponse(CalculationSellResultRequest calculationSellResultRequest, String taxRateCode, String dedCode){
@@ -2770,12 +2896,73 @@ public class CalculationSellService {
             return finalDedRate;
         }
 
-        // 조정대상지역 체크(TODO. 조정대상지역 history까지 체크하여 조정지역여부 체크)
-        private boolean checkAdjustmentTargetArea(String address){
-            String siGunGu = houseAddressService.separateAddress(address).getSiGunGu();
+        // 조정대상지역 여부 체크
+        private boolean checkAdjustmentTargetArea(String address, LocalDate date){
+            boolean isAdjustmentTargetArea = false;
 
-            // 조정대상지역(용산구, 서초구, 강남구, 송파구)
-            return ADJUSTMENT_TARGET_AREA1.equals(siGunGu) || ADJUSTMENT_TARGET_AREA2.equals(siGunGu) || ADJUSTMENT_TARGET_AREA3.equals(siGunGu) || ADJUSTMENT_TARGET_AREA4.equals(siGunGu);
+            HouseAddressDto houseAddressDto = houseAddressService.separateAddress(address);
+
+            // 지번주소
+            if(houseAddressDto.getAddressType() == 1){
+                List<String> searchAddress = houseAddressDto.getSearchAddress();
+                if(searchAddress != null){
+                    StringBuilder keywordAssemble = new StringBuilder(EMPTY);
+                    List<AdjustmentTargetAreaInfo> adjustmentTargetAreaInfoList = new ArrayList<>();
+                    boolean isFindAddress = false;
+
+                    for(String keyword : searchAddress){
+                        if(!EMPTY.contentEquals(keywordAssemble)){
+                            keywordAssemble.append(SPACE);
+                        }
+                        if(keyword != null && !EMPTY.equals(keyword)){
+                            keywordAssemble.append(keyword);
+                        }
+                        
+                        adjustmentTargetAreaInfoList = adjustmentTargetAreaRepository.findByTargetAreaStartingWith(keywordAssemble.toString());
+                        if(adjustmentTargetAreaInfoList != null){
+                            // 조회 결과가 1개인 경우(조회결과가 1개가 나올 때까지 반복)
+                            if(adjustmentTargetAreaInfoList.size() == 1){
+                                isFindAddress = true;
+                                break;
+                            }else if(adjustmentTargetAreaInfoList.isEmpty()){
+                                break;
+                            }
+                        }
+                    }
+
+                    if(isFindAddress){
+                        LocalDate startDate = null;
+                        LocalDate endDate = null;
+
+                        AdjustmentTargetAreaInfo adjustmentTargetAreaInfo = adjustmentTargetAreaInfoList.get(0);
+
+                        if(adjustmentTargetAreaInfo != null){
+                            if(adjustmentTargetAreaInfo.getStartDate() != null){
+                                startDate = adjustmentTargetAreaInfo.getStartDate();
+                            }
+                            if(adjustmentTargetAreaInfo.getEndDate() != null){
+                                endDate = adjustmentTargetAreaInfo.getEndDate();
+                            }
+
+                            if(startDate != null){
+                                if(endDate != null){
+                                    if((date.isEqual(startDate) || date.isAfter(startDate)) && (date.isEqual(endDate) || date.isBefore(endDate))){
+                                        isAdjustmentTargetArea = true;
+                                    }
+                                }else{
+                                    if(date.isEqual(startDate) || date.isAfter(startDate)){
+                                        isAdjustmentTargetArea = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }else{
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "조정대상지역 체크 중 오류가 발생했습니다.(지번주소 아님)");
+            }
+
+            return isAdjustmentTargetArea;
         }
 
         // selectNo 조건 부합 여부 체크

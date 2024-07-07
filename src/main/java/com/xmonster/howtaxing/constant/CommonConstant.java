@@ -119,6 +119,7 @@ public final class CommonConstant {
     public final static String Q_0005 = "Q_0005";
     public final static String Q_0006 = "Q_0006";
     public final static String Q_0007 = "Q_0007";
+    public final static String Q_0008 = "Q_0008";
     public final static String ANSWER_TYPE_SELECT = "select";
     public final static String ANSWER_VALUE_01 = "01";
     public final static String ANSWER_VALUE_02 = "02";

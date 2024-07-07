@@ -7,7 +7,9 @@ import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 
+import com.xmonster.howtaxing.dto.house.HouseAddressDto;
 import com.xmonster.howtaxing.model.*;
+import com.xmonster.howtaxing.repository.adjustment_target_area.AdjustmentTargetAreaRepository;
 import com.xmonster.howtaxing.repository.calculation.*;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.service.house.HouseAddressService;
@@ -41,6 +43,7 @@ public class CalculationBuyService {
     private final TaxRateInfoRepository taxRateInfoRepository;
     private final DeductionInfoRepository deductionInfoRepository;
     private final HouseRepository houseRepository;
+    private final AdjustmentTargetAreaRepository adjustmentTargetAreaRepository;
 
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
@@ -436,7 +439,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBalanceDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -491,7 +494,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBalanceDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -745,7 +748,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -963,7 +966,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1242,7 +1245,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1297,7 +1300,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1428,7 +1431,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1490,7 +1493,7 @@ public class CalculationBuyService {
             long buyPrice = calculationBuyResultRequest.getBuyPrice();
 
             // (취득주택)조정지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()), calculationBuyResultRequest.getBuyDate());
 
             log.info("- 취득주택 포함 보유주택 수 : " + ownHouseCount);
             log.info("- 취득가액 : " + buyPrice);
@@ -1844,12 +1847,73 @@ public class CalculationBuyService {
             return taxRate;
         }
 
-        // 조정대상지역 체크
-        private boolean checkAdjustmentTargetArea(String address){
-            String siGunGu = houseAddressService.separateAddress(address).getSiGunGu();
+        // 조정대상지역 여부 체크
+        private boolean checkAdjustmentTargetArea(String address, LocalDate date){
+            boolean isAdjustmentTargetArea = false;
 
-            // 조정대상지역(용산구, 서초구, 강남구, 송파구)
-            return ADJUSTMENT_TARGET_AREA1.equals(siGunGu) || ADJUSTMENT_TARGET_AREA2.equals(siGunGu) || ADJUSTMENT_TARGET_AREA3.equals(siGunGu) || ADJUSTMENT_TARGET_AREA4.equals(siGunGu);
+            HouseAddressDto houseAddressDto = houseAddressService.separateAddress(address);
+
+            // 지번주소
+            if(houseAddressDto.getAddressType() == 1){
+                List<String> searchAddress = houseAddressDto.getSearchAddress();
+                if(searchAddress != null){
+                    StringBuilder keywordAssemble = new StringBuilder(EMPTY);
+                    List<AdjustmentTargetAreaInfo> adjustmentTargetAreaInfoList = new ArrayList<>();
+                    boolean isFindAddress = false;
+
+                    for(String keyword : searchAddress){
+                        if(!EMPTY.contentEquals(keywordAssemble)){
+                            keywordAssemble.append(SPACE);
+                        }
+                        if(keyword != null && !EMPTY.equals(keyword)){
+                            keywordAssemble.append(keyword);
+                        }
+
+                        adjustmentTargetAreaInfoList = adjustmentTargetAreaRepository.findByTargetAreaStartingWith(keywordAssemble.toString());
+                        if(adjustmentTargetAreaInfoList != null){
+                            // 조회 결과가 1개인 경우(조회결과가 1개가 나올 때까지 반복)
+                            if(adjustmentTargetAreaInfoList.size() == 1){
+                                isFindAddress = true;
+                                break;
+                            }else if(adjustmentTargetAreaInfoList.isEmpty()){
+                                break;
+                            }
+                        }
+                    }
+
+                    if(isFindAddress){
+                        LocalDate startDate = null;
+                        LocalDate endDate = null;
+
+                        AdjustmentTargetAreaInfo adjustmentTargetAreaInfo = adjustmentTargetAreaInfoList.get(0);
+
+                        if(adjustmentTargetAreaInfo != null){
+                            if(adjustmentTargetAreaInfo.getStartDate() != null){
+                                startDate = adjustmentTargetAreaInfo.getStartDate();
+                            }
+                            if(adjustmentTargetAreaInfo.getEndDate() != null){
+                                endDate = adjustmentTargetAreaInfo.getEndDate();
+                            }
+
+                            if(startDate != null){
+                                if(endDate != null){
+                                    if((date.isEqual(startDate) || date.isAfter(startDate)) && (date.isEqual(endDate) || date.isBefore(endDate))){
+                                        isAdjustmentTargetArea = true;
+                                    }
+                                }else{
+                                    if(date.isEqual(startDate) || date.isAfter(startDate)){
+                                        isAdjustmentTargetArea = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }else{
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "조정대상지역 체크 중 오류가 발생했습니다.(지번주소 아님)");
+            }
+
+            return isAdjustmentTargetArea;
         }
 
         // selectNo 조건 부합 여부 체크
