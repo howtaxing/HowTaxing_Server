@@ -2905,19 +2905,20 @@ public class CalculationSellService {
             // 지번주소
             if(houseAddressDto.getAddressType() == 1){
                 List<String> searchAddress = houseAddressDto.getSearchAddress();
-                if(searchAddress != null){
+                if(searchAddress != null && searchAddress.get(0) != null){
+                    String[] keywordArr = searchAddress.get(0).split(SPACE);
                     StringBuilder keywordAssemble = new StringBuilder(EMPTY);
                     List<AdjustmentTargetAreaInfo> adjustmentTargetAreaInfoList = new ArrayList<>();
                     boolean isFindAddress = false;
 
-                    for(String keyword : searchAddress){
+                    for(String keyword : keywordArr){
                         if(!EMPTY.contentEquals(keywordAssemble)){
                             keywordAssemble.append(SPACE);
                         }
                         if(keyword != null && !EMPTY.equals(keyword)){
                             keywordAssemble.append(keyword);
                         }
-                        
+
                         adjustmentTargetAreaInfoList = adjustmentTargetAreaRepository.findByTargetAreaStartingWith(keywordAssemble.toString());
                         if(adjustmentTargetAreaInfoList != null){
                             // 조회 결과가 1개인 경우(조회결과가 1개가 나올 때까지 반복)
