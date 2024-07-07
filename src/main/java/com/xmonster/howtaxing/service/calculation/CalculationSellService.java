@@ -2911,22 +2911,27 @@ public class CalculationSellService {
                     List<AdjustmentTargetAreaInfo> adjustmentTargetAreaInfoList = new ArrayList<>();
                     boolean isFindAddress = false;
 
-                    for(String keyword : keywordArr){
+                    for(int i=0; i<keywordArr.length; i++){
+                        String keyword = keywordArr[i];
+
                         if(!EMPTY.contentEquals(keywordAssemble)){
                             keywordAssemble.append(SPACE);
                         }
+
                         if(keyword != null && !EMPTY.equals(keyword)){
                             keywordAssemble.append(keyword);
                         }
 
-                        adjustmentTargetAreaInfoList = adjustmentTargetAreaRepository.findByTargetAreaStartingWith(keywordAssemble.toString());
-                        if(adjustmentTargetAreaInfoList != null){
-                            // 조회 결과가 1개인 경우(조회결과가 1개가 나올 때까지 반복)
-                            if(adjustmentTargetAreaInfoList.size() == 1){
-                                isFindAddress = true;
-                                break;
-                            }else if(adjustmentTargetAreaInfoList.isEmpty()){
-                                break;
+                        if(i>0){
+                            adjustmentTargetAreaInfoList = adjustmentTargetAreaRepository.findByTargetAreaStartingWith(keywordAssemble.toString());
+                            if(adjustmentTargetAreaInfoList != null){
+                                // 조회 결과가 1개인 경우(조회결과가 1개가 나올 때까지 반복)
+                                if(adjustmentTargetAreaInfoList.size() == 1){
+                                    isFindAddress = true;
+                                    break;
+                                }else if(adjustmentTargetAreaInfoList.isEmpty()){
+                                    break;
+                                }
                             }
                         }
                     }
