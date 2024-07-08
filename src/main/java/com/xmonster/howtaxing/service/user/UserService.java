@@ -16,6 +16,7 @@ import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,9 @@ public class UserService {
     private final UserUtil userUtil;
     private final KakaoUserApi kakaoUserApi;
     //private final PasswordEncoder passwordEncoder;
+
+    @Value("${social.kakao.admin-key}")
+    private String kakaoAdminKey;
 
     // 회원가입
     public Object signUp(UserSignUpDto userSignUpDto) throws Exception {
@@ -98,8 +102,12 @@ public class UserService {
         String jsonString = EMPTY;
 
         try{
+            Map<String ,String> headerMap = new HashMap<>();
+            headerMap.put("authorization", "KakaoAK" + kakaoAdminKey);
+
             if(SocialType.KAKAO.equals(socialType)){
                 response = kakaoUserApi.unlinkUserInfo(
+                        headerMap,
                         SocialUnlinkRequest.builder()
                                 .targetIdType("user_id")
                                 .targetId(Long.parseLong(socialId))

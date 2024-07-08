@@ -17,5 +17,5 @@ public interface KakaoUserApi {
     ResponseEntity<String> getUserInfo(@RequestHeader Map<String, String> header);
 
     @PostMapping("/v1/user/unlink")
-    ResponseEntity<String> unlinkUserInfo(@RequestBody SocialUnlinkRequest socialUnlinkRequest);
+    ResponseEntity<String> unlinkUserInfo(@RequestHeader Map<String, String> header, @RequestBody SocialUnlinkRequest socialUnlinkRequest);
 }
