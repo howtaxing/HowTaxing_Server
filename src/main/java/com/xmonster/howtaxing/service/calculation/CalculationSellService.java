@@ -3180,8 +3180,8 @@ public class CalculationSellService {
                         else{
                             String[] stayPeriodArr = stayPeriodTotalStr.split(SPACE);
                             if(stayPeriodArr.length == 2){
-                                stayPeriodYearStr = stayPeriodArr[0];
-                                stayPeriodMonthStr = stayPeriodArr[1];
+                                stayPeriodYearStr = stayPeriodArr[0].replace("년", EMPTY);
+                                stayPeriodMonthStr = stayPeriodArr[1].replace("개월", EMPTY);
                                 stayPeriodYear = Long.parseLong(stayPeriodYearStr);
                                 stayPeriodMonth = Long.parseLong(stayPeriodMonthStr);
                             }else{
