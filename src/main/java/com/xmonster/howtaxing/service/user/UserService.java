@@ -103,7 +103,7 @@ public class UserService {
 
         try{
             Map<String ,String> headerMap = new HashMap<>();
-            headerMap.put("authorization", "KakaoAK" + kakaoAdminKey);
+            headerMap.put("authorization", "KakaoAK " + kakaoAdminKey);
 
             if(SocialType.KAKAO.equals(socialType)){
                 response = kakaoUserApi.unlinkUserInfo(
