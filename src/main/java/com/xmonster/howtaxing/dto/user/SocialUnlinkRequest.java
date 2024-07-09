@@ -6,6 +6,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 public class SocialUnlinkRequest {
     private String targetIdType;    // 회원번호 종류(user_id로 고정)

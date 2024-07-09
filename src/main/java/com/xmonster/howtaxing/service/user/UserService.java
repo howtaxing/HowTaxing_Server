@@ -104,14 +104,17 @@ public class UserService {
         try{
             Map<String ,String> headerMap = new HashMap<>();
             headerMap.put("authorization", "KakaoAK " + kakaoAdminKey);
+            log.info("[GGMANYAR]KakaoAK " + kakaoAdminKey);
+
+            SocialUnlinkRequest socialUnlinkRequest = SocialUnlinkRequest.builder()
+                    .targetIdType("user_id")
+                    .targetId(Long.parseLong(socialId))
+                    .build();
+
+            log.info("[GGMANYAR]socialUnlinkRequest : " + socialUnlinkRequest.toString());
 
             if(SocialType.KAKAO.equals(socialType)){
-                response = kakaoUserApi.unlinkUserInfo(
-                        headerMap,
-                        SocialUnlinkRequest.builder()
-                                .targetIdType("user_id")
-                                .targetId(Long.parseLong(socialId))
-                                .build());
+                response = kakaoUserApi.unlinkUserInfo(headerMap, socialUnlinkRequest);
             }else if(SocialType.NAVER.equals(socialType)){
                 throw new CustomException(ErrorCode.ETC_ERROR, "아직 네이버 회원탈퇴는 준비 중입니다.");
             }else{
@@ -119,6 +122,7 @@ public class UserService {
             }
         }catch(Exception e){
             log.error("회원탈퇴 처리중 오류 발생 : " + e.getMessage());
+            log.error(e.toString());
             throw new CustomException(ErrorCode.ETC_ERROR);
         }
 
