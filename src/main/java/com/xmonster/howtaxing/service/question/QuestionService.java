@@ -319,15 +319,17 @@ public class QuestionService {
             else{
                 log.info("[getAdditionalQuestion-condition]QuestionID를 가지고 추가질의가 오는 경우 : " + questionId);
                 if(Q_0001.equals(questionId)){
-                    // 1주택 로직으로 이동
-                    return getAdditionalQuestion(
-                            AdditionalQuestionRequest.builder()
-                                    .calcType(CALC_TYPE_SELL)
-                                    .sellHouseId(sellHouseId)
-                                    .sellDate(sellDate)
-                                    .sellPrice(sellPrice)
-                                    .ownHouseCnt(1L)
-                                    .build());
+                    if(ANSWER_VALUE_01.equals(answerValue)){
+                        // 1주택 로직으로 이동
+                        return getAdditionalQuestion(
+                                AdditionalQuestionRequest.builder()
+                                        .calcType(CALC_TYPE_SELL)
+                                        .sellHouseId(sellHouseId)
+                                        .sellDate(sellDate)
+                                        .sellPrice(sellPrice)
+                                        .ownHouseCnt(1L)
+                                        .build());
+                    }
                 }else if(Q_0004.equals(questionId)){
                     nextQuestionId = Q_0005;
                 }else if(Q_0005.equals(questionId)){
