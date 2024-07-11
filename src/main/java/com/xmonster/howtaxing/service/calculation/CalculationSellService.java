@@ -25,10 +25,7 @@ import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -205,7 +202,7 @@ public class CalculationSellService {
 
             if(FIVE.equals(house.getHouseType())){
                 selectNo = 2;   // 준공 분양권(선택번호:2)
-            } else if(THREE.equals(house.getHouseType())){
+            } else if(THREE.equals(house.getHouseType()) || house.getIsMoveInRight()){
                 selectNo = 3;   // 입주권(선택번호:3)
             } else{
                 selectNo = 1;   // 주택(선택번호:1)
@@ -1094,26 +1091,26 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "019")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 취득일 동일 여부
-            boolean isBuyDateSame = false;
-            
-            // 보유주택 수가 2개인 경우에만 확인 가능(그 외엔 false)
-            if(getOwnHouseCount() == 2){
-                List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-                if(houseList != null && houseList.size() == 2){
-                    LocalDate buyDate1 = houseList.get(0).getBuyDate();
-                    LocalDate buyDate2 = houseList.get(1).getBuyDate();
+            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
 
-                    if(buyDate1.isEqual(buyDate2)){
-                        isBuyDateSame = true;
-                    }
-                }
+            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            if(isBuyDateSame){
-                selectNo = 1;
+            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
+            House newHouse = getOldOrNewHouse(houseList, true);     // 신규주택
+
+            if(oldHouse.getBuyDate() != null && newHouse.getBuyDate() != null){
+                // 두 주택의 취득일이 동일한 경우
+                if(oldHouse.getBuyDate() == newHouse.getBuyDate()){
+                    selectNo = 1;
+                }
+                // 두 주택의 취득일이 동일하지 않은 경우
+                else{
+                    selectNo = 2;
+                }
             }else{
-                selectNo = 2;
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "보유주택의 취득일 계산 중 오류가 발생했습니다.");
             }
 
             for(CalculationProcess calculationProcess : list){
@@ -1162,37 +1159,25 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "020")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 신규주택여부
-            boolean isNewHouse = false;
+            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
 
-            // 보유주택 수가 2개인 경우에만 확인 가능(그 외엔 false)
-            if(getOwnHouseCount() == 2){
-                List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-                if(houseList != null && houseList.size() == 2){
-                    LocalDate buyDate1 = houseList.get(0).getBuyDate();
-                    LocalDate buyDate2 = houseList.get(1).getBuyDate();
-                    LocalDate buyDate = house.getBuyDate();
-
-                    if(buyDate1.isBefore(buyDate2)){
-                        if(buyDate2.equals(buyDate)){
-                            isNewHouse = true;
-                        }
-                    }else if(buyDate1.isAfter(buyDate2)){
-                        if(buyDate1.equals(buyDate)){
-                            isNewHouse = true;
-                        }
-                    }
-                }
+            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            // 신규주택
-            if(isNewHouse){
-                selectNo = 2;
-            }
-            // 종전주택
-            else{
+            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
+
+            // 양도주택이 종전주택인 경우
+            if(calculationSellResultRequest.getHouseId().equals(oldHouse.getHouseId())){
                 selectNo = 1;
             }
+            // 양도주택이 신규주택인 경우
+            else{
+                selectNo = 2;
+            }
+
+            // 신규주택여부
+            boolean isNewHouse = false;
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -1240,34 +1225,15 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "021")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 주택유형(6:주택이 기본값)
-            String newHouseType = SIX;
+            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
 
-            // 보유주택 수가 2개인 경우에만 확인 가능(그 외엔 false)
-            if(getOwnHouseCount() == 2){
-                List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-                if(houseList != null && houseList.size() == 2){
-                    LocalDate buyDate1 = houseList.get(0).getBuyDate();
-                    LocalDate buyDate2 = houseList.get(1).getBuyDate();
-                    LocalDate buyDate = house.getBuyDate();
-
-                    if(buyDate1.isBefore(buyDate2)){
-                        if(buyDate1.equals(buyDate)){
-                            newHouseType = houseList.get(1).getHouseType();
-                        }else{
-                            newHouseType = houseList.get(0).getHouseType();
-                        }
-                    }else if(buyDate1.isAfter(buyDate2)){
-                        if(buyDate1.equals(buyDate)){
-                            newHouseType = houseList.get(0).getHouseType();
-                        }else{
-                            newHouseType = houseList.get(1).getHouseType();
-                        }
-                    }
-                }
+            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            if(FIVE.equals(newHouseType) || THREE.equals(newHouseType)){
+            House newHouse = getOldOrNewHouse(houseList, true);     // 신규주택
+
+            if(FIVE.equals(newHouse.getHouseType()) || THREE.equals(newHouse.getHouseType()) || newHouse.getIsMoveInRight()){
                 selectNo = 2;   // 준공 분양권(선택번호:2)
             } else{
                 selectNo = 1;   // 주택(선택번호:1)
@@ -3141,6 +3107,14 @@ public class CalculationSellService {
                             }else{
                                 house = userHouseList.get(1);
                             }
+                        }
+                    }
+                    // 두 주택의 취득일이 같은 경우(순서대로 세팅)
+                    else{
+                        if(isNew){
+                            house = userHouseList.get(0);
+                        }else{
+                            house = userHouseList.get(1);
                         }
                     }
                 }

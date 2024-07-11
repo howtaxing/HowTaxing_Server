@@ -207,7 +207,7 @@ public class CalculationBuyService {
 
             if(FIVE.equals(houseType)){
                 selectNo = 2;   // 준공 분양권(선택번호:2)
-            } else if(THREE.equals(houseType)){
+            } else if(THREE.equals(houseType) || calculationBuyResultRequest.getIsMoveInRight()){
                 selectNo = 3;   // 입주권(선택번호:3)
             } else{
                 selectNo = 1;   // 주택(선택번호:1)
@@ -822,7 +822,7 @@ public class CalculationBuyService {
                     houseType = lastOwnHouse.getHouseType();
 
                     // 일반 주택인 경우(3:입주권, 5:분양권)
-                    if(!THREE.equals(houseType) && !FIVE.equals(houseType)){
+                    if(!calculationBuyResultRequest.getIsMoveInRight() && !THREE.equals(houseType) && !FIVE.equals(houseType)){
                         selectNo = 1;
                     }
                 }
@@ -1100,7 +1100,7 @@ public class CalculationBuyService {
                     houseType = lastOwnHouse.getHouseType();
 
                     // 일반 주택인 경우(3:입주권, 5:분양권)
-                    if(!THREE.equals(houseType) && !FIVE.equals(houseType)){
+                    if(!calculationBuyResultRequest.getIsMoveInRight() && !THREE.equals(houseType) && !FIVE.equals(houseType)){
                         log.info("종전주택이 일반주택인 경우(분양권이나 입주권이 아닌 경우)에 해당");
                         selectNo = 1;
                     }
