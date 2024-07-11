@@ -58,6 +58,8 @@ public class QuestionService {
 
         validationCheckForGetAdditionalQuestion(additionalQuestionRequest);
 
+        log.info("추가질의항목 조회 요청 : " + additionalQuestionRequest.toString());
+
         // REQUEST
         String calcType = additionalQuestionRequest.getCalcType();
         String questionId = StringUtils.defaultString(additionalQuestionRequest.getQuestionId());
@@ -437,15 +439,18 @@ public class QuestionService {
             hasNextQuestion = true;
         }
 
-        return ApiResponse.success(
-                AdditionalQuestionResponse.builder()
-                        .hasNextQuestion(hasNextQuestion)
-                        .nextQuestionId(nextQuestionId)
-                        .nextQuestionContent(nextQuestionContent)
-                        .isNeedAnswer(isNeedAnswer)
-                        .answerType(answerType)
-                        .answerSelectList(answerSelectList)
-                        .build());
+        AdditionalQuestionResponse additionalQuestionResponse = AdditionalQuestionResponse.builder()
+                .hasNextQuestion(hasNextQuestion)
+                .nextQuestionId(nextQuestionId)
+                .nextQuestionContent(nextQuestionContent)
+                .isNeedAnswer(isNeedAnswer)
+                .answerType(answerType)
+                .answerSelectList(answerSelectList)
+                .build();
+
+        log.info("추가질의항목 조회 응답 : " + additionalQuestionResponse.toString());
+
+        return ApiResponse.success(additionalQuestionResponse);
     }
 
     // 추가질의항목 요청 데이터 유효성 검증

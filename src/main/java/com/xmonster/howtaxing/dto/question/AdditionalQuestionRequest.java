@@ -8,6 +8,7 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 public class AdditionalQuestionRequest {
     private String calcType;        // [필수] 계산유형(01:취득세, 02:양도소득세)
