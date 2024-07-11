@@ -66,9 +66,9 @@ public class UserController {
         }
 
         String html = "<html><body><pre id='returnValue'>" +
-                "accessToken: " + accessToken + ", " +
-                "refreshToken: " + refreshToken + ", " +
-                "role: " + role +
+                "{\"accessToken\": \"" + accessToken + "\", " +
+                "\"refreshToken\": \"" + refreshToken + "\", " +
+                "\"role\": \"" + role + "\"}" +
                 "</pre><script>window.onload = function() {" +
                 "document.getElementById('returnValue').style.display = 'none';" +
                 "};</script></body></html>";
