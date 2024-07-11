@@ -65,10 +65,16 @@ public class UserController {
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }
 
-        String html = "<html><body><pre id='returnValue'>" +
+        String html2 = "<html><body><pre id='returnValue'>" +
                 "{\"accessToken\": \"" + accessToken + "\", " +
                 "\"refreshToken\": \"" + refreshToken + "\", " +
                 "\"role\": \"" + role + "\"}" +
+                "</pre><script>window.onload = function() {" +
+                "document.getElementById('returnValue').style.display = 'none';" +
+                "};</script></body></html>";
+
+        String html = "<html><body><pre id='returnValue'>" +
+                "{\"errYn\" : \"N\", \"data\" : " + "{\"accessToken\" : \"" + accessToken + "\", \"refreshToken\" : \"" + refreshToken + "\", \"role\" : \"" + role + "\"}}" +
                 "</pre><script>window.onload = function() {" +
                 "document.getElementById('returnValue').style.display = 'none';" +
                 "};</script></body></html>";
