@@ -10,6 +10,10 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -36,8 +40,8 @@ public class UserController {
     }
 
     // (자동)로그인 성공
-    @GetMapping("/oauth2/loginSuccess")
-    public Object loginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
+    @GetMapping("/oauth2/loginSuccess2")
+    public Object loginSuccess2(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
         log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
 
         Map<String, Object> tokenMap = new HashMap<>();
@@ -51,6 +55,28 @@ public class UserController {
         tokenMap.put("role", role);
 
         return ApiResponse.success(tokenMap);
+    }
+
+    @GetMapping("/oauth2/loginSuccess")
+    public ResponseEntity<String> loginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
+        log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
+
+        if(accessToken == null || refreshToken == null){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
+        }
+
+        String html = "<html><body><pre id='returnValue'>" +
+                "accessToken: " + accessToken + ", " +
+                "refreshToken: " + refreshToken + ", " +
+                "role: " + role +
+                "</pre><script>window.onload = function() {" +
+                "document.getElementById('returnValue').style.display = 'none';" +
+                "};</script></body></html>";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_HTML);
+
+        return new ResponseEntity<>(html, headers, HttpStatus.OK);
     }
 
     // (자동)로그인 실패
