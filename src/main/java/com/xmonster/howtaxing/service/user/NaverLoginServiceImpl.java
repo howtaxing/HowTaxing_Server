@@ -49,11 +49,12 @@ public class NaverLoginServiceImpl implements SocialLoginService {
   @Override
   public SocialAuthResponse getAccessToken(String authorizationCode) {
     ResponseEntity<?> response = naverAuthApi.getAccessToken(
-        naverGrantType,
-        naverAppKey,
-        naverAppSecret,
-        authorizationCode,
-        "state"
+            naverGrantType,
+            naverAppKey,
+            naverAppSecret,
+            authorizationCode,
+            "state",
+            null
     );
 
     log.info("naver auth response {}", response.toString());

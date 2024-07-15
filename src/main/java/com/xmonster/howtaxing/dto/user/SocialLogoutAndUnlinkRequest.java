@@ -8,7 +8,8 @@ import lombok.*;
 @NoArgsConstructor
 @ToString
 @Builder
-public class SocialUnlinkRequest {
+public class SocialLogoutAndUnlinkRequest {
+    // 카카오
     private String targetIdType;    // 회원번호 종류(user_id로 고정)
     private Long targetId;          // 연결을 끊을 사용자의 회원번호
 }

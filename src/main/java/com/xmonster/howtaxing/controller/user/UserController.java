@@ -39,6 +39,13 @@ public class UserController {
         return userService.withdraw();
     }
 
+    // 로그아웃
+    @PostMapping("/user/logout")
+    public Object logout() throws Exception {
+        log.info(">> [Controller]UserController logout - 로그아웃");
+        return userService.logout();
+    }
+
     // (자동)로그인 성공
     @GetMapping("/oauth2/loginSuccess2")
     public Object loginSuccess2(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
@@ -65,14 +72,6 @@ public class UserController {
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }
 
-        String html2 = "<html><body><pre id='returnValue'>" +
-                "{\"accessToken\": \"" + accessToken + "\", " +
-                "\"refreshToken\": \"" + refreshToken + "\", " +
-                "\"role\": \"" + role + "\"}" +
-                "</pre><script>window.onload = function() {" +
-                "document.getElementById('returnValue').style.display = 'none';" +
-                "};</script></body></html>";
-
         String html = "<html><body><pre id='returnValue'>" +
                 "{\"errYn\" : \"N\", \"data\" : " + "{\"accessToken\" : \"" + accessToken + "\", \"refreshToken\" : \"" + refreshToken + "\", \"role\" : \"" + role + "\"}}" +
                 "</pre><script>window.onload = function() {" +
@@ -95,5 +94,13 @@ public class UserController {
         }else{
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }
+    }
+
+    @GetMapping("/user/callback")
+    public void userCallback(@RequestParam String userId, @RequestParam String referrerType){
+        log.info(">> [Controller]UserController userCallback - 유저 콜백");
+
+        log.info("userId : " + userId);
+        log.info("referrerType : " + referrerType);
     }
 }

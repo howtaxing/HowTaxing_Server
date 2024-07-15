@@ -15,6 +15,9 @@ public final class CommonConstant {
     public final static String ERR_YN = "errYn";
     public final static String ERR_MSG = "errMsg";
 
+    public final static String SUCCESS = "success";
+    public final static String FAIL = "fail";
+
     public final static String ZERO = "0";
     public final static String ONE = "1";
     public final static String TWO = "2";

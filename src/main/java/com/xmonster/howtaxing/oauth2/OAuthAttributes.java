@@ -74,12 +74,13 @@ public class OAuthAttributes {
      * email에는 UUID로 중복 없는 랜덤 값 생성
      * role은 GUEST로 설정
      */
-    public User toEntity(SocialType socialType, OAuth2UserInfo oauth2UserInfo) {
+    public User toEntity(SocialType socialType, String socialAccessToken, OAuth2UserInfo oauth2UserInfo) {
         // 사용자 이메일(이메일이 비어있는 경우, UUID를 발급하여 임의로 이메일 계정 생성하여 세팅)
         String email = (oauth2UserInfo.getEmail() == null || oauth2UserInfo.getEmail().isBlank()) ? UUID.randomUUID() + "@socialUser.com" : oauth2UserInfo.getEmail();
 
         return User.builder()
                 .socialType(socialType)
+                .socialAccessToken(socialAccessToken)
                 .socialId(oauth2UserInfo.getId())
                 .email(email)
                 .nickname(oauth2UserInfo.getNickname())
