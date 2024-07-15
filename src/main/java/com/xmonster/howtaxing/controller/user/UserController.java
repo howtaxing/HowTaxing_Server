@@ -40,7 +40,7 @@ public class UserController {
     }
 
     // 로그아웃
-    @PostMapping("/user/logout")
+    @GetMapping("/user/logout")
     public Object logout() throws Exception {
         log.info(">> [Controller]UserController logout - 로그아웃");
         return userService.logout();
