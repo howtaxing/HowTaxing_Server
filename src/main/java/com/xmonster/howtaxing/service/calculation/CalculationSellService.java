@@ -1597,7 +1597,7 @@ public class CalculationSellService {
         /**
          * 분기번호 : 027
          * 분기명 : 취득일자 확인
-         * 분기설명 : (2주택)종전주택 취득일 [2022.02.15] 이전 여부
+         * 분기설명 : (2주택)신규주택 취득일 [2022.02.15] 이전 여부
          */
         public CalculationSellResultResponse branchNo027(CalculationSellResultRequest calculationSellResultRequest, House house){
             log.info(">>> CalculationBranch branchNo025 - 양도소득세 분기번호 027 : 신규주택 취득 전 종전주택 보유기간");
@@ -1618,17 +1618,17 @@ public class CalculationSellService {
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
+            House newHouse = getOldOrNewHouse(houseList, true);    // 신규주택
 
-            String oldHouseBuyDateStr = (oldHouse.getBuyDate() != null) ? oldHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
+            String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
 
-            log.info("oldHouseBuyDateStr : " + oldHouseBuyDateStr);
+            log.info("newHouseBuyDateStr : " + newHouseBuyDateStr);
 
             for(CalculationProcess calculationProcess : list){
                 String dataMethod = StringUtils.defaultString(calculationProcess.getDataMethod());
                 String variableData = StringUtils.defaultString(calculationProcess.getVariableData(), ZERO);
 
-                if(checkSelectNoCondition(DATA_TYPE_DATE, oldHouseBuyDateStr, EMPTY, variableData, dataMethod)){
+                if(checkSelectNoCondition(DATA_TYPE_DATE, newHouseBuyDateStr, EMPTY, variableData, dataMethod)){
                     selectNo = calculationProcess.getCalculationProcessId().getSelectNo();
                     log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
 
@@ -2342,6 +2342,71 @@ public class CalculationSellService {
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
                     log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationSellResultRequest.class, House.class);
+                    calculationSellResultResponse = (CalculationSellResultResponse) method.invoke(target, calculationSellResultRequest, house);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
+                }
+            }else{
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationSellResultResponse;
+        }
+
+        /**
+         * 분기번호 : 048
+         * 분기명 : 신규주택 보유기간에 따른 종전주택 매도일자
+         * 분기설명 : (2주택)신규주택 취득일로부터 [3]년이 된 날 다음날 이내에 종전주택 매도 (예정)여부
+         */
+        public CalculationSellResultResponse branchNo048(CalculationSellResultRequest calculationSellResultRequest, House house){
+            log.info(">>> CalculationBranch branchNo048 - 양도소득세 분기번호 048 : 신규주택 보유기간에 따른 종전주택 매도일자");
+
+            CalculationSellResultResponse calculationSellResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "048")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
+
+            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
+            }
+
+            House newHouse = getOldOrNewHouse(houseList, true);    // 신규주택
+
+            String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
+            String oldHouseSellDateStr = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
+
+            log.info("newHouseBuyDateStr : " + newHouseBuyDateStr);
+            log.info("oldHouseSellDateStr : " + oldHouseSellDateStr);
+
+            for(CalculationProcess calculationProcess : list){
+                String dataMethod = StringUtils.defaultString(calculationProcess.getDataMethod());
+                String variableData = StringUtils.defaultString(calculationProcess.getVariableData(), ZERO);
+
+                if(checkSelectNoCondition(DATA_TYPE_PERIOD, newHouseBuyDateStr, oldHouseSellDateStr, variableData, dataMethod)){
+                    selectNo = calculationProcess.getCalculationProcessId().getSelectNo();
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+
                     if(calculationProcess.isHasNextBranch()){
                         nextBranchNo = calculationProcess.getNextBranchNo();
                         hasNext = true;

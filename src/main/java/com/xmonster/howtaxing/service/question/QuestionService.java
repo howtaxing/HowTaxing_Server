@@ -248,31 +248,17 @@ public class QuestionService {
                                                 // 특정일자(2022.02.15)
                                                 LocalDate specificDate = LocalDate.parse(variableData, DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-                                                // 종전주택 취득일이 특정일자(2022.02.15) 이전인 경우
-                                                if(oldHouse.getBuyDate().isBefore(specificDate)){
-                                                    log.info("[getAdditionalQuestion-condition]종전주택 취득일이 특정일자(2022.02.15) 이전인 경우");
+                                                // 신규주택 취득일이 특정일자(2022.02.15) 이전인 경우
+                                                if(newHouse.getBuyDate().isBefore(specificDate)){
+                                                    log.info("[getAdditionalQuestion-condition]신규주택 취득일이 특정일자(2022.02.15) 이전인 경우");
                                                     // 종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우
                                                     if(sellDate.isAfter(oldHouse.getBuyDate().plusYears(2))){
                                                         log.info("[getAdditionalQuestion-condition]종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우");
-                                                        // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우
-                                                        if(sellDate.isBefore(newHouse.getBuyDate().plusYears(3).plusDays(1))){
-                                                            log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우");
-                                                            log.info("[getAdditionalQuestion-condition]1주택 로직으로 이동");
-                                                            // 1주택 로직으로 이동
-                                                            return getAdditionalQuestion(
-                                                                    AdditionalQuestionRequest.builder()
-                                                                            .calcType(CALC_TYPE_SELL)
-                                                                            .sellHouseId(sellHouseId)
-                                                                            .sellDate(sellDate)
-                                                                            .sellPrice(sellPrice)
-                                                                            .ownHouseCnt(1L)
-                                                                            .build());
-                                                        }
                                                         // 신규주택 취득일로부터 3년이 된 날 다음날 이후에 종전주택 매도하는 경우
-                                                        else{
+                                                        if(sellDate.isAfter(newHouse.getBuyDate().plusYears(3).plusDays(1))){
                                                             log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이후에 종전주택 매도하는 경우");
                                                             nextQuestionId = Q_0001;
-                                                            questionParamData = newHouse.getBuyDate().plusYears(1).toString();
+                                                            //questionParamData = newHouse.getBuyDate().plusYears(1).toString();
                                                         }
                                                     }
                                                 }
@@ -387,7 +373,10 @@ public class QuestionService {
         // 추가질의 객체 세팅
         if(Q_0001.equals(nextQuestionId)){
             hasNextQuestion = true;
-            nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 입주권 혹은 분양권으로 취득하신 신규주택에 전입신고 후 1년이 된 날 이후 까지(" + questionParamData + " 이후) 계속 거주하실 건가요?";
+            //nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 입주권 혹은 분양권으로 취득하신 신규주택에 전입신고 후 1년이 된 날 이후 까지(" + questionParamData + " 이후) 계속 거주하실 건가요?";
+            nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 다음의 요건을 모두 만족하시나요?";
+            nextQuestionContent += "1. 입주권 혹은 분양권으로 취득하신 신규주택이 완성된 후 3년 이내에 전입하여 해당 신규주택에 1년 이상 계속 거주";
+            nextQuestionContent += "2. 신규주택이 완성된 후 종전주택을 3년 이내 양도(혹은 완성일 전 양도)";
             isNeedAnswer = true;
             answerType = ANSWER_TYPE_SELECT;
             answerSelectList = new ArrayList<>();
