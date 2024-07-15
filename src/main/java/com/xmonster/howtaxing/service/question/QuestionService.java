@@ -374,8 +374,8 @@ public class QuestionService {
         if(Q_0001.equals(nextQuestionId)){
             hasNextQuestion = true;
             //nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 입주권 혹은 분양권으로 취득하신 신규주택에 전입신고 후 1년이 된 날 이후 까지(" + questionParamData + " 이후) 계속 거주하실 건가요?";
-            nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 다음의 요건을 모두 만족하시나요?";
-            nextQuestionContent += "1. 입주권 혹은 분양권으로 취득하신 신규주택이 완성된 후 3년 이내에 전입하여 해당 신규주택에 1년 이상 계속 거주";
+            nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 다음의 요건을 모두 만족하시나요?\n\n";
+            nextQuestionContent += "1. 입주권 혹은 분양권으로 취득하신 신규주택이 완성된 후 3년 이내에 전입하여 해당 신규주택에 1년 이상 계속 거주\n";
             nextQuestionContent += "2. 신규주택이 완성된 후 종전주택을 3년 이내 양도(혹은 완성일 전 양도)";
             isNeedAnswer = true;
             answerType = ANSWER_TYPE_SELECT;
