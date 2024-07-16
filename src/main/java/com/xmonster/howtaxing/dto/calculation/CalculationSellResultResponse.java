@@ -14,6 +14,8 @@ import java.util.List;
 public class CalculationSellResultResponse {
     private int listCnt;
     private List<CalculationSellOneResult> list;
+    private int commentaryListCnt;
+    private List<String> commentaryList;
 
     @Getter
     @Setter

@@ -149,4 +149,7 @@ public final class CommonConstant {
 
     /* 전용면적(m2) */
     public final static double AREA_85 = 85;
+
+    // 비과세 세율코드
+    public final static String NONE_TAX_RATE_CODE = "R_0002";
 }

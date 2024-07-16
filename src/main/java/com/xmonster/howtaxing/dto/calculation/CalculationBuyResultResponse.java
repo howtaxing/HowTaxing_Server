@@ -13,6 +13,8 @@ import java.util.List;
 public class CalculationBuyResultResponse {
     private int listCnt;
     private List<CalculationBuyOneResult> list;
+    private int commentaryListCnt;
+    private List<String> commentaryList;
 
     @Getter
     @Setter
