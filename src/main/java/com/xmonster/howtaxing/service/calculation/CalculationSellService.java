@@ -2770,7 +2770,7 @@ public class CalculationSellService {
                                 .build());
             }
 
-            // 해설부분 추가
+            // 양도소득세 해설부분 추가
             List<String> commentaryList = getCalculationSellCommentaryList(calculationSellResultRequest, taxRateCode, dedCode, calculationSellResultOneList);
             int commentaryListCnt = commentaryList.size();
 
@@ -2782,6 +2782,7 @@ public class CalculationSellService {
                     .build();
         }
 
+        // 양도소득세 해설 리스트 가져오기
         private List<String> getCalculationSellCommentaryList(CalculationSellResultRequest calculationSellResultRequest, String taxRateCode, String dedCode, List<CalculationSellOneResult> calculationSellResultOneList){
             // 양도주택
             House sellHouse = houseUtil.findSelectedHouse(calculationSellResultRequest.getHouseId());
@@ -2796,13 +2797,13 @@ public class CalculationSellService {
             // 해설 리스트
             List<String> commentaryList = new ArrayList<>();
 
-            // 1. 공동명의 선택 시
+            // 1.공동명의 선택 시
             if(!sellHouse.getUserProportion().equals(100)){
-                log.info("(Commentary Add) 1. 공동명의 선택 시");
+                log.info("(Commentary Add) 1.공동명의 선택 시");
                 commentaryList.add("입력하신 필요경비에는 지분율이 적용되지 않으니 지분율이 적용된 경비나 실제 해당 납세자가 지출한 경비를 기재해주세요.");
             }
 
-            // 2. 양도시점 1주택자 양도가액 12억 초과 시
+            // 2.양도시점 1주택자 양도가액 12억 초과 시
             calculationProcessList = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "015")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
@@ -2810,46 +2811,46 @@ public class CalculationSellService {
             variablePrice = Long.parseLong(variableData);   // 12억
 
             if(ownHouseCount == 1 && calculationSellResultRequest.getSellPrice() > variablePrice){
-                log.info("(Commentary Add) 2. 양도시점 1주택자 양도가액 12억 초과 시");
+                log.info("(Commentary Add) 2.양도시점 1주택자 양도가액 12억 초과 시");
                 commentaryList.add("1세대 1주택 비과세 대상 중 12억원 초과 고가주택을 거래하는 경우에는 초과분에 대한 비율만큼 양도세가 부과돼요.");
             }
 
-            // 3. 양도하려는 물건의 종류가 분양권/입주권인 경우
-            // 9. 양도하려는 물건의 종류가 분양권인 경우
+            // 3.양도하려는 물건의 종류가 분양권/입주권인 경우
+            // 9.양도하려는 물건의 종류가 분양권인 경우
             if(THREE.equals(sellHouse.getHouseType()) || FIVE.equals(sellHouse.getHouseType())){
-                log.info("(Commentary Add) 3. 양도하려는 물건의 종류가 분양권/입주권인 경우");
+                log.info("(Commentary Add) 3.양도하려는 물건의 종류가 분양권/입주권인 경우");
                 commentaryList.add("분양권 및 입주권은 장기보유특별공제를 적용받지 않아요.");
 
                 if(FIVE.equals(sellHouse.getHouseType())){
-                    log.info("(Commentary Add) 9. 양도하려는 물건의 종류가 분양권인 경우");
+                    log.info("(Commentary Add) 9.양도하려는 물건의 종류가 분양권인 경우");
                     commentaryList.add("분양권은 최초분양계약일로부터 보유기간을 산정하며 비과세 혜택이 없어요.");
                 }
             }
 
-            // 4. 항상
-            log.info("(Commentary Add) 4. 항상");
+            // 4.항상
+            log.info("(Commentary Add) 4.항상");
             commentaryList.add("연 1회 인별 기본공제 250만원이 적용돼요.");
 
-            // 6. 일반 2주택자 이상인 경우
+            // 6.일반 2주택자 이상인 경우
             if(ownHouseCount >= 2){
-                log.info("(Commentary Add) 6. 일반 2주택자 이상인 경우");
+                log.info("(Commentary Add) 6.일반 2주택자 이상인 경우");
                 commentaryList.add("2022.05.10. 다주택자 양도소득세 중과배제 조치 시행으로 22.05.10. - 24.05.09. 까지 한시적으로 적용 배제돼요. " +
                         "해당 기간 외의 거래에 대해서는 중과 대상(20%, 30%)이며, 장기보유특별공제도 적용되지 않아요.");
             }
 
-            // 7. (양도주택)취득시점 조정대상지역 해당
+            // 7.(양도주택)취득시점 조정대상지역 해당
             if(checkAdjustmentTargetArea(StringUtils.defaultString(sellHouse.getJibunAddr()), sellHouse.getBuyDate())){
-                log.info("(Commentary Add) 7. (양도주택)취득시점 조정대상지역 해당");
+                log.info("(Commentary Add) 7.(양도주택)취득시점 조정대상지역 해당");
                 commentaryList.add("2017.08.03. 이후 조정대상지역(구입 당시 기준)에서 구입한 주택을 비과세받고자 하는 경우 2년의 의무거주기간 요건을 충족해야 해요.");
             }
 
-            // 8. 상생임대인에 해당되는 경우
-            // 15. 거주기간을 입력받았을 경우
+            // 8.상생임대인에 해당되는 경우
+            // 15.거주기간을 입력받았을 경우
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
                 if(Q_0006.equals(answer.getQuestionId())){
                     if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
-                        log.info("(Commentary Add) 8. 상생임대인에 해당되는 경우");
+                        log.info("(Commentary Add) 8.상생임대인에 해당되는 경우");
                         commentaryList.add("조정대상지역 내 주택에 대해 거주요건을 충족하지 못하였으나 상생임대인에 해당되어 비과세 적용이 가능해요.");
                     }
                 }else if(PERIOD_TYPE_DIAL.equals(answer.getQuestionId()) || PERIOD_TYPE_CERT.equals(answer.getQuestionId())){
@@ -2864,7 +2865,7 @@ public class CalculationSellService {
                     }
 
                     if(stayPeriodYear != 0 || stayPeriodMonth != 0){
-                        log.info("(Commentary Add) 15. 거주기간을 입력받았을 경우");
+                        log.info("(Commentary Add) 15.거주기간을 입력받았을 경우");
                         StringBuilder tempCommentary = new StringBuilder(EMPTY);
                         tempCommentary.delete(0, tempCommentary.length());
                         tempCommentary.append("양도하실 주택의 거주기간은 총 ");
@@ -2876,47 +2877,47 @@ public class CalculationSellService {
                 }
             }
 
-            // 10. 1주택, 비과세 대상인 경우
+            // 10.1주택, 비과세 대상인 경우
             if(ownHouseCount == 1 && NONE_TAX_RATE_CODE.equals(taxRateCode)){
-                log.info("(Commentary Add) 10. 1주택, 비과세 대상인 경우");
+                log.info("(Commentary Add) 10.1주택, 비과세 대상인 경우");
                 commentaryList.add("주택은 잔금일(또는 등기일 중 빠른 날)로부터 2년 이상 보유한 이후 양도해야 비과세 적용이 가능해요.");
             }
 
-            // 12. 항상
-            log.info("(Commentary Add) 12. 항상");
+            // 12.항상
+            log.info("(Commentary Add) 12.항상");
             commentaryList.add("고객님은 양도하실 주택을 포함하여 현재 " + ownHouseCount + "채를 보유하고 있어요.");
 
-            // 13. 양도대상주택 포함하여 2주택이면서 일시적1가구2주택으로 인정되어 비과세를 적용받는경우
+            // 13.양도대상주택 포함하여 2주택이면서 일시적1가구2주택으로 인정되어 비과세를 적용받는경우
             if(ownHouseCount == 2 && NONE_TAX_RATE_CODE.equals(taxRateCode)){
-                log.info("(Commentary Add) 13. 양도대상주택 포함하여 2주택이면서 일시적1가구2주택으로 인정되어 비과세를 적용받는경우");
+                log.info("(Commentary Add) 13.양도대상주택 포함하여 2주택이면서 일시적1가구2주택으로 인정되어 비과세를 적용받는경우");
                 commentaryList.add("고객님은 일시적1가구 2주택으로 인정되어 양도세 비과세 혜택을 적용 받을 수 있어요.");
             }
 
-            // 14. 항상
+            // 14.항상
             if(calculationSellResultOneList != null){
                 for(CalculationSellOneResult calculationSellOneResult : calculationSellResultOneList){
                     if(calculationSellOneResult.getSellTaxRate() != null && !calculationSellOneResult.getSellTaxRate().isBlank()){
-                        log.info("(Commentary Add) 14. 항상");
+                        log.info("(Commentary Add) 14.항상");
                         commentaryList.add("양도하실 주택의 최종 세율은 " + calculationSellOneResult.getSellTaxRate() + "% 에요.");
                         break;
                     }
                 }
             }
 
-            // 17. (양도주택)양도시점 조정대상지역 해당
+            // 17.(양도주택)양도시점 조정대상지역 해당
             if(checkAdjustmentTargetArea(StringUtils.defaultString(sellHouse.getJibunAddr()), calculationSellResultRequest.getSellDate())){
-                log.info("(Commentary Add) 17. (양도주택)양도시점 조정대상지역 해당");
+                log.info("(Commentary Add) 17.(양도주택)양도시점 조정대상지역 해당");
                 commentaryList.add("양도하시려는 주택은 양도예정일 기준 조정대상에 해당해요.");
             }
 
-            // 19. 양도하려는 주택외에 주택수에 포함되는 분양권(2021.01.01 이후 취득)이 있는 경우
+            // 19.양도하려는 주택외에 주택수에 포함되는 분양권(2021.01.01 이후 취득)이 있는 경우
             List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
             if(houseList != null && getOwnHouseCount() > 1 && houseList.size() > 1){
                 for(House house : houseList){
                     if(!house.getHouseId().equals(sellHouse.getHouseId())){
                         LocalDate specificDate = LocalDate.parse("20210101", DateTimeFormatter.ofPattern("yyyyMMdd"));
                         if(FIVE.equals(house.getHouseType()) && house.getBuyDate().isAfter(specificDate)){
-                            log.info("(Commentary Add) 19. 양도하려는 주택외에 주택수에 포함되는 분양권(2021.01.01 이후 취득)이 있는 경우");
+                            log.info("(Commentary Add) 19.양도하려는 주택외에 주택수에 포함되는 분양권(2021.01.01 이후 취득)이 있는 경우");
                             commentaryList.add("2021.01.01 이후 취득 한 분양권을 보유하고 계시며, 해당 분양권은 보유주택수에 포함돼요.");
                         }
                     }

@@ -1873,10 +1873,79 @@ public class CalculationBuyService {
                                 .build());
             }
 
+            // 취득세 해설부분 추가
+            List<String> commentaryList = getCalculationBuyCommentaryList(calculationBuyResultRequest, taxRateCode, dedCode, calculationBuyResultOneList);
+            int commentaryListCnt = commentaryList.size();
+
             return CalculationBuyResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationBuyResultOneList)
+                    .commentaryListCnt(commentaryListCnt)
+                    .commentaryList(commentaryList)
                     .build();
+        }
+
+        // 취득세 해설 리스트 가져오기(GGMANYAR)
+        private List<String> getCalculationBuyCommentaryList(CalculationBuyResultRequest calculationBuyResultRequest, String taxRateCode, String dedCode, List<CalculationBuyOneResult> calculationBuyOneResultList){
+            // 보유주택 수
+            long ownHouseCount = getOwnHouseCount(calculationBuyResultRequest);
+
+            // 해설 리스트
+            List<String> commentaryList = new ArrayList<>();
+
+            // 1.(취득)주택의 전용면적이 85제곱미터 이상인 경우
+            if(calculationBuyResultRequest.getIsAreaOver85()){
+                log.info("(Commentary Add) 1.(취득)주택의 전용면적이 85제곱미터 이상인 경우");
+                commentaryList.add("85제곱미터(국민주택규모) 미만은 농어촌특별세 비과세이며, 주택 외 부동산 및 85제곱미터 이상 주택은 농어촌특별세 0.2% 추가적으로 붙어요.");
+            }
+
+            // 7.항상
+            log.info("(Commentary Add) 7.항상");
+            commentaryList.add("고객님이 취득하시려는 주택외에 기존 보유 주택수는" + (ownHouseCount-1) + "채 에요.");
+
+            // 8.취득일 기준 조정대상지역인 경우
+            if(checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate())){
+                log.info("(Commentary Add) 8.취득일 기준 조정대상지역인 경우");
+                commentaryList.add("85제곱미터(국민주택규모) 미만은 농어촌특별세 비과세이며, 주택 외 부동산 및 85제곱미터 이상 주택은 농어촌특별세 0.2% 추가적으로 붙어요.");
+            }
+
+            // 9.항상
+            String houseTypeName = EMPTY;
+            // 주택유형(1:아파트 2:연립,다가구 3:입주권 4:단독주택,다세대 5:분양권(주택) 6:주택)
+            if(ONE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "아파트";
+            }else if(TWO.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "연립·다가구";
+            }else if(THREE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "입주권";
+            }else if(FOUR.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "단독주택·다세대";
+            }else if(FIVE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "분양권(주택)";
+            }else{
+                houseTypeName = "주택";
+            }
+            log.info("(Commentary Add) 9.항상");
+            commentaryList.add("취득하시려는 주택의 유형은 " + houseTypeName + "이에요.");
+
+            // 10.취득하는 주택의 유형이 준공되는 분양권인 경우
+            if(FIVE.equals(calculationBuyResultRequest.getHouseType())){
+                log.info("(Commentary Add) 10.취득하는 주택의 유형이 준공되는 분양권인 경우");
+                commentaryList.add("취득하실 주택이 '보유하고 계셨던 분양권을 일반주택으로 취득하는 경우'이므로 해당 케이스는 분양권 취득 시점의 상태에 따라 세금이 달라 질 수 있어요.");
+            }
+
+            // 11.항상
+            if(calculationBuyOneResultList != null){
+                for(CalculationBuyOneResult calculationBuyOneResult : calculationBuyOneResultList){
+                    if(calculationBuyOneResult.getBuyTaxRate() != null && !calculationBuyOneResult.getBuyTaxRate().isBlank()){
+                        log.info("(Commentary Add) 11.항상");
+                        commentaryList.add("취득하실 주택의 최종 세율은 " + calculationBuyOneResult.getBuyTaxRate() + "%에요.");
+                        break;
+                    }
+                }
+            }
+
+            return commentaryList;
         }
 
         // (취득주택 포함)보유주택 수 가져오기
