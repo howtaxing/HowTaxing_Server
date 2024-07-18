@@ -2531,6 +2531,9 @@ public class CalculationSellService {
                 /* 양도소득세 계산 */
                 log.info("양도소득세 계산 START");
                 if(taxRateInfo != null){
+                    // 기본공제금액
+                    basicDeductionPrice = BASIC_DEDUCTION_PRICE;
+
                     // 세율이 상수인 경우
                     if(YES.equals(taxRateInfo.getConstYn())){
                         if(sellProfitPrice != 0){
@@ -2539,9 +2542,6 @@ public class CalculationSellService {
 
                             // 양도소득금액(과세대상양도차익금액)
                             sellIncomePrice = sellProfitPrice;
-
-                            // 기본공제금액
-                            basicDeductionPrice = BASIC_DEDUCTION_PRICE;
 
                             // 과세표준금액(양도소득금액 - 기본공제금액)
                             taxableStdPrice = sellIncomePrice - basicDeductionPrice;
@@ -2604,7 +2604,7 @@ public class CalculationSellService {
                             if(sellIncomePrice < 0) sellIncomePrice = 0;
 
                             // 과세표준금액(양도소득금액 - 기본공제금액)
-                            taxableStdPrice = sellIncomePrice - BASIC_DEDUCTION_PRICE;
+                            taxableStdPrice = sellIncomePrice - basicDeductionPrice;
                             if(taxableStdPrice < 0) taxableStdPrice = 0;
 
                             // 누진공제금액
