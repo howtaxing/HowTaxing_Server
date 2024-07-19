@@ -2432,6 +2432,188 @@ public class CalculationSellService {
             return calculationSellResultResponse;
         }
 
+        /**
+         * 분기번호 : 049
+         * 분기명 : 양도가액
+         * 분기설명 : (1주택)양도가액 12억 초과 여부 확인
+         */
+        public CalculationSellResultResponse branchNo049(CalculationSellResultRequest calculationSellResultRequest, House house){
+            log.info(">>> CalculationBranch branchNo049 - 양도소득세 분기번호 049 : 양도가액");
+
+            CalculationSellResultResponse calculationSellResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "049")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            String sellPrice = calculationSellResultRequest.getSellPrice().toString();
+            log.info("sellPrice : " + sellPrice + "원");
+
+            for(CalculationProcess calculationProcess : list){
+                String dataMethod = StringUtils.defaultString(calculationProcess.getDataMethod());
+                String variableData = StringUtils.defaultString(calculationProcess.getVariableData(), ZERO);
+
+                if(checkSelectNoCondition(DATA_TYPE_PRICE, sellPrice, EMPTY, variableData, dataMethod)){
+                    selectNo = calculationProcess.getCalculationProcessId().getSelectNo();
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationSellResultRequest.class, House.class);
+                    calculationSellResultResponse = (CalculationSellResultResponse) method.invoke(target, calculationSellResultRequest, house);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
+                }
+            }else{
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationSellResultResponse;
+        }
+
+        /**
+         * 분기번호 : 050
+         * 분기명 : 보유기간
+         * 분기설명 : (1주택)양도주택의 보유기간
+         */
+        public CalculationSellResultResponse branchNo050(CalculationSellResultRequest calculationSellResultRequest, House house){
+            log.info(">>> CalculationBranch branchNo050 - 양도소득세 분기번호 050 : 보유기간");
+
+            CalculationSellResultResponse calculationSellResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "050")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            String buyDate = (house.getBuyDate() != null) ? house.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
+            String sellDate = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
+
+            log.info("buyDate : " + buyDate);
+            log.info("sellDate : " + sellDate);
+
+            for(CalculationProcess calculationProcess : list){
+                String dataMethod = StringUtils.defaultString(calculationProcess.getDataMethod());
+                String variableData = StringUtils.defaultString(calculationProcess.getVariableData(), ZERO);
+
+                if(checkSelectNoCondition(DATA_TYPE_PERIOD, buyDate, sellDate, variableData, dataMethod)){
+                    selectNo = calculationProcess.getCalculationProcessId().getSelectNo();
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationSellResultRequest.class, House.class);
+                    calculationSellResultResponse = (CalculationSellResultResponse) method.invoke(target, calculationSellResultRequest, house);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
+                }
+            }else{
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationSellResultResponse;
+        }
+
+        /**
+         * 분기번호 : 051
+         * 분기명 : 거주기간
+         * 분기설명 : (1주택)양도주택의  거주기간
+         */
+        public CalculationSellResultResponse branchNo051(CalculationSellResultRequest calculationSellResultRequest, House house){
+            log.info(">>> CalculationBranch branchNo051 - 양도소득세 분기번호 051 : 거주기간");
+
+            CalculationSellResultResponse calculationSellResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "051")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            long stayPeriodYear = 0;
+            long stayPeriodMonth = 0;
+
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(PERIOD_TYPE_DIAL.equals(answer.getQuestionId()) || PERIOD_TYPE_CERT.equals(answer.getQuestionId())){
+                    Map<String, Object> stayPeriodMap = getStayPeriodYearAndMonth(answer.getAnswerValue());
+                    if(stayPeriodMap.containsKey(STAY_PERIOD_YEAR)){
+                        stayPeriodYear = (long)stayPeriodMap.get(STAY_PERIOD_YEAR);
+                    }
+                    if(stayPeriodMap.containsKey(STAY_PERIOD_MONTH)){
+                        stayPeriodMonth = (long)stayPeriodMap.get(STAY_PERIOD_MONTH);
+                    }
+                    break;
+                }
+            }
+
+            log.info("stayPeriodYear : " + stayPeriodYear + "년");
+            log.info("stayPeriodMonth : " + stayPeriodMonth + "개월");
+
+            for(CalculationProcess calculationProcess : list){
+                String dataMethod = StringUtils.defaultString(calculationProcess.getDataMethod());
+                String variableData = StringUtils.defaultString(calculationProcess.getVariableData(), ZERO);
+
+                if(checkSelectNoCondition(DATA_TYPE_PERIOD, Long.toString(stayPeriodYear), Long.toString(stayPeriodMonth), variableData, dataMethod)){
+                    selectNo = calculationProcess.getCalculationProcessId().getSelectNo();
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationSellResultRequest.class, House.class);
+                    calculationSellResultResponse = (CalculationSellResultResponse) method.invoke(target, calculationSellResultRequest, house);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
+                }
+            }else{
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationSellResultResponse;
+        }
+
         /*============================================================ 양도소득세 계산 프로세스 END ============================================================*/
 
         // 양도소득세 계산 결과 조회
