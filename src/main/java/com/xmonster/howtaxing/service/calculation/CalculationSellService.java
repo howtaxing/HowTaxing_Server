@@ -2,6 +2,7 @@ package com.xmonster.howtaxing.service.calculation;
 
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.calculation.CalculationAdditionalAnswerRequest;
+import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse.CalculationSellOneResult;
@@ -22,7 +23,9 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Method;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -2952,20 +2955,103 @@ public class CalculationSellService {
                                 .build());
             }
 
-            // 양도소득세 해설부분 추가
+            // 양도소득세 해설부분 세팅
             List<String> commentaryList = getCalculationSellCommentaryList(calculationSellResultRequest, taxRateCode, dedCode, calculationSellResultOneList);
             int commentaryListCnt = commentaryList.size();
+            
+            // 계산결과 텍스트 데이터 세팅
+            String calculationResultTextData = getCalculationResultTextData(calculationSellResultRequest, calculationSellResultOneList, commentaryList);
 
             return CalculationSellResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationSellResultOneList)
                     .commentaryListCnt(commentaryListCnt)
                     .commentaryList(commentaryList)
+                    .calculationResultTextData(calculationResultTextData)
                     .build();
+        }
+
+        private String getCalculationResultTextData(CalculationSellResultRequest calculationSellResultRequest,
+                                                    List<CalculationSellOneResult> calculationSellResultOneList,
+                                                    List<String> commentaryList){
+
+            House sellHouse = houseUtil.findSelectedHouse(calculationSellResultRequest.getHouseId());
+
+            StringBuilder textData = new StringBuilder(EMPTY);
+
+            String houseTypeName = EMPTY;
+            // 주택유형(1:아파트 2:연립,다가구 3:입주권 4:단독주택,다세대 5:분양권(주택) 6:주택)
+            if(ONE.equals(sellHouse.getHouseType())){
+                houseTypeName = "아파트";
+            }else if(TWO.equals(sellHouse.getHouseType())){
+                houseTypeName = "연립·다가구";
+            }else if(THREE.equals(sellHouse.getHouseType())){
+                houseTypeName = "입주권";
+            }else if(FOUR.equals(sellHouse.getHouseType())){
+                houseTypeName = "단독주택·다세대";
+            }else if(FIVE.equals(sellHouse.getHouseType())){
+                houseTypeName = "분양권(주택)";
+            }else{
+                houseTypeName = "주택";
+            }
+
+            textData.append("■ 양도소득세 계산 결과").append(DOUBLE_NEW_LINE);
+            textData.append("* 계산일시 : ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HHLmm:ss"))).append(DOUBLE_NEW_LINE);
+            textData.append("1. 양도 주택 정보").append(NEW_LINE);
+            textData.append("  - 주택유형 : ").append(houseTypeName).append(NEW_LINE);
+            textData.append("  - 주택명 : ").append(sellHouse.getHouseName()).append(NEW_LINE);
+            textData.append("  - 상세주소 : ").append(sellHouse.getDetailAdr()).append(NEW_LINE);
+            textData.append("  - 지번주소 : ").append(sellHouse.getJibunAddr()).append(NEW_LINE);
+            textData.append("  - 도로명주소 : ").append(sellHouse.getRoadAddr()).append(DOUBLE_NEW_LINE);
+
+            DecimalFormat df = new DecimalFormat("###,###");
+            CalculationSellOneResult calculationSellOneResult = null;
+
+            if(calculationSellResultOneList != null && !calculationSellResultOneList.isEmpty()){
+                textData.append("2. 계산결과").append(NEW_LINE);
+                for(int i=0; i<calculationSellResultOneList.size(); i++){
+                    calculationSellOneResult = calculationSellResultOneList.get(i);
+                    textData.append(SPACE).append(i+1).append(") 소유자").append(i+1).append("(지분율 : ").append(sellHouse.getUserProportion()).append("%)").append(NEW_LINE);
+                    textData.append("  - 총 납부세액 : ").append(df.format(calculationSellOneResult.getTotalTaxPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 양도소득세 : ").append(df.format(calculationSellOneResult.getSellTaxPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 지방소득세 : ").append(df.format(calculationSellOneResult.getLocalTaxPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 양도금액(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(calculationSellOneResult.getSellPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 취득금액(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(calculationSellOneResult.getBuyPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 필요경비(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(calculationSellOneResult.getNecExpensePrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 양도차익 : ").append(df.format(calculationSellOneResult.getSellProfitPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 비과세 양도차익 : ").append(df.format(calculationSellOneResult.getNonTaxablePrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 과세대상 양도차익 : ").append(df.format(calculationSellOneResult.getTaxablePrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 장기보유특별공제 : ").append(df.format(calculationSellOneResult.getLongDeductionPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 양도소득금액 : ").append(df.format(calculationSellOneResult.getSellIncomePrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 기본공제 : ").append(df.format(calculationSellOneResult.getBasicDeductionPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 과세표준 : ").append(df.format(calculationSellOneResult.getTaxableStdPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 세율 : ").append(df.format(calculationSellOneResult.getSellTaxRate())).append("%").append(NEW_LINE);
+                    textData.append("  - 누진공제 : ").append(df.format(calculationSellOneResult.getProgDeductionPrice())).append("원").append(NEW_LINE);
+                }
+                textData.append(NEW_LINE);
+            }
+
+            textData.append("3. 주의").append(NEW_LINE);
+            textData.append(" 1) 지금 보시는 세금 계산 결과는 법적 효력이 없으므로 정확한 세금 납부를 위해서는 전문가에게 상담을 추천해요.").append(houseTypeName).append(DOUBLE_NEW_LINE);
+
+            if(commentaryList != null && !commentaryList.isEmpty()){
+                textData.append("4. 해설").append(NEW_LINE);
+                for(int i=0; i<commentaryList.size(); i++){
+                    textData.append(SPACE).append(i+1).append(")").append(SPACE).append(commentaryList.get(i)).append(NEW_LINE);
+                }
+            }
+
+            log.info("---------- calculationResultTextData START ----------");
+            log.info(textData.toString());
+            log.info("---------- calculationResultTextData END ----------");
+
+            return textData.toString();
         }
 
         // 양도소득세 해설 리스트 가져오기
         private List<String> getCalculationSellCommentaryList(CalculationSellResultRequest calculationSellResultRequest, String taxRateCode, String dedCode, List<CalculationSellOneResult> calculationSellResultOneList){
+            log.info(">>> CalculationBranch getCalculationSellCommentaryList - 양도소득세 해설 리스트 가져오기");
+
             // 양도주택
             House sellHouse = houseUtil.findSelectedHouse(calculationSellResultRequest.getHouseId());
 

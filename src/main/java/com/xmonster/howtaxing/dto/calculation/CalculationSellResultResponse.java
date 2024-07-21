@@ -12,10 +12,11 @@ import java.util.List;
 @ToString
 @Builder
 public class CalculationSellResultResponse {
-    private int listCnt;
-    private List<CalculationSellOneResult> list;
-    private int commentaryListCnt;
-    private List<String> commentaryList;
+    private int listCnt;                            // 양도소득세 계산결과 리스트 수
+    private List<CalculationSellOneResult> list;    // 양도소득세 계산결과 리스트
+    private int commentaryListCnt;                  // (계산결과)해설 리스트 수
+    private List<String> commentaryList;            // (계산결과)해설 리스트
+    private String calculationResultTextData;       // 계산결과 텍스트 데이터
 
     @Getter
     @Setter
@@ -44,6 +45,5 @@ public class CalculationSellResultResponse {
         private String localTaxPrice;       // 지방소득세액
 
         private String totalTaxPrice;       // 총납부세액
-        private String totalResultText;     // 총결과텍스트
     }
 }

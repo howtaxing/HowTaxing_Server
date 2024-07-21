@@ -152,4 +152,8 @@ public final class CommonConstant {
 
     // 비과세 세율코드
     public final static String NONE_TAX_RATE_CODE = "R_0002";
+
+    // 기타
+    public final static String NEW_LINE = "\n";
+    public final static String DOUBLE_NEW_LINE = "\n\n";
 }
