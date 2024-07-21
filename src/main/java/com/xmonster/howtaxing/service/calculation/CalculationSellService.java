@@ -2998,28 +2998,24 @@ public class CalculationSellService {
                 houseTypeName = "주택";
             }
 
-            log.info("[GGMANYAR]POINT-1 : " + textData.toString());
-            textData.append("■ 양도소득세 계산 결과").append(DOUBLE_NEW_LINE);
-            textData.append("* 계산일시 : ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HHLmm:ss"))).append(DOUBLE_NEW_LINE);
+            textData.append("■ 양도소득세 계산 결과").append(NEW_LINE).append(NEW_LINE);
+            textData.append("* 계산일시 : ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HHLmm:ss"))).append(NEW_LINE).append(NEW_LINE);
             textData.append("1. 양도 주택 정보").append(NEW_LINE);
             textData.append("  - 주택유형 : ").append(houseTypeName).append(NEW_LINE);
             textData.append("  - 주택명 : ").append(sellHouse.getHouseName()).append(NEW_LINE);
             textData.append("  - 상세주소 : ").append(sellHouse.getDetailAdr()).append(NEW_LINE);
             textData.append("  - 지번주소 : ").append(sellHouse.getJibunAddr()).append(NEW_LINE);
-            textData.append("  - 도로명주소 : ").append(sellHouse.getRoadAddr()).append(DOUBLE_NEW_LINE);
+            textData.append("  - 도로명주소 : ").append(sellHouse.getRoadAddr()).append(NEW_LINE).append(NEW_LINE);
 
             DecimalFormat df = new DecimalFormat("###,###");
             CalculationSellOneResult calculationSellOneResult = null;
 
             if(calculationSellResultOneList != null && !calculationSellResultOneList.isEmpty()){
-                log.info("[GGMANYAR]POINT-2 : " + textData.toString());
                 textData.append("2. 계산결과").append(NEW_LINE);
                 for(int i=0; i<calculationSellResultOneList.size(); i++){
                     calculationSellOneResult = calculationSellResultOneList.get(i);
                     textData.append(SPACE).append(i+1).append(") 소유자").append(i+1).append("(지분율 : ").append(sellHouse.getUserProportion()).append("%)").append(NEW_LINE);
-                    log.info("[GGMANYAR]POINT-3 : " + textData.toString());
                     textData.append("  - 총 납부세액 : ").append(df.format(Long.parseLong(calculationSellOneResult.getTotalTaxPrice()))).append("원").append(NEW_LINE);
-                    log.info("[GGMANYAR]POINT-4 : " + textData.toString());
                     textData.append("  - 양도소득세 : ").append(df.format(Long.parseLong(calculationSellOneResult.getSellTaxPrice()))).append("원").append(NEW_LINE);
                     textData.append("  - 지방소득세 : ").append(df.format(Long.parseLong(calculationSellOneResult.getLocalTaxPrice()))).append("원").append(NEW_LINE);
                     textData.append("  - 양도금액(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(Long.parseLong(calculationSellOneResult.getSellPrice()))).append("원").append(NEW_LINE);
@@ -3038,20 +3034,17 @@ public class CalculationSellService {
                 textData.append(NEW_LINE);
             }
 
-            log.info("[GGMANYAR]POINT-5 : " + textData.toString());
             textData.append("3. 주의").append(NEW_LINE);
-            textData.append(" 1) 지금 보시는 세금 계산 결과는 법적 효력이 없으므로 정확한 세금 납부를 위해서는 전문가에게 상담을 추천해요.").append(houseTypeName).append(DOUBLE_NEW_LINE);
+            textData.append(" 1) 지금 보시는 세금 계산 결과는 법적 효력이 없으므로 정확한 세금 납부를 위해서는 전문가에게 상담을 추천해요.").append(houseTypeName).append(NEW_LINE).append(NEW_LINE);
 
-            log.info("[GGMANYAR]POINT-6 : " + textData.toString());
             if(commentaryList != null && !commentaryList.isEmpty()){
                 textData.append("4. 해설").append(NEW_LINE);
                 for(int i=0; i<commentaryList.size(); i++){
                     textData.append(SPACE).append(i+1).append(")").append(SPACE).append(commentaryList.get(i)).append(NEW_LINE);
                 }
             }
-            log.info("[GGMANYAR]POINT-7 : " + textData.toString());
 
-            log.info("---------- calculationResultTextData START ----------");
+            log.info("---------- calculationResultTextData START ----------\n");
             log.info(textData.toString());
             log.info("---------- calculationResultTextData END ----------");
 
