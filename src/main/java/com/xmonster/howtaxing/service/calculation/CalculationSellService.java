@@ -3018,22 +3018,22 @@ public class CalculationSellService {
                     calculationSellOneResult = calculationSellResultOneList.get(i);
                     textData.append(SPACE).append(i+1).append(") 소유자").append(i+1).append("(지분율 : ").append(sellHouse.getUserProportion()).append("%)").append(NEW_LINE);
                     log.info("[GGMANYAR]POINT-3 : " + textData.toString());
-                    textData.append("  - 총 납부세액 : ").append(df.format(calculationSellOneResult.getTotalTaxPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 총 납부세액 : ").append(df.format(Long.parseLong(calculationSellOneResult.getTotalTaxPrice()))).append("원").append(NEW_LINE);
                     log.info("[GGMANYAR]POINT-4 : " + textData.toString());
-                    textData.append("  - 양도소득세 : ").append(df.format(calculationSellOneResult.getSellTaxPrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 지방소득세 : ").append(df.format(calculationSellOneResult.getLocalTaxPrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 양도금액(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(calculationSellOneResult.getSellPrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 취득금액(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(calculationSellOneResult.getBuyPrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 필요경비(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(calculationSellOneResult.getNecExpensePrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 양도차익 : ").append(df.format(calculationSellOneResult.getSellProfitPrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 비과세 양도차익 : ").append(df.format(calculationSellOneResult.getNonTaxablePrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 과세대상 양도차익 : ").append(df.format(calculationSellOneResult.getTaxablePrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 장기보유특별공제 : ").append(df.format(calculationSellOneResult.getLongDeductionPrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 양도소득금액 : ").append(df.format(calculationSellOneResult.getSellIncomePrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 기본공제 : ").append(df.format(calculationSellOneResult.getBasicDeductionPrice())).append("원").append(NEW_LINE);
-                    textData.append("  - 과세표준 : ").append(df.format(calculationSellOneResult.getTaxableStdPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 양도소득세 : ").append(df.format(Long.parseLong(calculationSellOneResult.getSellTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 지방소득세 : ").append(df.format(Long.parseLong(calculationSellOneResult.getLocalTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 양도금액(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(Long.parseLong(calculationSellOneResult.getSellPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 취득금액(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(Long.parseLong(calculationSellOneResult.getBuyPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 필요경비(").append("지분비율 ").append(sellHouse.getUserProportion()).append("%) : ").append(df.format(Long.parseLong(calculationSellOneResult.getNecExpensePrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 양도차익 : ").append(df.format(Long.parseLong(calculationSellOneResult.getSellProfitPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 비과세 양도차익 : ").append(df.format(Long.parseLong(calculationSellOneResult.getNonTaxablePrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 과세대상 양도차익 : ").append(df.format(Long.parseLong(calculationSellOneResult.getTaxablePrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 장기보유특별공제 : ").append(df.format(Long.parseLong(calculationSellOneResult.getLongDeductionPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 양도소득금액 : ").append(df.format(Long.parseLong(calculationSellOneResult.getSellIncomePrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 기본공제 : ").append(df.format(Long.parseLong(calculationSellOneResult.getBasicDeductionPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 과세표준 : ").append(df.format(Long.parseLong(calculationSellOneResult.getTaxableStdPrice()))).append("원").append(NEW_LINE);
                     textData.append("  - 세율 : ").append(calculationSellOneResult.getSellTaxRate()).append("%").append(NEW_LINE);
-                    textData.append("  - 누진공제 : ").append(df.format(calculationSellOneResult.getProgDeductionPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 누진공제 : ").append(df.format(Long.parseLong(calculationSellOneResult.getProgDeductionPrice()))).append("원").append(NEW_LINE);
                 }
                 textData.append(NEW_LINE);
             }
