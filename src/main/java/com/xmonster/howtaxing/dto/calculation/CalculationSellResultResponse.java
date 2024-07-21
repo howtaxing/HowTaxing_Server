@@ -44,5 +44,6 @@ public class CalculationSellResultResponse {
         private String localTaxPrice;       // 지방소득세액
 
         private String totalTaxPrice;       // 총납부세액
+        private String totalResultText;     // 총결과텍스트
     }
 }
