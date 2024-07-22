@@ -5,6 +5,7 @@ import com.xmonster.howtaxing.dto.calculation.CalculationAdditionalAnswerRequest
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
+import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 
 import com.xmonster.howtaxing.dto.house.HouseAddressDto;
@@ -24,7 +25,9 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Method;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -1877,15 +1880,84 @@ public class CalculationBuyService {
             List<String> commentaryList = getCalculationBuyCommentaryList(calculationBuyResultRequest, taxRateCode, dedCode, calculationBuyResultOneList);
             int commentaryListCnt = commentaryList.size();
 
+            // 계산결과 텍스트 데이터 세팅
+            String calculationResultTextData = getCalculationResultTextData(calculationBuyResultRequest, calculationBuyResultOneList, commentaryList);
+
             return CalculationBuyResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationBuyResultOneList)
                     .commentaryListCnt(commentaryListCnt)
                     .commentaryList(commentaryList)
+                    .calculationResultTextData(calculationResultTextData)
                     .build();
         }
 
-        // 취득세 해설 리스트 가져오기(GGMANYAR)
+        private String getCalculationResultTextData(CalculationBuyResultRequest calculationBuyResultRequest,
+                                                    List<CalculationBuyOneResult> calculationBuyOneResultList,
+                                                    List<String> commentaryList){
+            log.info(">>> CalculationBranch getCalculationResultTextData - 취득세 계산결과 텍스트 데이터 가져오기");
+
+            StringBuilder textData = new StringBuilder(EMPTY);
+
+            String houseTypeName = EMPTY;
+            // 주택유형(1:아파트 2:연립,다가구 3:입주권 4:단독주택,다세대 5:분양권(주택) 6:주택)
+            if(ONE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "아파트";
+            }else if(TWO.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "연립·다가구";
+            }else if(THREE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "입주권";
+            }else if(FOUR.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "단독주택·다세대";
+            }else if(FIVE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "분양권(주택)";
+            }else{
+                houseTypeName = "주택";
+            }
+
+            textData.append("■ 취득세 계산 결과").append(NEW_LINE).append(NEW_LINE);
+            textData.append("* 계산일시 : ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append(NEW_LINE).append(NEW_LINE);
+            textData.append("1. 취득 주택 정보").append(NEW_LINE);
+            textData.append("  - 주택유형 : ").append(houseTypeName).append(NEW_LINE);
+            textData.append("  - 주택명 : ").append(calculationBuyResultRequest.getHouseName()).append(NEW_LINE);
+            textData.append("  - 상세주소 : ").append(calculationBuyResultRequest.getDetailAdr()).append(NEW_LINE);
+            textData.append("  - 지번주소 : ").append(calculationBuyResultRequest.getJibunAddr()).append(NEW_LINE);
+            textData.append("  - 도로명주소 : ").append(calculationBuyResultRequest.getRoadAddr()).append(NEW_LINE).append(NEW_LINE);
+
+            DecimalFormat df = new DecimalFormat("###,###");
+            CalculationBuyOneResult calculationBuyOneResult = null;
+
+            if(calculationBuyOneResultList != null && !calculationBuyOneResultList.isEmpty()){
+                textData.append("2. 계산결과").append(NEW_LINE);
+                for(int i=0; i<calculationBuyOneResultList.size(); i++){
+                    calculationBuyOneResult = calculationBuyOneResultList.get(i);
+                    textData.append(SPACE).append(i+1).append(") 소유자").append(i+1).append("(지분율 : ").append(calculationBuyResultRequest.getUserProportion()).append("%)").append(NEW_LINE);
+                    textData.append("  - 취득세 합계 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getTotalTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 취득세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getBuyTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 취득금액(").append("지분비율 ").append(calculationBuyResultRequest.getUserProportion()).append("%) : ").append(df.format(calculationBuyResultRequest.getBuyPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 취득세율 : ").append(calculationBuyOneResult.getBuyTaxRate()).append("%").append(NEW_LINE);
+                    textData.append("  - 지방교육세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getEduTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 지방교육세율 : ").append(calculationBuyOneResult.getEduTaxRate()).append("%").append(NEW_LINE);
+                    textData.append("  - 농어촌특별세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getAgrTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 농어촌특별세율 : ").append(calculationBuyOneResult.getAgrTaxRate()).append("%").append(NEW_LINE);
+                }
+                textData.append(NEW_LINE);
+            }
+
+            textData.append("3. 주의").append(NEW_LINE);
+            textData.append(" 1) 지금 보시는 세금 계산 결과는 법적 효력이 없으므로 정확한 세금 납부를 위해서는 전문가에게 상담을 추천해요.").append(NEW_LINE).append(NEW_LINE);
+
+            if(commentaryList != null && !commentaryList.isEmpty()){
+                textData.append("4. 해설").append(NEW_LINE);
+                for(int i=0; i<commentaryList.size(); i++){
+                    textData.append(SPACE).append(i+1).append(")").append(SPACE).append(commentaryList.get(i)).append(NEW_LINE);
+                }
+            }
+
+            return textData.toString();
+        }
+
+        // 취득세 해설 리스트 가져오기
         private List<String> getCalculationBuyCommentaryList(CalculationBuyResultRequest calculationBuyResultRequest, String taxRateCode, String dedCode, List<CalculationBuyOneResult> calculationBuyOneResultList){
             // 보유주택 수
             long ownHouseCount = getOwnHouseCount(calculationBuyResultRequest);

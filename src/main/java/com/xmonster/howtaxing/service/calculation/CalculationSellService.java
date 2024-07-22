@@ -2999,7 +2999,7 @@ public class CalculationSellService {
             }
 
             textData.append("■ 양도소득세 계산 결과").append(NEW_LINE).append(NEW_LINE);
-            textData.append("* 계산일시 : ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HHLmm:ss"))).append(NEW_LINE).append(NEW_LINE);
+            textData.append("* 계산일시 : ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append(NEW_LINE).append(NEW_LINE);
             textData.append("1. 양도 주택 정보").append(NEW_LINE);
             textData.append("  - 주택유형 : ").append(houseTypeName).append(NEW_LINE);
             textData.append("  - 주택명 : ").append(sellHouse.getHouseName()).append(NEW_LINE);
@@ -3035,7 +3035,7 @@ public class CalculationSellService {
             }
 
             textData.append("3. 주의").append(NEW_LINE);
-            textData.append(" 1) 지금 보시는 세금 계산 결과는 법적 효력이 없으므로 정확한 세금 납부를 위해서는 전문가에게 상담을 추천해요.").append(houseTypeName).append(NEW_LINE).append(NEW_LINE);
+            textData.append(" 1) 지금 보시는 세금 계산 결과는 법적 효력이 없으므로 정확한 세금 납부를 위해서는 전문가에게 상담을 추천해요.").append(NEW_LINE).append(NEW_LINE);
 
             if(commentaryList != null && !commentaryList.isEmpty()){
                 textData.append("4. 해설").append(NEW_LINE);
@@ -3043,10 +3043,6 @@ public class CalculationSellService {
                     textData.append(SPACE).append(i+1).append(")").append(SPACE).append(commentaryList.get(i)).append(NEW_LINE);
                 }
             }
-
-            log.info("---------- calculationResultTextData START ----------\n");
-            log.info(textData.toString());
-            log.info("---------- calculationResultTextData END ----------");
 
             return textData.toString();
         }
