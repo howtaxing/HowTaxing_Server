@@ -1095,7 +1095,7 @@ public class CalculationBuyService {
                 // 종전주택이 2020.08.12 이후 취득한 분양권이나 지방세법상 입주권인 경우(재개발, 재건축, 소규모재건축)
                 House lastOwnHouse = getLastOwnHouse();
 
-                if(calculationBuyResultRequest != null && calculationBuyResultRequest.getBuyDate() != null){
+                if(calculationBuyResultRequest.getBuyDate() != null){
                     buyDate = calculationBuyResultRequest.getBuyDate().toString().replace(HYPHEN, EMPTY);
                 }
 
@@ -2085,7 +2085,7 @@ public class CalculationBuyService {
                 }
                 // 2주택
                 else if(ownHouseCount == 2){
-                    // 조정대상지역 외(조정대상지역에 대한 취득세율은 다른 프로세스로 접근)
+                    // 조정대상지역 외
                     if(!isAdjustmentTargetArea){
                         // 6억 이하
                         if(buyPrice <= SIX_HND_MIL){
@@ -2102,6 +2102,11 @@ public class CalculationBuyService {
                             // 취득세율 : 3%
                             taxRate = 0.03;
                         }
+                    }
+                    // 조정대상지역
+                    else{
+                        // 취득세율 : 8%
+                        taxRate = 0.08;
                     }
                 }
             }
