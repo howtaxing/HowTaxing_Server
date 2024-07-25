@@ -145,9 +145,9 @@ public class QuestionService {
                                         nextQuestionId = Q_0008;
                                     }
                                 }else{
-                                    // 취득일로부터 2년이 된날 다음날 이후 매도하는 경우
+                                    // 취득일로부터 2년이 된날 다음날 이후 양도하는 경우
                                     if(sellDate.isAfter(sellHouse.getBuyDate().plusYears(2).plusDays(1))){
-                                        log.info("[getAdditionalQuestion-condition]취득일로부터 2년이 된날 다음날 이후 매도하는 경우");
+                                        log.info("[getAdditionalQuestion-condition]취득일로부터 2년이 된날 다음날 이후 양도하는 경우");
                                         calculationProcessList = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "015")
                                                 .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
@@ -157,9 +157,9 @@ public class QuestionService {
                                         // 양도가액 12억 초과
                                         if(sellPrice > variablePrice){
                                             log.info("[getAdditionalQuestion-condition]양도가액 12억 초과");
-                                            // 취득일로부터 3년이 된날 다음날 이후 매도하는 경우
+                                            // 취득일로부터 3년이 된날 다음날 이후 양도하는 경우
                                             if(sellDate.isAfter(sellHouse.getBuyDate().plusYears(3).plusDays(1))) {
-                                                log.info("[getAdditionalQuestion-condition]취득일로부터 3년이 된날 다음날 이후 매도하는 경우");
+                                                log.info("[getAdditionalQuestion-condition]취득일로부터 3년이 된날 다음날 이후 양도하는 경우");
                                                 nextQuestionId = Q_0004;
                                             }
                                         }
@@ -186,18 +186,18 @@ public class QuestionService {
                             // 양도가액 12억 초과
                             if(sellPrice > variablePrice){
                                 log.info("[getAdditionalQuestion-condition]양도가액 12억 초과");
-                                // 취득일로부터 3년이 된날 다음날 이후 매도하는 경우
+                                // 취득일로부터 3년이 된날 다음날 이후 양도하는 경우
                                 if(sellDate.isAfter(sellHouse.getBuyDate().plusYears(3).plusDays(1))){
-                                    log.info("[getAdditionalQuestion-condition]취득일로부터 3년이 된날 다음날 이후 매도하는 경우");
+                                    log.info("[getAdditionalQuestion-condition]취득일로부터 3년이 된날 다음날 이후 양도하는 경우");
                                     nextQuestionId = Q_0004;
                                 }
                             }
                         }
                     }
                 }
-                // 2주택 : 종전주택 매도여부 및 신규주택 거주예정기간 질의
+                // 2주택 : 종전주택 양도여부 및 신규주택 거주예정기간 질의
                 else if(ownHouseCnt == 2){
-                    log.info("[getAdditionalQuestion-condition]2주택 : 종전주택 매도여부 및 신규주택 거주예정기간 질의");
+                    log.info("[getAdditionalQuestion-condition]2주택 : 종전주택 양도여부 및 신규주택 거주예정기간 질의");
                     if(userHouseList != null && userHouseList.size() == 2){
                         House oldHouse = getOldOrNewHouse(userHouseList, false);    // 종전주택
                         House newHouse = getOldOrNewHouse(userHouseList, true);     // 신규주택
@@ -215,12 +215,12 @@ public class QuestionService {
                                         // 종전주택 취득일로부터 1년이 된 날 다음날 이후 신규주택을 취득한 경우
                                         if(newHouse.getBuyDate().isAfter(oldHouse.getBuyDate().plusYears(1).plusDays(1))){
                                             log.info("[getAdditionalQuestion-condition]종전주택 취득일로부터 1년이 된 날 다음날 이후 신규주택을 취득한 경우");
-                                            // 종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우
+                                            // 종전주택을 취득일로부터 2년이 된 날 이후 양도하는 경우
                                             if(sellDate.isAfter(oldHouse.getBuyDate().plusYears(2))){
-                                                log.info("[getAdditionalQuestion-condition]종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우");
-                                                // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우
+                                                log.info("[getAdditionalQuestion-condition]종전주택을 취득일로부터 2년이 된 날 이후 양도하는 경우");
+                                                // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 양도하는 경우
                                                 if(sellDate.isBefore(newHouse.getBuyDate().plusYears(3).plusDays(1))){
-                                                    log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우");
+                                                    log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 양도하는 경우");
                                                     log.info("[getAdditionalQuestion-condition]1주택 로직으로 이동");
                                                     // 1주택 로직으로 이동
                                                     return getAdditionalQuestion(
@@ -251,12 +251,12 @@ public class QuestionService {
                                                 // 신규주택 취득일이 특정일자(2022.02.15) 이전인 경우
                                                 if(newHouse.getBuyDate().isBefore(specificDate)){
                                                     log.info("[getAdditionalQuestion-condition]신규주택 취득일이 특정일자(2022.02.15) 이전인 경우");
-                                                    // 종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우
+                                                    // 종전주택을 취득일로부터 2년이 된 날 이후 양도하는 경우
                                                     if(sellDate.isAfter(oldHouse.getBuyDate().plusYears(2))){
-                                                        log.info("[getAdditionalQuestion-condition]종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우");
-                                                        // 신규주택 취득일로부터 3년이 된 날 다음날 이후에 종전주택 매도하는 경우
+                                                        log.info("[getAdditionalQuestion-condition]종전주택을 취득일로부터 2년이 된 날 이후 양도하는 경우");
+                                                        // 신규주택 취득일로부터 3년이 된 날 다음날 이후에 종전주택 양도하는 경우
                                                         if(sellDate.isAfter(newHouse.getBuyDate().plusYears(3).plusDays(1))){
-                                                            log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이후에 종전주택 매도하는 경우");
+                                                            log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이후에 종전주택 양도하는 경우");
                                                             nextQuestionId = Q_0001;
                                                             //questionParamData = newHouse.getBuyDate().plusYears(1).toString();
                                                         }
@@ -271,12 +271,12 @@ public class QuestionService {
                                         // 종전주택 취득일로부터 1년이 된 날 다음날 이후 신규주택을 취득한 경우
                                         if(newHouse.getBuyDate().isAfter(oldHouse.getBuyDate().plusYears(1).plusDays(1))){
                                             log.info("[getAdditionalQuestion-condition]종전주택 취득일로부터 1년이 된 날 다음날 이후 신규주택을 취득한 경우");
-                                            // 종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우
+                                            // 종전주택을 취득일로부터 2년이 된 날 이후 양도하는 경우
                                             if(sellDate.isAfter(oldHouse.getBuyDate().plusYears(2))){
-                                                log.info("[getAdditionalQuestion-condition]종전주택을 취득일로부터 2년이 된 날 이후 매도하는 경우");
-                                                // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우
+                                                log.info("[getAdditionalQuestion-condition]종전주택을 취득일로부터 2년이 된 날 이후 양도하는 경우");
+                                                // 신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 양도하는 경우
                                                 if(sellDate.isBefore(newHouse.getBuyDate().plusYears(3).plusDays(1))){
-                                                    log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 매도하는 경우");
+                                                    log.info("[getAdditionalQuestion-condition]신규주택 취득일로부터 3년이 된 날 다음날 이내에 종전주택 양도하는 경우");
                                                     log.info("[getAdditionalQuestion-condition]1주택 로직으로 이동");
                                                     // 1주택 로직으로 이동
                                                     return getAdditionalQuestion(
@@ -338,7 +338,7 @@ public class QuestionService {
 
                         // 양도가액 12억 초과
                         if(sellPrice > variablePrice){
-                            // 취득일로부터 3년이 된날 다음날 이후 매도하는 경우
+                            // 취득일로부터 3년이 된날 다음날 이후 양도하는 경우
                             if(sellDate.isAfter(sellHouse.getBuyDate().plusYears(3).plusDays(1))){
                                 nextQuestionId = Q_0004;
                             }
@@ -433,20 +433,20 @@ public class QuestionService {
             );
         }else if(Q_0007.equals(nextQuestionId)){
             hasNextQuestion = true;
-            nextQuestionContent = "종전주택 매도 계획에 따라 취득세가 다르게 산출될 수 있어요. 종전주택 매도 계획이 있나요?";
+            nextQuestionContent = "종전주택 양도 계획에 따라 취득세가 다르게 산출될 수 있어요. 종전주택 양도 계획이 있나요?";
             isNeedAnswer = true;
             answerType = ANSWER_TYPE_SELECT;
             answerSelectList = new ArrayList<>();
             answerSelectList.add(
                     AnswerSelectListResponse.builder()
                             .answerValue(ANSWER_VALUE_01)
-                            .answerContent("3년 이내 매도 계획")
+                            .answerContent("3년 이내 양도 계획")
                             .build()
             );
             answerSelectList.add(
                     AnswerSelectListResponse.builder()
                             .answerValue(ANSWER_VALUE_02)
-                            .answerContent("매도 계획 없음")
+                            .answerContent("양도 계획 없음")
                             .build()
             );
         }else if(Q_0008.equals(nextQuestionId)){
