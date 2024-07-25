@@ -123,6 +123,7 @@ public class HouseService {
                             .houseName(house.getHouseName())
                             .roadAddr(house.getRoadAddr())
                             .detailAdr(house.getDetailAdr())
+                            .isMoveInRight(house.getIsMoveInRight())
                             .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
                             .build());
         }
@@ -198,6 +199,7 @@ public class HouseService {
                             .houseName(house.getHouseName())
                             .roadAddr(house.getRoadAddr())
                             .detailAdr(house.getDetailAdr())
+                            .isMoveInRight(house.getIsMoveInRight())
                             .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
                             .build());
         }
@@ -229,6 +231,7 @@ public class HouseService {
                             .houseName(house.getHouseName())
                             .roadAddr(house.getRoadAddr())
                             .detailAdr(house.getDetailAdr())
+                            .isMoveInRight(house.getIsMoveInRight())
                             .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, calcType))
                             .build());
         }
