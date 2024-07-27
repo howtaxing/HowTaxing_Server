@@ -117,7 +117,9 @@ public class HouseAddressService {
                             } else if(part.endsWith("층")) {
                                 houseAddressDto.setDetailCheung(this.removeFrontZero(part));
                             } else {
-                                houseAddressDto.appendToEtcAddress(seperateEtcAddress(part, houseAddressDto));
+                                for (String etcAddress : seperateEtcAddress(part, houseAddressDto)) {
+                                    houseAddressDto.appendToEtcAddress(etcAddress);
+                                }
                             }
                         }
                         break;
@@ -131,8 +133,9 @@ public class HouseAddressService {
                         }else if(part.endsWith("층") && houseAddressDto.getDetailCheung() == null){
                             houseAddressDto.setDetailCheung(this.removeFrontZero(part));
                         } else{
-                            // 기타주소에 넣기 전 동명과 건물명 분리
-                            houseAddressDto.appendToEtcAddress(seperateEtcAddress(part, houseAddressDto));
+                            for (String etcAddress : seperateEtcAddress(part, houseAddressDto)) {
+                                houseAddressDto.appendToEtcAddress(etcAddress);
+                            }
                         }
                         break;
                 }
@@ -273,20 +276,36 @@ public class HouseAddressService {
     }
 
     // 기타주소 입력 처리
-    private String seperateEtcAddress(String part, HouseAddressDto houseAddressDto) {
+    private List<String> seperateEtcAddress(String part, HouseAddressDto houseAddressDto) {
         part = part.replaceAll("[()]", "").trim();  // 괄호 제거 및 트림
         String[] parts = part.split("\\s*,\\s*");  // 쉼표로 분리
-        String etcPart = "";
-    
+        List<String> etcParts = new ArrayList<>();
+
         for (String p : parts) {
             // 지번주소의 동명이 들어있는 경우 분리 후 입력
             if (p.endsWith("동") && houseAddressDto.getDongRi() == null) {
                 houseAddressDto.setDongRi(p);
             } else {
-                etcPart = p;
+                // 지번주소의 지번이나 도로명주소의 건물번호가 입력이 되어있는 경우, 숫자와 하이픈 타입이면 하이픈으로 분리하여 동호수로 입력
+                if ((houseAddressDto.getAddressType() == 1 && houseAddressDto.getJibun() != null) || (houseAddressDto.getAddressType() == 2 && houseAddressDto.getBuildingNo() != null))
+                {
+                    if (p.matches("^[0-9-]+$")) {
+                        String[] dongPart = p.split("-");
+                        log.info("동호수로 분리 : {}동 {}호", dongPart[0], dongPart[1]);
+
+                        if (houseAddressDto.getDetailDong() == null) {
+                            houseAddressDto.setDetailDong(dongPart[0] + "동");
+                        }
+                        if (houseAddressDto.getDetailHo() == null) {
+                            houseAddressDto.setDetailHo(dongPart[1] + "호");
+                        }
+                        continue;
+                    }
+                }
+                etcParts.add(p);
             }
         }
 
-        return etcPart;
+        return etcParts;
     }
 }
