@@ -24,7 +24,7 @@ public class CalculationBuyResultRequest {
     private Long pubLandPrice;                  // [선택] 공시지가
     private Boolean isPubLandPriceOver100Mil;   // [필수] 공시지가1억초과여부
 
-    private String jibunAddr;                   // [선택] 지번주소
+    private String jibunAddr;                   // [필수] 지번주소
     private String roadAddr;                    // [필수] 도로명주소
     private String roadAddrRef;                 // [선택] 도로명주소참고항목
     private String bdMgtSn;                     // [선택] 건물관리번호

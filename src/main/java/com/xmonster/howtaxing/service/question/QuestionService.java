@@ -1,6 +1,8 @@
 package com.xmonster.howtaxing.service.question;
 
 import com.xmonster.howtaxing.CustomException;
+import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultRequest;
+import com.xmonster.howtaxing.dto.calculation.CalculationSellResultRequest;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.house.HouseAddressDto;
 import com.xmonster.howtaxing.dto.question.AdditionalQuestionRequest;
@@ -64,10 +66,14 @@ public class QuestionService {
         String calcType = additionalQuestionRequest.getCalcType();
         String questionId = StringUtils.defaultString(additionalQuestionRequest.getQuestionId());
         String answerValue = StringUtils.defaultString(additionalQuestionRequest.getAnswerValue());
+
         Long sellHouseId = additionalQuestionRequest.getSellHouseId();
         LocalDate sellDate = additionalQuestionRequest.getSellDate();
         Long sellPrice = additionalQuestionRequest.getSellPrice();
+
         Long ownHouseCnt = additionalQuestionRequest.getOwnHouseCnt();
+        LocalDate buyDate = additionalQuestionRequest.getBuyDate();
+        String jibunAddr = additionalQuestionRequest.getJibunAddr();
 
         String questionParamData = EMPTY;
 
@@ -86,17 +92,54 @@ public class QuestionService {
         List<CalculationProcess> calculationProcessList = null;
         String variableData = EMPTY;
         long variablePrice = 0;
+        LocalDate variableDate = null;
 
         // 계산유형 '취득세'인 경우
         if(CALC_TYPE_BUY.equals(calcType)){
+            // QuestionID 없이 추가질의가 오는 경우(최초 추가질의)
             if(EMPTY.equals(questionId)){
-                // STEP 1. 기존에 1주택을 가지고 있는지 확인
+                log.info("QuestionID 없이 추가질의가 오는 경우(최초 추가질의)");
+                // 취득주택 포함 2주택인 경우(1주택 보유중인 경우)
                 if(ownHouseCnt == 1){
-                    // STEP 2. 추가질의항목 응답
+                    log.info("[getAdditionalQuestion-condition]취득주택 포함 2주택인 경우(1주택 보유중인 경우)");
                     nextQuestionId = Q_0007;
                 }
-            }else{
+            }
+            // QuestionID를 가지고 추가질의가 오는 경우
+            else{
+                log.info("[getAdditionalQuestion-condition]QuestionID를 가지고 추가질의가 오는 경우 : " + questionId);
                 if(Q_0007.equals(questionId)){
+                    if(ANSWER_VALUE_01.equals(answerValue)){
+                        calculationProcessList = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "016")
+                                .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+                        variableData = StringUtils.defaultString(calculationProcessList.get(0).getVariableData());
+                        if(variableData.length() == 8){
+                            variableDate = LocalDate.parse(variableData, DateTimeFormatter.ofPattern("yyyyMMdd"));
+                        }
+
+                        nextQuestionId = Q_0009;
+                        questionParamData = (variableDate != null) ? variableDate.toString() : variableData;
+                    }else if(ANSWER_VALUE_02.equals(answerValue)){
+                        // 신규주택 취득일 기준 조정대상지역에 해당하는 경우
+                        if(checkAdjustmentTargetArea(jibunAddr, buyDate)){
+                            log.info("[getAdditionalQuestion-condition]신규주택 취득일 기준 조정대상지역 기간에 해당하는 경우");
+                            nextQuestionId = Q_0013;
+                        }
+                    }else{
+                        throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "응답값의 범위를 벗어났습니다.");
+                    }
+                }else if(Q_0009.equals(questionId)){
+                    if(ANSWER_VALUE_01.equals(answerValue)){
+                        nextQuestionId = Q_0012;
+                    }else if(ANSWER_VALUE_02.equals(answerValue)){
+                        log.info("다음 추가질의항목 없음, questionId : " + questionId);
+                    }else{
+                        throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "응답값의 범위를 벗어났습니다.");
+                    }
+                }else if(Q_0012.equals(questionId)){
+                    log.info("다음 추가질의항목 없음, questionId : " + questionId);
+                }else if(Q_0013.equals(questionId)){
                     log.info("다음 추가질의항목 없음, questionId : " + questionId);
                 }else{
                     throw new CustomException(ErrorCode.QUESTION_OUTPUT_NOT_FOUND, "추가질의항목 조회를 위한 질의ID가 올바르지 않습니다.");
@@ -373,7 +416,6 @@ public class QuestionService {
         // 추가질의 객체 세팅
         if(Q_0001.equals(nextQuestionId)){
             hasNextQuestion = true;
-            //nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 입주권 혹은 분양권으로 취득하신 신규주택에 전입신고 후 1년이 된 날 이후 까지(" + questionParamData + " 이후) 계속 거주하실 건가요?";
             nextQuestionContent = "현재 주택을 2채 보유하고 계시네요. 종전주택을 양도하실 예정이신데, 다음의 요건을 모두 만족하시나요?\n\n";
             nextQuestionContent += "1. 입주권 혹은 분양권으로 취득하신 신규주택이 완성된 후 3년 이내에 전입하여 해당 신규주택에 1년 이상 계속 거주\n";
             nextQuestionContent += "2. 신규주택이 완성된 후 종전주택을 3년 이내 양도(혹은 완성일 전 양도)";
@@ -433,20 +475,20 @@ public class QuestionService {
             );
         }else if(Q_0007.equals(nextQuestionId)){
             hasNextQuestion = true;
-            nextQuestionContent = "종전주택 양도 계획에 따라 취득세가 다르게 산출될 수 있어요. 종전주택 양도 계획이 있나요?";
+            nextQuestionContent = "신규로 취득하는 주택을 포함하여 2주택이시네요. 종전주택(기존에 보유하고 있던 주택)이 혹시 분양권 또는 입주권 이신가요?";
             isNeedAnswer = true;
             answerType = ANSWER_TYPE_SELECT;
             answerSelectList = new ArrayList<>();
             answerSelectList.add(
                     AnswerSelectListResponse.builder()
                             .answerValue(ANSWER_VALUE_01)
-                            .answerContent("3년 이내 양도 계획")
+                            .answerContent("분양권 또는 입주권")
                             .build()
             );
             answerSelectList.add(
                     AnswerSelectListResponse.builder()
                             .answerValue(ANSWER_VALUE_02)
-                            .answerContent("양도 계획 없음")
+                            .answerContent("일반주택")
                             .build()
             );
         }else if(Q_0008.equals(nextQuestionId)){
@@ -469,6 +511,60 @@ public class QuestionService {
             );
         }else if(PERIOD_TYPE_DIAL.equals(nextQuestionId) || PERIOD_TYPE_CERT.equals(nextQuestionId)){
             hasNextQuestion = true;
+        }else if(Q_0009.equals(nextQuestionId)){
+            hasNextQuestion = true;
+            nextQuestionContent = "종전주택(기존에 보유하고 있던 분양권 또는 입주권)을 " + questionParamData + " 이후에 취득하셨나요?";
+            isNeedAnswer = true;
+            answerType = ANSWER_TYPE_SELECT;
+            answerSelectList = new ArrayList<>();
+            answerSelectList.add(
+                    AnswerSelectListResponse.builder()
+                            .answerValue(ANSWER_VALUE_01)
+                            .answerContent("네")
+                            .build()
+            );
+            answerSelectList.add(
+                    AnswerSelectListResponse.builder()
+                            .answerValue(ANSWER_VALUE_02)
+                            .answerContent("아니오")
+                            .build()
+            );
+        }else if(Q_0012.equals(nextQuestionId)){
+            hasNextQuestion = true;
+            nextQuestionContent = "종전주택(분양권 또는 입주권)이 완공된 후 3년 이내에 종전(신축) 주택 또는 신규 취득 주택을 양도할 예정이신가요?";
+            isNeedAnswer = true;
+            answerType = ANSWER_TYPE_SELECT;
+            answerSelectList = new ArrayList<>();
+            answerSelectList.add(
+                    AnswerSelectListResponse.builder()
+                            .answerValue(ANSWER_VALUE_01)
+                            .answerContent("네")
+                            .build()
+            );
+            answerSelectList.add(
+                    AnswerSelectListResponse.builder()
+                            .answerValue(ANSWER_VALUE_02)
+                            .answerContent("아니오")
+                            .build()
+            );
+        }else if(Q_0013.equals(nextQuestionId)){
+            hasNextQuestion = true;
+            nextQuestionContent = "종전주택을 신규 취득주택의 취득일 기준으로 3년 이내에 양도할 예정이신가요?";
+            isNeedAnswer = true;
+            answerType = ANSWER_TYPE_SELECT;
+            answerSelectList = new ArrayList<>();
+            answerSelectList.add(
+                    AnswerSelectListResponse.builder()
+                            .answerValue(ANSWER_VALUE_01)
+                            .answerContent("네")
+                            .build()
+            );
+            answerSelectList.add(
+                    AnswerSelectListResponse.builder()
+                            .answerValue(ANSWER_VALUE_02)
+                            .answerContent("아니오")
+                            .build()
+            );
         }
 
         AdditionalQuestionResponse additionalQuestionResponse = AdditionalQuestionResponse.builder()
@@ -491,8 +587,48 @@ public class QuestionService {
 
         String calcType = StringUtils.defaultString(additionalQuestionRequest.getCalcType());
 
+        Long sellHouseId = additionalQuestionRequest.getSellHouseId();
+        LocalDate sellDate = additionalQuestionRequest.getSellDate();
+        Long sellPrice = additionalQuestionRequest.getSellPrice();
+
+        Long ownHouseCnt = additionalQuestionRequest.getOwnHouseCnt();
+        LocalDate buyDate = additionalQuestionRequest.getBuyDate();
+        String jibunAddr = additionalQuestionRequest.getJibunAddr();
+
         if(EMPTY.equals(calcType)){
             throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "추가질의항목 조회를 위한 계샨유형이 입력되지 않았습니다.");
+        }else{
+            if(!CALC_TYPE_BUY.equals(calcType) && !CALC_TYPE_SELL.equals(calcType)){
+                throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "추가질의항목 조회를 위한 계샨유형이 입력 값이 올바르지 않습니다.");
+            }
+        }
+
+        if(CALC_TYPE_BUY.equals(calcType)){
+            if(ownHouseCnt == null){
+                throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "취득세 추가질의항목 조회를 위한 보유주택 수가 입력되지 않았습니다.");
+            }
+
+            if(buyDate == null){
+                throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "취득세 추가질의항목 조회를 위한 신규주택 취득일자가 입력되지 않았습니다.");
+            }
+
+            if(jibunAddr == null){
+                throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "취득세 추가질의항목 조회를 위한 신규주택 지번주소가 입력되지 않았습니다.");
+            }
+        }
+
+        if(CALC_TYPE_SELL.equals(calcType)){
+            if(sellHouseId == null){
+                throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "양도소득세 추가질의항목 조회를 위한 양도주택 ID가 입력되지 않았습니다.");
+            }
+
+            if(sellDate == null){
+                throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "양도소득세 추가질의항목 조회를 위한 양도주택 양도일자가 입력되지 않았습니다.");
+            }
+
+            if(sellPrice == null){
+                throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "양도소득세 추가질의항목 조회를 위한 양도주택 양도가액이 입력되지 않았습니다.");
+            }
         }
     }
 
