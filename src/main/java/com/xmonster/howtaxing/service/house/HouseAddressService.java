@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -44,219 +46,102 @@ public class HouseAddressService {
     public HouseAddressDto separateAddress(String address){
         log.info(">>> HouseAddressService separateAddress - 주소 분할");
 
-        HouseAddressDto houseAddressDto = new HouseAddressDto(this.replaceLongSpace(address));
-        String[] splitAddress = houseAddressDto.getAddress().split("\\s+|\\(");    // 공백과 '('로 분할
+        HouseAddressDto houseAddressDto = new HouseAddressDto(this.replaceLongSpace(address.trim()));
+        List<String> splitAddress = splitAddress(houseAddressDto.getAddress());
 
-        if(splitAddress.length > 0){
-            log.info("----- splitAddress Print Start -----");
-            for(int i=0; i<splitAddress.length; i++){
-                log.info("Index : " + i);
-                log.info("Data : " + splitAddress[i]);
-            }
-            log.info("----- splitAddress Print End -----");
+        if(!splitAddress.isEmpty()){
+            for (int i = 0; i< splitAddress.size(); i++) {
+                String part = splitAddress.get(i);
+                log.info("part[{}] : {}", i, part);
 
-            for(int j=0; j<splitAddress.length; j++){
-                String str = splitAddress[j];
-
-                if(str.endsWith(")") && !str.startsWith("(")){
-                    splitAddress[j] = "(" + str;
-                }
-            }
-
-            log.info("----- Mapping Start -----");
-            for(int i=0; i<splitAddress.length; i++){
-                String part = splitAddress[i];
-                log.info("index : " + i);
-                log.info("part : " + part);
-
-                // [1] 시/도
-                if(i==0){
-                    if(part.endsWith("시") || part.endsWith("도")){
-                        houseAddressDto.setSiDo(part);
-                    }
-                }
-                // [2] 시/군/구
-                else if(i==1){
-                    if(part.endsWith("시") || part.endsWith("군") || part.endsWith("구")){
-                        houseAddressDto.setSiGunGu(part);
-                    }
-                }
-                // [3] 구 or 읍/면 or 동/리/가 or 도로명
-                else if(i==2){
-                    if(part.endsWith("구")){
-                        if(houseAddressDto.getSiGunGu() != null && !houseAddressDto.getSiGunGu().isBlank() && !houseAddressDto.getSiGunGu().endsWith("구")){
-                            houseAddressDto.setGu(part);
+                switch (i) {
+                    // 시도
+                    case 0:
+                        if(part.endsWith("시") || part.endsWith("도")){
+                            houseAddressDto.setSiDo(part);
                         }
-                    } else if(part.endsWith("읍") || part.endsWith("면")){
-                        houseAddressDto.setEupMyun(part);
-                    }else if(part.endsWith("동") || part.endsWith("리") || part.endsWith("가")){
-                        houseAddressDto.setDongRi(part);
-                        houseAddressDto.setAddressType(1);  // 지번주소로 세팅
-                    }else if(part.endsWith("로") || part.endsWith("길")){
-                        houseAddressDto.setRoadNm(part);
-                        houseAddressDto.setAddressType(2);  // 도로명주소로 세팅
-                    }
-                }
-                // [4] 3가지 케이스
-                // [지번주소] 지번
-                // [도로명주소] 건물번호
-                // [모름] 읍/면 or 동/리/가 or 로/길
-                else if(i==3){
-                    if(houseAddressDto.getAddressType() == 1){
-                        // 지번을 아직 세팅하지 않은 경우
-                        if(EMPTY.equals(StringUtils.defaultString(houseAddressDto.getJibun()))){
-                            // 지번(숫자와 하이픈만으로 이루어진 문자열인지 체크)
-                            if(this.isValidFormat(1, part)){
-                                houseAddressDto.setJibun(part);
+                        break;
+                    
+                    // 시군구
+                    case 1:
+                        if(part.endsWith("시") || part.endsWith("군") || part.endsWith("구")){
+                            houseAddressDto.setSiGunGu(part);
+                        }
+                        break;
+                    
+                    // 구읍면 = 미정
+                    // 동리가 = 지번주소 타입
+                    // 로길 = 도로명주소 타입
+                    case 2:
+                        if(part.endsWith("구")){
+                            if(houseAddressDto.getSiGunGu() != null && !houseAddressDto.getSiGunGu().isBlank() && !houseAddressDto.getSiGunGu().endsWith("구")){
+                                houseAddressDto.setGu(part);
                             }
-                        }
-                    }else if(houseAddressDto.getAddressType() == 2){
-                        // 건물번호(숫자만으로 이루어진 문자열인지 체크)
-                        if(this.isValidFormat(2, part)){
-                            houseAddressDto.setBuildingNo(part);
-                        }
-                    }else{
-                        if(part.endsWith("읍") || part.endsWith("면")){
+                        } else if(part.endsWith("읍") || part.endsWith("면")){
                             houseAddressDto.setEupMyun(part);
-                        }else if(part.endsWith("동") || part.endsWith("리") || part.endsWith("가")){
+                        } else if(part.endsWith("동") || part.endsWith("리") || part.endsWith("가")){
                             houseAddressDto.setDongRi(part);
                             houseAddressDto.setAddressType(1);  // 지번주소로 세팅
-                        }else if(part.endsWith("로") || part.endsWith("길")){
+                        } else if(part.endsWith("로") || part.endsWith("길")){
                             houseAddressDto.setRoadNm(part);
                             houseAddressDto.setAddressType(2);  // 도로명주소로 세팅
                         }
-                    }
-                }
-                // [5] 3가지 케이스
-                // [지번주소] 지번 or 동/호/층 or ELSE
-                // [도로명주소] 건물번호 or 동/호/층 / or ELSE
-                // [모름] 동/리/가 or 로/길
-                else if(i==4){
-                    if(houseAddressDto.getAddressType() == 1){
-                        // 지번을 아직 세팅하지 않은 경우
-                        if(EMPTY.equals(StringUtils.defaultString(houseAddressDto.getJibun()))){
-                            // 지번(숫자와 하이픈만으로 이루어진 문자열인지 체크)
-                            if(this.isValidFormat(1, part)){
-                                houseAddressDto.setJibun(part);
-                            }else{
-                                houseAddressDto.appendToEtcAddress(part);
+                        break;
+                    
+                    // [지번] 지번
+                    // [도로명] 건물번호
+                    // [미정] 읍면, 동리가, 로길
+                    case 3:
+                        if(!validAddressType(houseAddressDto, part)) {
+                            if(part.endsWith("읍") || part.endsWith("면")){
+                                houseAddressDto.setEupMyun(part);
+                            }else if(part.endsWith("동") || part.endsWith("리") || part.endsWith("가")){
+                                houseAddressDto.setDongRi(part);
+                                houseAddressDto.setAddressType(1);  // 지번주소로 세팅
+                            }else if(part.endsWith("로") || part.endsWith("길")){
+                                houseAddressDto.setRoadNm(part);
+                                houseAddressDto.setAddressType(2);  // 도로명주소로 세팅
                             }
                         }
-                        // 지번을 이미 세팅한 경우
-                        else{
-                            if(part.endsWith("동")){
+                        break;
+
+                    // [지번] 동호층
+                    // [도로명] 동호층
+                    // [기타] 
+                    case 4:
+                        if(!validAddressType(houseAddressDto, part)) {
+                            if(part.endsWith("동")) {
                                 houseAddressDto.setDetailDong(this.removeFrontZero(part));
-                            }else if(part.endsWith("호")){
+                            } else if(part.endsWith("호")) {
                                 houseAddressDto.setDetailHo(this.removeFrontZero(part));
-                            }else if(part.endsWith("층")){
+                            } else if(part.endsWith("층")) {
                                 houseAddressDto.setDetailCheung(this.removeFrontZero(part));
-                            }else if(this.isValidFormat(1, part)){
-                                String[] detailAddr = part.split(HYPHEN);
-                                if(detailAddr != null && detailAddr.length == 2){
-                                    houseAddressDto.setDetailDong(this.removeFrontZero(detailAddr[0])); // 동
-                                    houseAddressDto.setDetailHo(this.removeFrontZero(detailAddr[1]));   // 호
-                                }
-                            }else{
-                                houseAddressDto.appendToEtcAddress(part);
+                            } else {
+                                houseAddressDto.appendToEtcAddress(seperateEtcAddress(part, houseAddressDto));
                             }
                         }
-                    }else if(houseAddressDto.getAddressType() == 2){
-                        // 건물번호(숫자만으로 이루어진 문자열인지 체크)
-                        if(this.isValidFormat(2, part)){
-                            houseAddressDto.setBuildingNo(part);
-                        }else if(part.endsWith("동")){
+                        break;
+
+                    // 그 외
+                    default:
+                        if(part.endsWith("동") && houseAddressDto.getDetailDong() == null){
                             houseAddressDto.setDetailDong(this.removeFrontZero(part));
-                        }else if(part.endsWith("호")){
+                        }else if(part.endsWith("호") && houseAddressDto.getDetailHo() == null){
                             houseAddressDto.setDetailHo(this.removeFrontZero(part));
-                        }else if(part.endsWith("층")){
+                        }else if(part.endsWith("층") && houseAddressDto.getDetailCheung() == null){
                             houseAddressDto.setDetailCheung(this.removeFrontZero(part));
-                        }else{
-                            houseAddressDto.appendToEtcAddress(part);
+                        } else{
+                            // 기타주소에 넣기 전 동명과 건물명 분리
+                            houseAddressDto.appendToEtcAddress(seperateEtcAddress(part, houseAddressDto));
                         }
-                    }else{
-                        if(part.endsWith("동") || part.endsWith("리") || part.endsWith("가")){
-                            houseAddressDto.setDongRi(part);
-                            houseAddressDto.setAddressType(1);  // 지번주소로 세팅
-                        }else if(part.endsWith("로") || part.endsWith("길")){
-                            houseAddressDto.setRoadNm(part);
-                            houseAddressDto.setAddressType(2);  // 도로명주소로 세팅
-                        }else{
-                            houseAddressDto.appendToEtcAddress(part);
-                        }
-                    }
-                }
-                // [6] 2가지 케이스 (반복 수행)
-                // [지번주소] 지번 or 동/호/층 or ELSE
-                // [도로명주소] 건물번호 or 동/호/층 / or ELSE
-                else{
-                    if(houseAddressDto.getAddressType() == 1){
-                        // 지번을 아직 세팅하지 않은 경우
-                        if(EMPTY.equals(StringUtils.defaultString(houseAddressDto.getJibun()))){
-                            // 지번(숫자와 하이픈만으로 이루어진 문자열인지 체크)
-                            if(this.isValidFormat(1, part)){
-                                if(houseAddressDto.getJibun() == null){
-                                    houseAddressDto.setJibun(part);
-                                }
-                            }else{
-                                houseAddressDto.appendToEtcAddress(part);
-                            }
-                        }
-                        // 지번을 이미 세팅한 경우
-                        else{
-                            if(part.endsWith("동")){
-                                if(houseAddressDto.getDetailDong() == null){
-                                    houseAddressDto.setDetailDong(this.removeFrontZero(part));
-                                }
-                            }else if(part.endsWith("호")){
-                                if(houseAddressDto.getDetailHo() == null){
-                                    houseAddressDto.setDetailHo(this.removeFrontZero(part));
-                                }
-                            }else if(part.endsWith("층")){
-                                if(houseAddressDto.getDetailCheung() == null){
-                                    houseAddressDto.setDetailCheung(this.removeFrontZero(part));
-                                }
-                            }else if(this.isValidFormat(1, part)){
-                                String[] detailAddr = part.split(HYPHEN);
-                                if(detailAddr != null && detailAddr.length == 2){
-                                    houseAddressDto.setDetailDong(this.removeFrontZero(detailAddr[0])); // 동
-                                    houseAddressDto.setDetailHo(this.removeFrontZero(detailAddr[1]));   // 호
-                                }
-                            }else{
-                                houseAddressDto.appendToEtcAddress(part);
-                            }
-                        }
-                    }else if(houseAddressDto.getAddressType() == 2){
-                        // 건물번호(숫자만으로 이루어진 문자열인지 체크)
-                        if(this.isValidFormat(2, part)){
-                            if(houseAddressDto.getBuildingNo() == null){
-                                houseAddressDto.setBuildingNo(part);
-                            }
-                        }else if(part.endsWith("동")){
-                            if(houseAddressDto.getDetailDong() != null){
-                                houseAddressDto.setDetailDong(this.removeFrontZero(part));
-                            }
-                        }else if(part.endsWith("호")){
-                            if(houseAddressDto.getDetailHo() != null){
-                                houseAddressDto.setDetailHo(this.removeFrontZero(part));
-                            }
-                        }else if(part.endsWith("층")){
-                            if(houseAddressDto.getDetailCheung() != null){
-                                houseAddressDto.setDetailCheung(this.removeFrontZero(part));
-                            }
-                        }else{
-                            houseAddressDto.appendToEtcAddress(part);
-                        }
-                    }else{
-                        houseAddressDto.appendToEtcAddress(part);
-                    }
+                        break;
                 }
             }
-            log.info("----- Mapping End -----");
 
             houseAddressDto.makeDetailAddress();    // 상세주소 생성
             houseAddressDto.makeSearchAddress();    // 검색 주소(리스트) 생성
 
-            log.info("houseAddressDto.toString() : " + houseAddressDto.toString());
+            log.info("houseAddressDto.toString() : {}", houseAddressDto.toString());
         }
 
         return houseAddressDto;
@@ -282,29 +167,16 @@ public class HouseAddressService {
         String detailAddr1 = StringUtils.defaultString(houseAddressDto1.getDetailAddress());
         String detailAddr2 = StringUtils.defaultString(houseAddressDto2.getDetailAddress());
 
-        boolean isSame = true;
+        log.info("전입주택 : {} {}", searchAddr1.get(0), detailAddr1);
+        log.info("양도주택 : {} {}", searchAddr2.get(0), detailAddr2);
 
-        if(searchAddr1 != null && !searchAddr1.isEmpty() && searchAddr2 != null && !searchAddr2.isEmpty()){
-            if(searchAddr1.size() != searchAddr2.size()){
-                isSame = false;
-            }else{
-                for(int i=0; i<searchAddr1.size(); i++){
-                    if(!searchAddr1.get(i).equals(searchAddr2.get(i))){
-                        isSame = false;
-                    }
-                }
-            }
-        }else{
-            isSame = false;
-        }
+        boolean isSame = false;
 
-        if(isSame){
-            if(EMPTY.equals(detailAddr1) || EMPTY.equals(detailAddr2)){
-                isSame = false;
-            }else{
-                if(!detailAddr1.equals(detailAddr2)){
-                    isSame = false;
-                }
+        // 지번주소 혹은 도로명주소 비교
+        if (searchAddr1.get(0).equals(searchAddr2.get(0))) {
+            // 상세주소 비교
+            if (detailAddr1.equals(detailAddr2)) {
+                isSame = true;
             }
         }
 
@@ -336,6 +208,7 @@ public class HouseAddressService {
         boolean result = false;
         String regex = EMPTY;
 
+        /*
         // 숫자와 하이픈만으로 이루어진 문자열인지 체크
         if(type == 1){
             regex = "^[0-9-]+$";
@@ -346,7 +219,12 @@ public class HouseAddressService {
             regex = "^[0-9]+$";
             result = input.matches(regex);
         }
+        */
 
+        // 도로명주소도 하이픈이 포함된 경우가 있어 주소타입 분기 제외
+        regex = "^[0-9-]+$";
+        result = input.matches(regex);
+        
         return result;
     }
 
@@ -359,5 +237,56 @@ public class HouseAddressService {
         }
 
         return result;
+    }
+
+    // 정규식으로 주소분리(공백, 쉼표, 괄호묶음)
+    private static List<String> splitAddress(String address) {
+        List<String> result = new ArrayList<>();
+        // Regular expression to match everything except the contents inside the parentheses
+        Pattern pattern = Pattern.compile("([^(),\\s]+|\\([^()]*\\))");
+        Matcher matcher = pattern.matcher(address);
+
+        while (matcher.find()) {
+            result.add(matcher.group().trim());
+        }
+
+        return result;
+    }
+
+    // 주소타입 확정여부 검증
+    private boolean validAddressType(HouseAddressDto houseAddressDto, String part) {
+        // [지번주소] 지번 입력 안된 경우 입력
+        if(houseAddressDto.getAddressType() == 1 && houseAddressDto.getJibun() == null) {
+            if(this.isValidFormat(1, part)){
+                houseAddressDto.setJibun(part);
+            }
+            return true;
+        // [도로명주소] 건물번호 입력 안된 경우 입력
+        } else if(houseAddressDto.getAddressType() == 2 && houseAddressDto.getBuildingNo() == null) {
+            if(this.isValidFormat(2, part)){
+                houseAddressDto.setBuildingNo(part);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // 기타주소 입력 처리
+    private String seperateEtcAddress(String part, HouseAddressDto houseAddressDto) {
+        part = part.replaceAll("[()]", "").trim();  // 괄호 제거 및 트림
+        String[] parts = part.split("\\s*,\\s*");  // 쉼표로 분리
+        String etcPart = "";
+    
+        for (String p : parts) {
+            // 지번주소의 동명이 들어있는 경우 분리 후 입력
+            if (p.endsWith("동") && houseAddressDto.getDongRi() == null) {
+                houseAddressDto.setDongRi(p);
+            } else {
+                etcPart = p;
+            }
+        }
+
+        return etcPart;
     }
 }
