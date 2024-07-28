@@ -593,7 +593,6 @@ public class HouseService {
                     .stayPeriodCount(stayPeriodCount)
                     .ownPeriodDetail(ownPeriodDetail)
                     .stayPeriodDetailList(stayPeriodDetailList)
-                    //.stayPeriodDetailContent(stayPeriodDetailContent)
                     .build();
         }
 

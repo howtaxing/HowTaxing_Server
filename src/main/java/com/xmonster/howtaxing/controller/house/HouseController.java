@@ -113,8 +113,8 @@ public class HouseController {
     }
 
     // (양도)주택 거주기간 조회(하이픈-정부24-주민등록초본)
-    @PostMapping("/house/stayPeriodTest")
+    /*@PostMapping("/house/stayPeriodTest")
     public Object searchHouseStayPeriodTest(@RequestBody HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
         return houseService.getHouseStayPeriodTest(houseStayPeriodRequest);
-    }
+    }*/
 }
