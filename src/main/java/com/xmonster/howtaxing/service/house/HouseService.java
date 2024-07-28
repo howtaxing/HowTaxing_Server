@@ -469,7 +469,7 @@ public class HouseService {
             LocalDate buyDate = house.getBuyDate();
             LocalDate sellDate = houseStayPeriodRequest.getSellDate();
 
-            ownPeriodDetail = buyDate + "부터" + sellDate + "까지 보유";
+            ownPeriodDetail = buyDate + "부터 " + sellDate + "까지 보유";
 
             List<ChangeHistory> list = hyphenUserResidentRegistrationData.getChangeHistoryList();
 
@@ -482,8 +482,7 @@ public class HouseService {
                     if(MOVE_IN_KEYWORD.equals(history.getChangeReason())){
                         // 본인이 세대주인 경우만 체크 - 확인필요
                         // if(history.getHeadOfHouseHoldAndRelationShip().contains("본인")){
-                            String address = StringUtils.defaultString(history.getAddress());
-
+                        String address = StringUtils.defaultString(history.getAddress());
                             if(!EMPTY.equals(address)){
                                 HouseAddressDto historyAddressDto = houseAddressService.separateAddress(address);
                                 HouseAddressDto sellHouseAddressDto = null;
@@ -515,6 +514,7 @@ public class HouseService {
                                         if(!EMPTY.equals(curReportDate)){
                                             LocalDate crDate = LocalDate.parse(curReportDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
                                             LocalDate nrDate = null;
+                                            boolean isStayCurrentSellHouse = false;
 
                                             // 다음 전입 신고일이 존재하는 경우
                                             if(!EMPTY.equals(nextReportDate)){
@@ -523,11 +523,12 @@ public class HouseService {
                                             // 다음 전입 신고일이 존재하지 않는 경우(해당 주택에서 현재까지 계속 거주하고 있는 경우)
                                             else{
                                                 nrDate = LocalDate.now();
+                                                isStayCurrentSellHouse = true;
                                             }
 
                                             // 보유기간 내에 포함되어있는 거주기간을 계산(누적)
                                             LocalDate startDate = (buyDate.isAfter(crDate)) ? buyDate : crDate;
-                                            LocalDate endDate = (sellDate.isAfter(nrDate)) ? sellDate : nrDate;
+                                            LocalDate endDate = (isStayCurrentSellHouse) ? sellDate : nrDate;
 
                                             stayPeriodByDayCount += ChronoUnit.DAYS.between(startDate, endDate);
 
@@ -571,12 +572,12 @@ public class HouseService {
                 stayPeriodByMonthCount = (stayPeriodByDayCount - (stayPeriodByYearCount * PERIOD_YEAR)) / PERIOD_MONTH;
 
                 if(stayPeriodByYearCount > 0){
-                    stayPeriodInfo = Long.toString(stayPeriodByYearCount) + "년 " + stayPeriodByMonthCount + "개월";
+                    stayPeriodInfo = stayPeriodByYearCount + "년 " + stayPeriodByMonthCount + "개월";
                 }else{
-                    stayPeriodInfo = Long.toString(stayPeriodByMonthCount) + "개월";
+                    stayPeriodInfo = stayPeriodByMonthCount + "개월";
                 }
 
-                stayPeriodCount = Long.toString(stayPeriodByDayCount) + "일";
+                stayPeriodCount = stayPeriodByDayCount + "일";
 
             }else{
                 throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR);
