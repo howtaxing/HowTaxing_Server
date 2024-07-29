@@ -1316,60 +1316,99 @@ public class HouseService {
         return isRequiredDataMissing;
     }
 
-    // 청약홈에서 불러온 보유주택 누락된 정보 입력 - 배열순서가 일치한다는 가정
+    // 청약홈에서 불러온 보유주택 누락된 정보 입력
     private void fillEmptyValuesFromLists(List<DataDetail1> list1, List<DataDetail2> list2, List<DataDetail3> list3, List<House> houseList){
         log.info(">> HouseService fillEmptyValuesFromLists - 주택정보 빈값 채워넣는 로직");
+        // 1. 부동산거래내역이 1개인 경우에는 주소비교 없이 세팅
+        // 2. 거래내역이 여러건인 경우 거래유형 [매수]
+        // 3. 거래유형 [매수] 중 보유주택 주소와 유사한 경우 세팅
 
         HyphenUserHouseResultInfo hyphenUserHouseResultInfo = new HyphenUserHouseResultInfo();
-
-        int count = 0;
         
-        // 부동산거래내역 - 제산세정보의 주택 개수만큼만 매수정보를 가져온다.
-        for (int i = 0; count < list3.size(); i++) {
-            if (count >= list3.size()) {
-                break;
-            }
+        // 부동산거래내역
+        for (int i = 0; i < list2.size(); i++) {
             DataDetail2 dataDetail2 = list2.get(i);
-            House house = houseList.get(count);
 
             String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
             String buyPrice = ZERO;
+            String myHouseAddress = EMPTY;
 
-            // 거래유형이 매수인 경우 취득금액과 계약일자를 순서에 맞게 세팅
-            if(ONE.equals(tradeType)){
-                log.info("거래내역 중 {}번째 매수 주택: {}",i, dataDetail2.getAddress());
-                log.info("보유주택 중 {}번째 주택: {}",i, house.getHouseName());
-
+            if (list2.size() == 1) {
                 buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
 
                 hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
                 hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
-                if (house.getBuyPrice() == null) {
-                    house.setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
-                }
-                if (house.getContractDate() == null) {
-                    house.setContractDate(hyphenUserHouseResultInfo.getContractDate());
-                }
 
-                count ++;
+                if (houseList.get(0).getBuyPrice() == null) {
+                    houseList.get(0).setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
+                }
+                if (houseList.get(0).getContractDate() == null) {
+                    houseList.get(0).setContractDate(hyphenUserHouseResultInfo.getContractDate());
+                }
+            } else {
+                // 거래유형이 매수인 경우 보유주택과 비교
+                if(ONE.equals(tradeType)) {
+                    HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail2.getAddress());
+                    log.info("{}개 거래내역 중 {}번째 매수 주택: {}", list2.size(), i+1, houseAddressDto.getSearchAddress().get(0));
+
+                    for (House house : houseList) {
+                        if (houseAddressDto.getAddressType() == 1) {
+                            log.info("보유주택 지번주소: {}", house.getJibunAddr());
+                            myHouseAddress = house.getJibunAddr();
+                        } else {
+                            log.info("보유주택 도로명주소: {}", house.getRoadAddr());
+                            myHouseAddress = house.getRoadAddr();
+                        }
+                        
+                        // 부동산거래내역의 주소가 보유주택 주소와 일부 일치하는 경우 [취득금액]과 [계약일자] 세팅
+                        if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                            buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
+
+                            hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
+                            hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+
+                            if (house.getBuyPrice() == null) {
+                                house.setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
+                            }
+                            if (house.getContractDate() == null) {
+                                house.setContractDate(hyphenUserHouseResultInfo.getContractDate());
+                            }
+
+                            break;
+                        }
+                    }
+                }
             }
         }
         // 재산세정보
         for (int i = 0; i < list3.size(); i++) {
             DataDetail3 dataDetail3 = list3.get(i);
-            House house = houseList.get(i);
-            log.info("재산세정보 {}번째 주택: {}", i, dataDetail3.getAddress());
-            log.info("보유주택 중 {}번째 매수 주택: {}",i, house.getHouseName());
+            String myHouseAddress = EMPTY;
 
             HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail3.getAddress());
+            log.info("{}개 재산세정보 중 {}번째 정보: {}", list3.size(), i+1, houseAddressDto.getSearchAddress().get(0));
 
-            hyphenUserHouseResultInfo.setDetailAdr(houseAddressDto.getDetailAddress());
-            hyphenUserHouseResultInfo.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
-            if (house.getDetailAdr() == null) {
-                house.setDetailAdr(hyphenUserHouseResultInfo.getDetailAdr());
-            }
-            if (house.getBuyDate() == null) {
-                house.setBuyDate(hyphenUserHouseResultInfo.getBuyDate());
+            for (House house : houseList) {
+                if (houseAddressDto.getAddressType() == 1) {
+                    log.info("보유주택 지번주소: {}", house.getJibunAddr());
+                    myHouseAddress = house.getJibunAddr();
+                } else {
+                    log.info("보유주택 도로명주소: {}", house.getRoadAddr());
+                    myHouseAddress = house.getRoadAddr();
+                }
+                
+                if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                    hyphenUserHouseResultInfo.setDetailAdr(houseAddressDto.getDetailAddress());
+                    hyphenUserHouseResultInfo.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+
+                    if (house.getDetailAdr() == null) {
+                        house.setDetailAdr(hyphenUserHouseResultInfo.getDetailAdr());
+                    }
+                    if (house.getBuyDate() == null) {
+                        house.setBuyDate(hyphenUserHouseResultInfo.getBuyDate());
+                    }
+                    break;
+                }
             }
         }
     }
