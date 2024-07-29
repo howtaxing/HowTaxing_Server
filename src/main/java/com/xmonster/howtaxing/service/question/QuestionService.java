@@ -449,12 +449,12 @@ public class QuestionService {
                             .answerContent("직접 입력하기")
                             .build()
             );
-            answerSelectList.add(
+            /*answerSelectList.add(
                     AnswerSelectListResponse.builder()
                             .answerValue(ANSWER_VALUE_02)
                             .answerContent("본인 인증하기")
                             .build()
-            );
+            );*/
         }else if(Q_0006.equals(nextQuestionId)){
             hasNextQuestion = true;
             nextQuestionContent = "상생임대인에 해당하시나요?";
