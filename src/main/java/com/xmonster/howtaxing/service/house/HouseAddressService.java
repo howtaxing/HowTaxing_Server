@@ -111,7 +111,10 @@ public class HouseAddressService {
                     case 4:
                         if(!validAddressType(houseAddressDto, part)) {
                             if(part.endsWith("동")) {
-                                houseAddressDto.setDetailDong(this.removeFrontZero(part));
+                                // 동이 없는 케이스는 입력하지않음
+                                if (this.removeFrontZero(part).length() > 1) {
+                                    houseAddressDto.setDetailDong(this.removeFrontZero(part));
+                                }
                             } else if(part.endsWith("호")) {
                                 houseAddressDto.setDetailHo(this.removeFrontZero(part));
                             } else if(part.endsWith("층")) {
@@ -127,7 +130,10 @@ public class HouseAddressService {
                     // 그 외
                     default:
                         if(part.endsWith("동") && houseAddressDto.getDetailDong() == null){
-                            houseAddressDto.setDetailDong(this.removeFrontZero(part));
+                            // 동이 없는 케이스는 입력하지않음
+                            if (this.removeFrontZero(part).length() > 1) {
+                                houseAddressDto.setDetailDong(this.removeFrontZero(part));
+                            }
                         }else if(part.endsWith("호") && houseAddressDto.getDetailHo() == null){
                             houseAddressDto.setDetailHo(this.removeFrontZero(part));
                         }else if(part.endsWith("층") && houseAddressDto.getDetailCheung() == null){
@@ -289,7 +295,7 @@ public class HouseAddressService {
                 // 지번주소의 지번이나 도로명주소의 건물번호가 입력이 되어있는 경우, 숫자와 하이픈 타입이면 하이픈으로 분리하여 동호수로 입력
                 if ((houseAddressDto.getAddressType() == 1 && houseAddressDto.getJibun() != null) || (houseAddressDto.getAddressType() == 2 && houseAddressDto.getBuildingNo() != null))
                 {
-                    if (p.matches("^[0-9-]+$")) {
+                    if (p.matches("^[0-9-]+$") && p.length() > 1) {
                         String[] dongPart = p.split("-");
                         log.info("동호수로 분리 : {}동 {}호", dongPart[0], dongPart[1]);
 

@@ -601,7 +601,7 @@ public class HouseService {
     }
 
     // (양도주택)거주기간 조회 테스트
-    /*public Object getHouseStayPeriodTest(HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
+    public Object getHouseStayPeriodTest(HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
         log.info(">> [Service]HouseService getHouseStayPeriodTest - (양도주택)거주기간 조회 샘플데이터 조회");
 
         // 테스트데이터세팅
@@ -642,7 +642,8 @@ public class HouseService {
             boolean hasStayInfo = false;                // 거주정보존재여부
             String stayPeriodInfo = EMPTY;              // 거주기간정보
             String stayPeriodCount = EMPTY;             // 거주기간일자
-            String stayPeriodDetailContent = EMPTY;     // 거주기간상세내용
+            List<String> stayPeriodDetailList = new ArrayList<>();  // 거주기간 상세 리스트
+            // String stayPeriodDetailContent = EMPTY;     // 거주기간상세내용
 
             List<ChangeHistory> list = hyphenUserResidentRegistrationData.getChangeHistoryList();
 
@@ -703,19 +704,8 @@ public class HouseService {
                                             Long stayPeriodByYear = ChronoUnit.YEARS.between(crDate, nrDate);
 
                                             // 거주기간이 하루 이상은 되어야 세팅
-                                            if(stayPeriodByDay > 0){
-                                                // STEP4 : 날짜 차이를 n일로 변경하여 응답값의 '거주기간일자'에 세팅
-                                                stayPeriodCount = Long.toString(stayPeriodByDay) + "일";
-
-                                                // STEP5 : 거주기간일자를 x년 y개월로 변경하여 응답값의 '거주기간정보'에 세팅
-                                                if(stayPeriodByYear > 0){
-                                                    stayPeriodInfo = Long.toString(stayPeriodByYear) + "년 " + (stayPeriodByMonth - (stayPeriodByYear * 12)) + "개월";
-                                                }else{
-                                                    stayPeriodInfo = Long.toString(stayPeriodByMonth) + "개월";
-                                                }
-
-                                                // STEP6 : 해당 주택에 언제부터 언제까지 거주했는지를 정리하여 응답값의 '거주기간상세내용'에 세팅
-                                                stayPeriodDetailContent = crDate + "부터 " + nrDate + "까지 거주";
+                                            if(ChronoUnit.DAYS.between(crDate, nrDate) > 0){
+                                                stayPeriodDetailList.add(crDate + "부터 " + nrDate + "까지 거주");
                                             }
                                         }
                                     }
@@ -739,12 +729,12 @@ public class HouseService {
                     .hasStayInfo(hasStayInfo)
                     .stayPeriodInfo(stayPeriodInfo)
                     .stayPeriodCount(stayPeriodCount)
-                    .stayPeriodDetailContent(stayPeriodDetailContent)
+                    .stayPeriodDetailList(stayPeriodDetailList)
                     .build();
         }
 
         return ApiResponse.success(houseStayPeriodResponse);
-    }*/
+    }
 
     // 하이픈 보유주택 조회 응답 정상여부 확인
     private boolean isSuccessHyphenUserHouseListResponse(HyphenCommon hyphenCommon){
@@ -1193,7 +1183,7 @@ public class HouseService {
                     if(house.getHouseName().isBlank()) house.setHouseName(jusoDetail.getBdNm());
                     if(house.getJibunAddr().isBlank()) house.setJibunAddr(jusoDetail.getJibunAddr());
                     if(house.getRoadAddr().isBlank()) house.setRoadAddr(jusoDetail.getRoadAddrPart1());
-                    if(house.getRoadAddrRef().isBlank()) house.setRoadAddrRef(jusoDetail.getRoadAddrPart2());
+                    // if(house.getRoadAddrRef().isBlank()) house.setRoadAddrRef(jusoDetail.getRoadAddrPart2());
                     if(house.getBdMgtSn().isBlank()) house.setBdMgtSn(jusoDetail.getBdMgtSn());
                     if(house.getAdmCd().isBlank()) house.setAdmCd(jusoDetail.getAdmCd());
                     if(house.getRnMgtSn().isBlank()) house.setRnMgtSn(jusoDetail.getRnMgtSn());
