@@ -1062,7 +1062,7 @@ public class CalculationBuyService {
 
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
-                if(Q_0008.equals(answer.getQuestionId())){
+                if(Q_0007.equals(answer.getQuestionId())){
                     if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
                         selectNo = 1;
                     }else{
@@ -1072,7 +1072,7 @@ public class CalculationBuyService {
             }
 
             if(selectNo == 0){
-                String errMsg = Q_0008 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                String errMsg = Q_0007 + "에 대한 추가 질의 값을 받지 못했습니다.";
                 log.info(errMsg);
                 throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
             }
