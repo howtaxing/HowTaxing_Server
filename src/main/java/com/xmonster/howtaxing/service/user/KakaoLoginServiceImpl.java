@@ -38,8 +38,6 @@ public class KakaoLoginServiceImpl implements SocialLoginService {
     @Value("${spring.security.oauth2.client.registration.kakao.authorization-grant-type}")
     private String kakaoGrantType;
 
-
-
     @Override
     public SocialType getServiceName() {
         return SocialType.KAKAO;

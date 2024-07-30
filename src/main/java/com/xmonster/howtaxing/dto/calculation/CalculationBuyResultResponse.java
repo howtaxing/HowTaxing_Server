@@ -8,15 +8,20 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 public class CalculationBuyResultResponse {
-    private int listCnt;
-    private List<CalculationBuyOneResult> list;
+    private int listCnt;                            // 취득세 계산결과 리스트 수
+    private List<CalculationBuyOneResult> list;     // 취득세 계산결과 리스트
+    private int commentaryListCnt;                  // (계산결과)해설 리스트 수
+    private List<String> commentaryList;            // (계산결과)해설 리스트
+    private String calculationResultTextData;       // 계산결과 텍스트 데이터
 
     @Getter
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
+    @ToString
     @Builder
     public static class CalculationBuyOneResult {
         private String buyPrice;            // 취득가액

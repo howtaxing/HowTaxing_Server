@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import javax.persistence.*;
 
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Builder
@@ -37,6 +38,8 @@ public class User extends DateEntity {
     private String refreshToken;        // 리프레시 토큰(JWT)
     private boolean isMktAgr;           // 마케팅동의여부(true:여, false:부)
     private boolean isWithdraw;         // 탈퇴여부(true:여, false:부)
+
+    private String socialAccessToken;   // 소셜엑세스토큰
 
     // 유저 권한 설정
     public void authorizeUser() {

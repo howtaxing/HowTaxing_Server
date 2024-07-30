@@ -84,7 +84,7 @@ public class HyphenService {
             );
         }catch(Exception e){
             log.error("보유주택조회 간편인증 오류 내용 : " + e.getMessage());
-            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR);
+            throw new CustomException(ErrorCode.HOUSE_HYPHEN_SYSTEM_ERROR, "청약홈 간편인증 중 오류가 발생했습니다.(청약통장을 보유하고 있지 않거나 인증앱에 문제가 있는 경우 오류가 발생할 수 있습니다.)");
         }
 
         log.info("hyphen user house response");
@@ -126,8 +126,8 @@ public class HyphenService {
                             .req2Opt2(INCLUDE)
                             .req2Opt3(INCLUDE)
                             .req2Opt4(NOT_INCLUDE)
-                            .req2Opt5(NOT_INCLUDE)
-                            .req2Opt6(NOT_INCLUDE)
+                            .req2Opt5(INCLUDE)
+                            .req2Opt6(INCLUDE)
                             .req2Opt7(NOT_INCLUDE)
                             .req2Opt8(NOT_INCLUDE)
                             .authMethod(EASY)

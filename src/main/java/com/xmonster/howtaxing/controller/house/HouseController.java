@@ -3,6 +3,7 @@ package com.xmonster.howtaxing.controller.house;
 import com.xmonster.howtaxing.dto.house.*;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrDetailRequest;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrListRequest;
+import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaRequest;
 import com.xmonster.howtaxing.dto.vworld.VworldPubLandPriceAndAreaRequest;
 import com.xmonster.howtaxing.service.house.HouseService;
 
@@ -35,11 +36,18 @@ public class HouseController {
         return jusoGovService.getHouseRoadAddrDetail(jusoGovRoadAddrDetailRequest);
     }
 
-    // (취득)주택 공시가격 및 전용면적 조회
+    // (취득)주택 공시가격 및 전용면적 조회 - 브이월드
     @PostMapping("/house/pubLandPriceAndArea")
     public Object getPubLandPriceAndArea(@RequestBody VworldPubLandPriceAndAreaRequest vworldPubLandPriceAndAreaRequest) throws Exception {
         log.info(">> [Controller]HouseController getPubLandPriceAndArea - 주택 공시가격 및 전용면적 조회(브이월드-공동,개별 주택가격속성조회)");
         return vworldService.getPubLandPriceAndArea(vworldPubLandPriceAndAreaRequest);
+    }
+
+    // (취득)주택 공시가격 및 전용면적 조회 - DB
+    @PostMapping("/house/pubLandPriceAndAreaAtDB")
+    public Object getPubLandPriceAndAreaAtDB(@RequestBody PubLandPriceAndAreaRequest PubLandPriceAndAreaRequest) throws Exception {
+        log.info(">> [Controller]HouseController getPubLandPriceAndArea - 주택 공시가격 및 전용면적 조회(DB-공동,개별 주택가격속성조회)");
+        return vworldService.getPubLandPridAndAreaAtDB(PubLandPriceAndAreaRequest);
     }
 
     // 보유주택 조회(하이픈-청약홈-주택소유확인)
@@ -103,4 +111,10 @@ public class HouseController {
     public Object searchHouseStayPeriod(@RequestBody HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
         return houseService.getHouseStayPeriod(houseStayPeriodRequest);
     }
+
+    // (양도)주택 거주기간 조회(하이픈-정부24-주민등록초본)
+    /*@PostMapping("/house/stayPeriodTest")
+    public Object searchHouseStayPeriodTest(@RequestBody HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
+        return houseService.getHouseStayPeriodTest(houseStayPeriodRequest);
+    }*/
 }

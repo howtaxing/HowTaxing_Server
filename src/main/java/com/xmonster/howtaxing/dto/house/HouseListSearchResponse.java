@@ -24,6 +24,7 @@ public class HouseListSearchResponse {
         private String houseName;               // 주택명
         private String roadAddr;                // 도로명주소
         private String detailAdr;               // 상세주소
+        private Boolean isMoveInRight;          // 입주권여부
         private Boolean isRequiredDataMissing;  // 필수데이터누락여부
     }
 }

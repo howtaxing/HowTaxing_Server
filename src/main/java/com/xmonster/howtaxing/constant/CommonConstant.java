@@ -15,6 +15,9 @@ public final class CommonConstant {
     public final static String ERR_YN = "errYn";
     public final static String ERR_MSG = "errMsg";
 
+    public final static String SUCCESS = "success";
+    public final static String FAIL = "fail";
+
     public final static String ZERO = "0";
     public final static String ONE = "1";
     public final static String TWO = "2";
@@ -92,7 +95,13 @@ public final class CommonConstant {
 
     /* 세율 함수 */
     public final static String MAX = "MAX";                     // 세율1과 세율2 중 최대값 사용
-    public final static String OR_LESS_MORE = "OR_LESS_MORE";   // 기준금액 이하 세율1, 기준금액 초과 세율2
+
+    /* 공제 대상 */
+    public final static String DEDUCTION_TARGET_RETENTION = "RETENTION";
+    public final static String DEDUCTION_TARGET_STAY = "STAY";
+
+    /* 공제 함수 */
+    public final static String SUM = "SUM";
 
     /* 취득세 일반세율 기준 금액 */
     public final static long ONE_HND_MIL = 100000000;           // 1억(원)
@@ -113,6 +122,13 @@ public final class CommonConstant {
     public final static String Q_0005 = "Q_0005";
     public final static String Q_0006 = "Q_0006";
     public final static String Q_0007 = "Q_0007";
+    public final static String Q_0008 = "Q_0008";
+    public final static String Q_0009 = "Q_0009";
+    public final static String Q_0010 = "Q_0010";
+    public final static String Q_0011 = "Q_0011";
+    public final static String Q_0012 = "Q_0012";
+    public final static String Q_0013 = "Q_0013";
+
     public final static String ANSWER_TYPE_SELECT = "select";
     public final static String ANSWER_VALUE_01 = "01";
     public final static String ANSWER_VALUE_02 = "02";
@@ -139,4 +155,11 @@ public final class CommonConstant {
 
     /* 전용면적(m2) */
     public final static double AREA_85 = 85;
+
+    // 비과세 세율코드
+    public final static String NONE_TAX_RATE_CODE = "R_0002";
+
+    // 기타
+    public final static String NEW_LINE = "\n";
+    public final static String DOUBLE_NEW_LINE = "\n\n";
 }

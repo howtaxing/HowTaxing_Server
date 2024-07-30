@@ -27,6 +27,8 @@ public class HouseDetailResponse {
     private String roadAddr;            // 도로명주소
     private String roadAddrRef;         // 도로명주소참고항목
     private String bdMgtSn;             // 건물관리번호
+    private String admCd;               // 행정구역코드
+    private String rnMgtSn;             // 도로명코드
     private BigDecimal area;            // 전용면적
     private Boolean isDestruction;      // 멸실여부
     private Integer ownerCnt;           // 소유자수

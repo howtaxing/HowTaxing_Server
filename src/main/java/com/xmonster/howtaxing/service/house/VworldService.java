@@ -5,11 +5,15 @@ import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.vworld.ApartHousingPriceResponse;
 import com.xmonster.howtaxing.dto.vworld.IndvdHousingPriceResponse;
+import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaRequest;
+import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaResponse;
 import com.xmonster.howtaxing.dto.vworld.VworldPubLandPriceAndAreaRequest;
 import com.xmonster.howtaxing.dto.vworld.VworldPubLandPriceAndAreaResponse;
 import com.xmonster.howtaxing.feign.vworld.ApartHousingPriceApi;
 import com.xmonster.howtaxing.feign.vworld.IndvdHousingPriceApi;
 import com.xmonster.howtaxing.type.ErrorCode;
+import com.xmonster.howtaxing.model.HousePubLandPriceInfo;
+import com.xmonster.howtaxing.repository.house.HousePubLandPriceInfoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -30,6 +34,7 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 public class VworldService {
     private final ApartHousingPriceApi apartHousingPriceApi;
     private final IndvdHousingPriceApi indvdHousingPriceApi;
+    private final HousePubLandPriceInfoRepository housePubLandPriceInfoRepository;
 
     private final static int NUM_OF_ROWS = 10;
 
@@ -206,6 +211,52 @@ public class VworldService {
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new CustomException(ErrorCode.HOUSE_VWORLD_OUTPUT_ERROR);
+        }
+    }
+
+    public Object getPubLandPridAndAreaAtDB(PubLandPriceAndAreaRequest pubLandPriceAndAreaRequest){
+        log.info(">> [Service]VworldService getPubLandPriceAndAreaAtDB - (취득)주택 공시가격 및 전용면적 DB조회");
+
+        String legalDstCode = pubLandPriceAndAreaRequest.getLegalDstCode();
+        String roadAddr = pubLandPriceAndAreaRequest.getRoadAddr();
+        String complexName = pubLandPriceAndAreaRequest.getComplexName().replace(" ", "");
+        String dongName = pubLandPriceAndAreaRequest.getDongName();
+        String hoName = pubLandPriceAndAreaRequest.getHoName();
+
+        if (EMPTY.equals(legalDstCode)) {
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "법정동코드를 입력하세요.");
+        }
+        if (EMPTY.equals(hoName)) {
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "호를 입력하세요.");
+        }
+
+        List<HousePubLandPriceInfo> pubLandPriceAndAreaList;
+        try {
+            // 기존 API와의 호환을 위해 도로명주소로 먼저 검색
+            pubLandPriceAndAreaList = housePubLandPriceInfoRepository.findByConditions(legalDstCode, roadAddr, dongName, hoName);
+            if (pubLandPriceAndAreaList.isEmpty()) {
+                // 검색결과 없을 시 건물명으로 검색
+                pubLandPriceAndAreaList = housePubLandPriceInfoRepository.findByConditionsWithoutRoadAddr(legalDstCode, complexName, dongName, hoName);
+            }
+
+            if (pubLandPriceAndAreaList.size() > 1) {
+                //결과값이 너무 많은 경우 예외처리
+                throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "입력값이 올바르지 않습니다.");
+            }
+            HousePubLandPriceInfo housePubLandPriceInfo = pubLandPriceAndAreaList.get(0);
+            PubLandPriceAndAreaResponse pubLandPriceAndAreaResponse = PubLandPriceAndAreaResponse.builder()
+                    .area(housePubLandPriceInfo.getArea())
+                    .pubLandPrice(housePubLandPriceInfo.getPubLandPrice())
+                    .complexName(housePubLandPriceInfo.getComplexName())
+                    .dongName(housePubLandPriceInfo.getDongName())
+                    .hoName(housePubLandPriceInfo.getHoName())
+                    .build();
+            return ApiResponse.success(pubLandPriceAndAreaResponse);
+        } catch (CustomException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.error("DB조회결과 없음: {}", e.getMessage());
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "DB조회 결과가 없습니다.");
         }
     }
 }

@@ -14,6 +14,7 @@ public interface NaverAuthApi {
             @RequestParam("client_id") String clientId,
             @RequestParam("client_secret") String clientSecret,
             @RequestParam("code") String code,
-            @RequestParam("state") String state
+            @RequestParam("state") String state,
+            @RequestParam("access_token") String accessToken
     );
 }

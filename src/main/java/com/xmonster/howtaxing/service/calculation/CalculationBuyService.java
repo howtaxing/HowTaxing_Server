@@ -5,9 +5,12 @@ import com.xmonster.howtaxing.dto.calculation.CalculationAdditionalAnswerRequest
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
+import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 
+import com.xmonster.howtaxing.dto.house.HouseAddressDto;
 import com.xmonster.howtaxing.model.*;
+import com.xmonster.howtaxing.repository.adjustment_target_area.AdjustmentTargetAreaRepository;
 import com.xmonster.howtaxing.repository.calculation.*;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.service.house.HouseAddressService;
@@ -22,7 +25,9 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Method;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +46,7 @@ public class CalculationBuyService {
     private final TaxRateInfoRepository taxRateInfoRepository;
     private final DeductionInfoRepository deductionInfoRepository;
     private final HouseRepository houseRepository;
+    private final AdjustmentTargetAreaRepository adjustmentTargetAreaRepository;
 
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
@@ -55,6 +61,8 @@ public class CalculationBuyService {
         // 요청 데이터 유효성 검증
         validationCheckRequestData(calculationBuyResultRequest);
 
+        log.info("(Calculation)취득세 계산 결과 조회 요청 : " + calculationBuyResultRequest.toString());
+
         // 분기 메소드
         try{
             calculationBranchClass = Class.forName("com.xmonster.howtaxing.service.calculation.CalculationBuyService$CalculationBranch");
@@ -63,6 +71,8 @@ public class CalculationBuyService {
             Method method = calculationBranchClass.getMethod("calculationStart", CalculationBuyResultRequest.class);
 
             Object result = method.invoke(target, calculationBuyResultRequest);
+
+            if(result != null) log.info("(Calculation)취득세 계산 결과 조회 응답 : " + result.toString());
 
             return ApiResponse.success(result);
 
@@ -83,6 +93,7 @@ public class CalculationBuyService {
         LocalDate buyDate = calculationBuyResultRequest.getBuyDate();
         Long buyPrice = calculationBuyResultRequest.getBuyPrice();
         Boolean isPubLandPriceOver100Mil = calculationBuyResultRequest.getIsPubLandPriceOver100Mil();
+        String jibunAddr = StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr());
         String roadAddr = StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr());
         Boolean isAreaOver85 = calculationBuyResultRequest.getIsAreaOver85();
         Boolean isDestruction = calculationBuyResultRequest.getIsDestruction();
@@ -118,6 +129,10 @@ public class CalculationBuyService {
 
         if(isPubLandPriceOver100Mil == null){
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 공시지가1억초과여부 정보가 입력되지 않았습니다.");
+        }
+
+        if(EMPTY.equals(jibunAddr)){
+            throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 지번주소 정보가 입력되지 않았습니다.");
         }
 
         if(EMPTY.equals(roadAddr)){
@@ -177,6 +192,8 @@ public class CalculationBuyService {
             return calculationBuyResultResponse;
         }
 
+        /*============================================================ 취득세 계산 프로세스 START ============================================================*/
+
         /**
          * 분기번호 : 001
          * 분기명 : 취득하려는 주택의 유형
@@ -200,7 +217,7 @@ public class CalculationBuyService {
 
             if(FIVE.equals(houseType)){
                 selectNo = 2;   // 준공 분양권(선택번호:2)
-            } else if(THREE.equals(houseType)){
+            } else if(THREE.equals(houseType) || calculationBuyResultRequest.getIsMoveInRight()){
                 selectNo = 3;   // 입주권(선택번호:3)
             } else{
                 selectNo = 1;   // 주택(선택번호:1)
@@ -432,7 +449,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBalanceDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -487,7 +504,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBalanceDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -741,7 +758,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -779,11 +796,11 @@ public class CalculationBuyService {
 
         /**
          * 분기번호 : 011
-         * 분기명 : 종전주택이 분양권이나 입주권인 경우
-         * 분기설명 : 종전주택이 2020.08.12 이후 취득한 분양권이나 지방세법상 입주권인 경우(재개발, 재건축, 소규모재건축)
+         * 분기명 : 종전주택 구분
+         * 분기설명 : 종전주택 구분(분양권/입주권, 일반주택)
          */
         public CalculationBuyResultResponse branchNo011(CalculationBuyResultRequest calculationBuyResultRequest){
-            log.info(">>> CalculationBranch branchNo011 - 취득세 분기번호 011 : 종전주택이 분양권이나 입주권인 경우");
+            log.info(">>> CalculationBranch branchNo011 - 취득세 분기번호 011 : 종전주택 구분");
 
             CalculationBuyResultResponse calculationBuyResultResponse;
             boolean hasNext = false;
@@ -792,66 +809,37 @@ public class CalculationBuyService {
             String dedCode = EMPTY;
             int selectNo = 0;
 
-            String houseType = EMPTY;
-            String buyDate = EMPTY;
-
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "011")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 보유주택 수를 직접 입력한 경우
-            if(calculationBuyResultRequest.getIsOwnHouseCntRegist()){
-                selectNo = 1;
-            }
-            // 보유주택 정보를 조회하여 가져오는 경우
-            else{
-                // 종전주택이 2020.08.12 이후 취득한 분양권이나 지방세법상 입주권인 경우(재개발, 재건축, 소규모재건축)
-                House lastOwnHouse = getLastOwnHouse();
-
-                if(calculationBuyResultRequest != null && calculationBuyResultRequest.getBuyDate() != null){
-                    buyDate = calculationBuyResultRequest.getBuyDate().toString().replace(HYPHEN, EMPTY);
-                }
-
-                if(lastOwnHouse != null){
-                    houseType = lastOwnHouse.getHouseType();
-
-                    // 일반 주택인 경우(3:입주권, 5:분양권)
-                    if(!THREE.equals(houseType) && !FIVE.equals(houseType)){
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0008.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
                         selectNo = 1;
+                    }else{
+                        selectNo = 2;
                     }
                 }
+            }
+
+            if(selectNo == 0){
+                String errMsg = Q_0008 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
             }
 
             for(CalculationProcess calculationProcess : list){
-                if(selectNo != 0){
-                    if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
-                        log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
-
-                        if(calculationProcess.isHasNextBranch()){
-                            nextBranchNo = calculationProcess.getNextBranchNo();
-                            hasNext = true;
-                        }else{
-                            taxRateCode = calculationProcess.getTaxRateCode();
-                            dedCode = calculationProcess.getDedCode();
-                        }
-                        break;
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
                     }
-                }else{
-                    String dataMethod = StringUtils.defaultString(calculationProcess.getDataMethod());
-                    String variableData = StringUtils.defaultString(calculationProcess.getVariableData(), ZERO);
-
-                    if(checkSelectNoCondition(DATA_TYPE_DATE, buyDate, variableData, dataMethod)){
-                        selectNo = calculationProcess.getCalculationProcessId().getSelectNo();
-                        log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
-
-                        if(calculationProcess.isHasNextBranch()){
-                            nextBranchNo = calculationProcess.getNextBranchNo();
-                            hasNext = true;
-                        }else{
-                            taxRateCode = calculationProcess.getTaxRateCode();
-                            dedCode = calculationProcess.getDedCode();
-                        }
-                        break;
-                    }
+                    break;
                 }
             }
 
@@ -871,11 +859,11 @@ public class CalculationBuyService {
 
         /**
          * 분기번호 : 012
-         * 분기명 : 분양권/입주권 완공 후 3년 이내 종전 또는 신규(신축)주택 양도예정
-         * 분기설명 : 분양권/입주권이 완공된 후 3년 이내에 종전주택 또는 신규(신축)주택을 양도 예정
+         * 분기명 : 종전주택이 특정일자 이후에 취득한 분양권이나 입주권인 경우
+         * 분기설명 : 종전주택이 2020.08.12 이후 취득한 분양권이나 지방세법상 입주권인 경우(재개발, 재건축, 소규모재건축)
          */
         public CalculationBuyResultResponse branchNo012(CalculationBuyResultRequest calculationBuyResultRequest){
-            log.info(">>> CalculationBranch branchNo012 - 취득세 분기번호 012 : 분양권/입주권 완공 후 3년 이내 종전 또는 신규(신축)주택 양도예정");
+            log.info(">>> CalculationBranch branchNo012 - 취득세 분기번호 012 : 종전주택이 특정일자 이후에 취득한 분양권이나 입주권인 경우");
 
             CalculationBuyResultResponse calculationBuyResultResponse;
             boolean hasNext = false;
@@ -889,7 +877,7 @@ public class CalculationBuyService {
 
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
-                if(Q_0007.equals(answer.getQuestionId())){
+                if(Q_0009.equals(answer.getQuestionId())){
                     if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
                         selectNo = 1;
                     }else{
@@ -899,17 +887,10 @@ public class CalculationBuyService {
             }
 
             if(selectNo == 0){
-                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+                String errMsg = Q_0009 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
             }
-
-            // (사용자 입력)완공 후 n년 이내 신규주택 양도 예정 여부
-            /*Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
-
-            if(hasSellPlan){
-                selectNo = 1;
-            }else{
-                selectNo = 2;
-            }*/
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -941,11 +922,11 @@ public class CalculationBuyService {
 
         /**
          * 분기번호 : 013
-         * 분기명 : 취득일 기준 조정대상지역여부
-         * 분기설명 : 취득일 기준 조정대상지역여부
+         * 분기명 : 종전주택(분양권 또는 입주권)을 신규주택 취득일 기준 3년 이내 양도예정 여부
+         * 분기설명 : 종전주택(분양권 또는 입주권)을 신규주택 취득일 기준 3년 내 양도예정 여부
          */
         public CalculationBuyResultResponse branchNo013(CalculationBuyResultRequest calculationBuyResultRequest){
-            log.info(">>> CalculationBranch branchNo013 - 취득세 분기번호 013 : 취득일 기준 조정대상지역여부");
+            log.info(">>> CalculationBranch branchNo013 - 취득세 분기번호 013 : 종전주택(분양권 또는 입주권)을 신규주택 취득일 기준 3년 이내 양도예정 여부");
 
             CalculationBuyResultResponse calculationBuyResultResponse;
             boolean hasNext = false;
@@ -957,13 +938,21 @@ public class CalculationBuyService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "013")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0010.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
 
-            if(isAdjustmentTargetArea){
-                selectNo = 1;
-            }else{
-                selectNo = 2;
+            if(selectNo == 0){
+                String errMsg = Q_0010 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
             }
 
             for(CalculationProcess calculationProcess : list){
@@ -1055,11 +1044,11 @@ public class CalculationBuyService {
 
         /**
          * 분기번호 : 015
-         * 분기명 : 종전주택이 분양권이나 입주권인 경우
-         * 분기설명 : 종전주택이 2020.08.12 이후 취득한 분양권이나 지방세법상 입주권인 경우(재개발, 재건축, 소규모재건축)
+         * 분기명 : 종전주택 구분
+         * 분기설명 : 종전주택 구분(분양권/입주권, 일반주택)
          */
         public CalculationBuyResultResponse branchNo015(CalculationBuyResultRequest calculationBuyResultRequest){
-            log.info(">>> CalculationBranch branchNo015 - 취득세 분기번호 015 : 종전주택이 분양권이나 입주권인 경우");
+            log.info(">>> CalculationBranch branchNo015 - 취득세 분기번호 015 : 종전주택 구분");
 
             CalculationBuyResultResponse calculationBuyResultResponse;
             boolean hasNext = false;
@@ -1068,68 +1057,37 @@ public class CalculationBuyService {
             String dedCode = EMPTY;
             int selectNo = 0;
 
-            String houseType = EMPTY;
-            String buyDate = EMPTY;
-
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "015")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 보유주택 수를 직접 입력한 경우
-            if(calculationBuyResultRequest.getIsOwnHouseCntRegist()){
-                log.info("보유주택 수 직접 입력에 해당");
-                selectNo = 1;
-            }
-            // 보유주택 정보를 조회하여 가져오는 경우
-            else{
-                // 종전주택이 2020.08.12 이후 취득한 분양권이나 지방세법상 입주권인 경우(재개발, 재건축, 소규모재건축)
-                House lastOwnHouse = getLastOwnHouse();
-
-                if(calculationBuyResultRequest != null && calculationBuyResultRequest.getBuyDate() != null){
-                    buyDate = calculationBuyResultRequest.getBuyDate().toString().replace(HYPHEN, EMPTY);
-                }
-
-                if(lastOwnHouse != null){
-                    houseType = lastOwnHouse.getHouseType();
-
-                    // 일반 주택인 경우(3:입주권, 5:분양권)
-                    if(!THREE.equals(houseType) && !FIVE.equals(houseType)){
-                        log.info("종전주택이 일반주택인 경우(분양권이나 입주권이 아닌 경우)에 해당");
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0007.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
                         selectNo = 1;
+                    }else{
+                        selectNo = 2;
                     }
                 }
+            }
+
+            if(selectNo == 0){
+                String errMsg = Q_0007 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
             }
 
             for(CalculationProcess calculationProcess : list){
-                if(selectNo != 0){
-                    if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
-                        log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
-
-                        if(calculationProcess.isHasNextBranch()){
-                            nextBranchNo = calculationProcess.getNextBranchNo();
-                            hasNext = true;
-                        }else{
-                            taxRateCode = calculationProcess.getTaxRateCode();
-                            dedCode = calculationProcess.getDedCode();
-                        }
-                        break;
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
                     }
-                }else{
-                    String dataMethod = StringUtils.defaultString(calculationProcess.getDataMethod());
-                    String variableData = StringUtils.defaultString(calculationProcess.getVariableData(), ZERO);
-
-                    if(checkSelectNoCondition(DATA_TYPE_DATE, buyDate, variableData, dataMethod)){
-                        selectNo = calculationProcess.getCalculationProcessId().getSelectNo();
-                        log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
-
-                        if(calculationProcess.isHasNextBranch()){
-                            nextBranchNo = calculationProcess.getNextBranchNo();
-                            hasNext = true;
-                        }else{
-                            taxRateCode = calculationProcess.getTaxRateCode();
-                            dedCode = calculationProcess.getDedCode();
-                        }
-                        break;
-                    }
+                    break;
                 }
             }
 
@@ -1149,11 +1107,11 @@ public class CalculationBuyService {
 
         /**
          * 분기번호 : 016
-         * 분기명 : 종전주택 완공 후 3년 이내에 종전(신축) 또는 신규 주택 양도예정
-         * 분기설명 : 종전주택이 완공된 후 3년 이내에 종전(신축)주택 또는 신규주택을 양도 예정
+         * 분기명 : 종전주택이 특정일자 이후에 취득한 분양권이나 입주권인 경우
+         * 분기설명 : 종전주택이 2020.08.12 이후 취득한 분양권이나 지방세법상 입주권인 경우(재개발, 재건축, 소규모재건축)
          */
         public CalculationBuyResultResponse branchNo016(CalculationBuyResultRequest calculationBuyResultRequest){
-            log.info(">>> CalculationBranch branchNo016 - 취득세 분기번호 016 : 분양권/입주권 완공 후 3년 이내 종전 또는 신규(신축)주택 양도예정");
+            log.info(">>> CalculationBranch branchNo016 - 취득세 분기번호 016 : 종전주택이 특정일자 이후에 취득한 분양권이나 입주권인 경우");
 
             CalculationBuyResultResponse calculationBuyResultResponse;
             boolean hasNext = false;
@@ -1167,7 +1125,7 @@ public class CalculationBuyService {
 
             List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
             for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
-                if(Q_0007.equals(answer.getQuestionId())){
+                if(Q_0009.equals(answer.getQuestionId())){
                     if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
                         selectNo = 1;
                     }else{
@@ -1177,17 +1135,10 @@ public class CalculationBuyService {
             }
 
             if(selectNo == 0){
-                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
+                String errMsg = Q_0009 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
             }
-
-            // (사용자 입력)완공 후 n년 이내 종전 또는 신규 주택 양도 예정 여부
-            /*Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
-
-            if(hasSellPlan){
-                selectNo = 1;
-            }else{
-                selectNo = 2;
-            }*/
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -1219,11 +1170,11 @@ public class CalculationBuyService {
 
         /**
          * 분기번호 : 017
-         * 분기명 : 신규주택 취득시점 조정지역 여부
-         * 분기설명 : 신규주택 취득시점 조정지역 여부
+         * 분기명 : 종전주택(분양권 또는 입주권)이 완공된 후 3년 이내에 종전(신축)주택 또는 신규 취득주택을 양도 예정 여부
+         * 분기설명 : 종전주택(분양권 또는 입주권)이 완공된 후 3년 이내에 종전(신축)주택 또는 신규 취득주택을 양도 예정 여부
          */
         public CalculationBuyResultResponse branchNo017(CalculationBuyResultRequest calculationBuyResultRequest){
-            log.info(">>> CalculationBranch branchNo017 - 취득세 분기번호 017 : 신규주택 취득시점 조정지역 여부");
+            log.info(">>> CalculationBranch branchNo017 - 취득세 분기번호 017 : 종전주택이 특정일자 이후에 취득한 분양권이나 입주권인 경우");
 
             CalculationBuyResultResponse calculationBuyResultResponse;
             boolean hasNext = false;
@@ -1235,13 +1186,21 @@ public class CalculationBuyService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "017")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0012.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
 
-            if(isAdjustmentTargetArea){
-                selectNo = 1;
-            }else{
-                selectNo = 2;
+            if(selectNo == 0){
+                String errMsg = Q_0012 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
             }
 
             for(CalculationProcess calculationProcess : list){
@@ -1275,7 +1234,7 @@ public class CalculationBuyService {
         /**
          * 분기번호 : 018
          * 분기명 : 신규주택 취득시점 조정지역 여부
-         * 분기설명 : 신규주택 취득시점 조정지역 여부
+         * 분기설명 : 신규주택(일반주택 또는 입주권) 취득일 기준 조정지역 여부
          */
         public CalculationBuyResultResponse branchNo018(CalculationBuyResultRequest calculationBuyResultRequest){
             log.info(">>> CalculationBranch branchNo018 - 취득세 분기번호 018 : 신규주택 취득시점 조정지역 여부");
@@ -1291,7 +1250,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1329,11 +1288,11 @@ public class CalculationBuyService {
 
         /**
          * 분기번호 : 019
-         * 분기명 : 종전주택을 신규주택 취득일 기준 3년 내 양도예정 여부
-         * 분기설명 : 종전주택을 신규주택 취득일 기준 3년 내 양도예정
+         * 분기명 : 신규주택 취득시점 조정지역 여부
+         * 분기설명 : 신규주택(일반주택 또는 입주권) 취득일 기준 조정지역 여부
          */
         public CalculationBuyResultResponse branchNo019(CalculationBuyResultRequest calculationBuyResultRequest){
-            log.info(">>> CalculationBranch branchNo019 - 취득세 분기번호 019 : 종전주택을 신규주택 취득일 기준 3년 내 양도예정 여부");
+            log.info(">>> CalculationBranch branchNo019 - 취득세 분기번호 019 : 신규주택 취득시점 조정지역 여부");
 
             CalculationBuyResultResponse calculationBuyResultResponse;
             boolean hasNext = false;
@@ -1345,29 +1304,14 @@ public class CalculationBuyService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "019")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
-            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
-                if(Q_0007.equals(answer.getQuestionId())){
-                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
-                        selectNo = 1;
-                    }else{
-                        selectNo = 2;
-                    }
-                }
-            }
+            // 조정대상지역여부
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
-            if(selectNo == 0){
-                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "최근 취득한 주택에 1년이상 거주 예정 여부에 대한 추가 질의 값을 받지 못했습니다.");
-            }
-
-            // (사용자 입력)취득후 n년 이내 종전주택 양도 에정 여부
-            /*Boolean hasSellPlan = calculationBuyResultRequest.getHasSellPlan();
-
-            if(hasSellPlan){
+            if(isAdjustmentTargetArea){
                 selectNo = 1;
             }else{
                 selectNo = 2;
-            }*/
+            }
 
             for(CalculationProcess calculationProcess : list){
                 if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
@@ -1416,7 +1360,7 @@ public class CalculationBuyService {
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
             // 조정대상지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             if(isAdjustmentTargetArea){
                 selectNo = 1;
@@ -1452,6 +1396,307 @@ public class CalculationBuyService {
             return calculationBuyResultResponse;
         }
 
+        /**
+         * 분기번호 : 021
+         * 분기명 : 종전주택을 신규주택 취득일 기준 3년 이내 양도예정 여부
+         * 분기설명 : 종전주택을 신규주택 취득일 기준 3년 이내 양도예정 여부
+         */
+        public CalculationBuyResultResponse branchNo021(CalculationBuyResultRequest calculationBuyResultRequest){
+            log.info(">>> CalculationBranch branchNo021 - 취득세 분기번호 021 : 종전주택을 신규주택 취득일 기준 3년 이내 양도예정 여부");
+
+            CalculationBuyResultResponse calculationBuyResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "021")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0013.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            if(selectNo == 0){
+                String errMsg = Q_0013 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationBuyResultRequest.class);
+                    calculationBuyResultResponse = (CalculationBuyResultResponse) method.invoke(target, calculationBuyResultRequest);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED);
+                }
+            }else{
+                calculationBuyResultResponse = getCalculationBuyResultResponse(calculationBuyResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationBuyResultResponse;
+        }
+
+        /**
+         * 분기번호 : 022
+         * 분기명 : 종전주택을 신규주택 취득일 기준 3년 이내 양도예정 여부
+         * 분기설명 : 종전주택을 신규주택 취득일 기준 3년 이내 양도예정 여부
+         */
+        public CalculationBuyResultResponse branchNo022(CalculationBuyResultRequest calculationBuyResultRequest){
+            log.info(">>> CalculationBranch branchNo022 - 취득세 분기번호 022 : 종전주택을 신규주택 취득일 기준 3년 이내 양도예정 여부");
+
+            CalculationBuyResultResponse calculationBuyResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "022")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0013.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            if(selectNo == 0){
+                String errMsg = Q_0013 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationBuyResultRequest.class);
+                    calculationBuyResultResponse = (CalculationBuyResultResponse) method.invoke(target, calculationBuyResultRequest);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED);
+                }
+            }else{
+                calculationBuyResultResponse = getCalculationBuyResultResponse(calculationBuyResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationBuyResultResponse;
+        }
+
+        /**
+         * 분기번호 : 023
+         * 분기명 : 신규주택 취득시점 조정지역 여부
+         * 분기설명 : 신규주택 취득시점 조정지역 여부
+         */
+        public CalculationBuyResultResponse branchNo023(CalculationBuyResultRequest calculationBuyResultRequest){
+            log.info(">>> CalculationBranch branchNo023 - 취득세 분기번호 023 : 신규주택 취득시점 조정지역 여부");
+
+            CalculationBuyResultResponse calculationBuyResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "023")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            // 조정대상지역여부
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
+
+            if(isAdjustmentTargetArea){
+                selectNo = 1;
+            }else{
+                selectNo = 2;
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationBuyResultRequest.class);
+                    calculationBuyResultResponse = (CalculationBuyResultResponse) method.invoke(target, calculationBuyResultRequest);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED);
+                }
+            }else{
+                calculationBuyResultResponse = getCalculationBuyResultResponse(calculationBuyResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationBuyResultResponse;
+        }
+
+        /**
+         * 분기번호 : 024
+         * 분기명 : 신규주택(준공분양권)이 완공된 후 3년 이내에 종전주택 또는 신규 취득주택을 양도 예정 여부
+         * 분기설명 : 신규주택(준공분양권)이 완공된 후 3년 이내에 종전주택 또는 신규 취득주택을 양도 예정 여부
+         */
+        public CalculationBuyResultResponse branchNo024(CalculationBuyResultRequest calculationBuyResultRequest){
+            log.info(">>> CalculationBranch branchNo024 - 취득세 분기번호 024 : 신규주택(준공분양권)이 완공된 후 3년 이내에 종전주택 또는 신규 취득주택을 양도 예정 여부");
+
+            CalculationBuyResultResponse calculationBuyResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "024")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0011.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            if(selectNo == 0){
+                String errMsg = Q_0011 + "에 대한 추가 질의 값을 받지 못했습니다.";
+                log.info(errMsg);
+                throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, errMsg);
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationBuyResultRequest.class);
+                    calculationBuyResultResponse = (CalculationBuyResultResponse) method.invoke(target, calculationBuyResultRequest);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED);
+                }
+            }else{
+                calculationBuyResultResponse = getCalculationBuyResultResponse(calculationBuyResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationBuyResultResponse;
+        }
+
+        /**
+         * 분기번호 : 025
+         * 분기명 : 신규주택 취득시점 조정지역 여부
+         * 분기설명 : 신규주택 취득시점 조정지역 여부
+         */
+        public CalculationBuyResultResponse branchNo025(CalculationBuyResultRequest calculationBuyResultRequest){
+            log.info(">>> CalculationBranch branchNo025 - 취득세 분기번호 025 : 신규주택 취득시점 조정지역 여부");
+
+            CalculationBuyResultResponse calculationBuyResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_BUY, "025")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            // 조정대상지역여부
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
+
+            if(isAdjustmentTargetArea){
+                selectNo = 1;
+            }else{
+                selectNo = 2;
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationBuyResultRequest.class);
+                    calculationBuyResultResponse = (CalculationBuyResultResponse) method.invoke(target, calculationBuyResultRequest);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED);
+                }
+            }else{
+                calculationBuyResultResponse = getCalculationBuyResultResponse(calculationBuyResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationBuyResultResponse;
+        }
+
+        /*============================================================ 취득세 계산 프로세스 END ============================================================*/
+
         // 취득세 계산 결과 조회
         private CalculationBuyResultResponse getCalculationBuyResultResponse(CalculationBuyResultRequest calculationBuyResultRequest, String taxRateCode, String dedCode){
             log.info(">>> CalculationBranch getCalculationBuyResult - 취득세 계산 수행");
@@ -1478,7 +1723,7 @@ public class CalculationBuyService {
             long buyPrice = calculationBuyResultRequest.getBuyPrice();
 
             // (취득주택)조정지역여부
-            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getRoadAddr()));
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate());
 
             log.info("- 취득주택 포함 보유주택 수 : " + ownHouseCount);
             log.info("- 취득가액 : " + buyPrice);
@@ -1549,20 +1794,11 @@ public class CalculationBuyService {
 
                             // MAX : 세율1과 세율2 중 최대값 사용
                             if(MAX.equals(usedFunc)){
+                                // 취득세율
                                 buyTaxRate = Math.max(finalTaxRate1, finalTaxRate2);
+
+                                // 취득세액(취득금액 x 취득세율)
                                 buyTaxPrice = (long) (buyPrice * buyTaxRate);
-                            }
-                            // OR_LESS_MORE : 기준금액 이하 세율1, 기준금액 초과 세율2
-                            else if(OR_LESS_MORE.equals(usedFunc)){
-                                long basePrice = taxRateInfo.getBasePrice();
-
-                                if(buyPrice > basePrice){
-                                    buyTaxPrice = (long)((basePrice * finalTaxRate1) + ((buyPrice - basePrice) * finalTaxRate2));
-                                }else{
-                                    buyTaxPrice = (long)(buyPrice * finalTaxRate1);
-                                }
-
-                                buyTaxRate = (double)(buyTaxPrice / buyPrice); // 취득세액으로 취득세율을 계산
                             }
                         }
                         // 세율이 1개인 경우
@@ -1634,58 +1870,67 @@ public class CalculationBuyService {
 
             /* 3. 지방교육세 계산 */
             log.info("3. 지방교육세 계산");
-            // 1주택
-            if(ownHouseCount == 1){
-                // 6억 이하
-                if(buyPrice <= SIX_HND_MIL){
-                    eduTaxRate = 0.001;                // 지방교육세율 : 0.1%
-                }
-                // 6억 초과, 9억 이하
-                else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
-                    eduTaxRate = buyTaxRate / 10;       // 지방교육세율 : 취득세율의 1/10
-                }
-                // 9억 초과
-                else{
-                    eduTaxRate = 0.003;                // 지방교육세율 : 0.3%
-                }
-            }
-            // 2주택
-            else if(ownHouseCount == 2){
-                // 조정대상지역
-                if(isAdjustmentTargetArea){
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }else{
+
+            // TODO. 취득세 중과배제 관련 임시 조치
+            // 취득주택의 공시가격이 1억 초과인 경우
+            if(calculationBuyResultRequest.getIsPubLandPriceOver100Mil()){
+                // 1주택
+                if(ownHouseCount == 1){
                     // 6억 이하
                     if(buyPrice <= SIX_HND_MIL){
-                        eduTaxRate = 0.001;            // 지방교육세율 : 0.1%
+                        eduTaxRate = 0.001;                // 지방교육세율 : 0.1%
                     }
                     // 6억 초과, 9억 이하
                     else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
-                        eduTaxRate = buyTaxRate / 10;   // 지방교육세율 : 취득세율의 1/10
+                        eduTaxRate = buyTaxRate / 10;       // 지방교육세율 : 취득세율의 1/10
                     }
                     // 9억 초과
                     else{
-                        eduTaxRate = 0.003;            // 지방교육세율 : 0.3%
+                        eduTaxRate = 0.003;                // 지방교육세율 : 0.3%
+                    }
+                }
+                // 2주택
+                else if(ownHouseCount == 2){
+                    // 조정대상지역
+                    if(isAdjustmentTargetArea){
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }else{
+                        // 6억 이하
+                        if(buyPrice <= SIX_HND_MIL){
+                            eduTaxRate = 0.001;            // 지방교육세율 : 0.1%
+                        }
+                        // 6억 초과, 9억 이하
+                        else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                            eduTaxRate = buyTaxRate / 10;   // 지방교육세율 : 취득세율의 1/10
+                        }
+                        // 9억 초과
+                        else{
+                            eduTaxRate = 0.003;            // 지방교육세율 : 0.3%
+                        }
+                    }
+                }
+                // 3주택
+                else if(ownHouseCount == 3){
+                    // 조정대상지역
+                    if(isAdjustmentTargetArea){
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }else{
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }
+                }
+                // 4주택 이상
+                else if(ownHouseCount >= 4){
+                    // 조정대상지역
+                    if(isAdjustmentTargetArea){
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
+                    }else{
+                        eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
                     }
                 }
             }
-            // 3주택
-            else if(ownHouseCount == 3){
-                // 조정대상지역
-                if(isAdjustmentTargetArea){
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }else{
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }
-            }
-            // 4주택 이상
-            else if(ownHouseCount >= 4){
-                // 조정대상지역
-                if(isAdjustmentTargetArea){
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }else{
-                    eduTaxRate = 0.004;                // 지방교육세율 : 0.4%
-                }
+            // 취득주택의 공시가격이 1억 이하인 경우
+            else{
+                eduTaxRate = 0.001;                         // 지방교육세율 : 0.1%
             }
 
             // 지방교육세액
@@ -1732,10 +1977,148 @@ public class CalculationBuyService {
                                 .build());
             }
 
+            // 취득세 해설부분 추가
+            List<String> commentaryList = getCalculationBuyCommentaryList(calculationBuyResultRequest, taxRateCode, dedCode, calculationBuyResultOneList);
+            int commentaryListCnt = commentaryList.size();
+
+            // 계산결과 텍스트 데이터 세팅
+            String calculationResultTextData = getCalculationResultTextData(calculationBuyResultRequest, calculationBuyResultOneList, commentaryList);
+
             return CalculationBuyResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationBuyResultOneList)
+                    .commentaryListCnt(commentaryListCnt)
+                    .commentaryList(commentaryList)
+                    .calculationResultTextData(calculationResultTextData)
                     .build();
+        }
+
+        private String getCalculationResultTextData(CalculationBuyResultRequest calculationBuyResultRequest,
+                                                    List<CalculationBuyOneResult> calculationBuyOneResultList,
+                                                    List<String> commentaryList){
+            log.info(">>> CalculationBranch getCalculationResultTextData - 취득세 계산결과 텍스트 데이터 가져오기");
+
+            StringBuilder textData = new StringBuilder(EMPTY);
+
+            String houseTypeName = EMPTY;
+            // 주택유형(1:아파트 2:연립,다가구 3:입주권 4:단독주택,다세대 5:분양권(주택) 6:주택)
+            if(ONE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "아파트";
+            }else if(TWO.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "연립·다가구";
+            }else if(THREE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "입주권";
+            }else if(FOUR.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "단독주택·다세대";
+            }else if(FIVE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "분양권(주택)";
+            }else{
+                houseTypeName = "주택";
+            }
+
+            textData.append("■ 취득세 계산 결과").append(NEW_LINE).append(NEW_LINE);
+            textData.append("* 계산일시 : ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append(NEW_LINE).append(NEW_LINE);
+            textData.append("1. 취득 주택 정보").append(NEW_LINE);
+            textData.append("  - 주택유형 : ").append(houseTypeName).append(NEW_LINE);
+            textData.append("  - 주택명 : ").append(calculationBuyResultRequest.getHouseName()).append(NEW_LINE);
+            textData.append("  - 상세주소 : ").append(calculationBuyResultRequest.getDetailAdr()).append(NEW_LINE);
+            textData.append("  - 지번주소 : ").append(calculationBuyResultRequest.getJibunAddr()).append(NEW_LINE);
+            textData.append("  - 도로명주소 : ").append(calculationBuyResultRequest.getRoadAddr()).append(NEW_LINE).append(NEW_LINE);
+
+            DecimalFormat df = new DecimalFormat("###,###");
+            CalculationBuyOneResult calculationBuyOneResult = null;
+
+            if(calculationBuyOneResultList != null && !calculationBuyOneResultList.isEmpty()){
+                textData.append("2. 계산결과").append(NEW_LINE);
+                for(int i=0; i<calculationBuyOneResultList.size(); i++){
+                    calculationBuyOneResult = calculationBuyOneResultList.get(i);
+                    textData.append(SPACE).append(i+1).append(") 소유자").append(i+1).append("(지분율 : ").append(calculationBuyResultRequest.getUserProportion()).append("%)").append(NEW_LINE);
+                    textData.append("  - 취득세 합계 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getTotalTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 취득세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getBuyTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 취득금액(").append("지분비율 ").append(calculationBuyResultRequest.getUserProportion()).append("%) : ").append(df.format(calculationBuyResultRequest.getBuyPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 취득세율 : ").append(calculationBuyOneResult.getBuyTaxRate()).append("%").append(NEW_LINE);
+                    textData.append("  - 지방교육세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getEduTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 지방교육세율 : ").append(calculationBuyOneResult.getEduTaxRate()).append("%").append(NEW_LINE);
+                    textData.append("  - 농어촌특별세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getAgrTaxPrice()))).append("원").append(NEW_LINE);
+                    textData.append("  - 농어촌특별세율 : ").append(calculationBuyOneResult.getAgrTaxRate()).append("%").append(NEW_LINE);
+                }
+                textData.append(NEW_LINE);
+            }
+
+            textData.append("3. 주의").append(NEW_LINE);
+            textData.append(" 1) 지금 보시는 세금 계산 결과는 법적 효력이 없으므로 정확한 세금 납부를 위해서는 전문가에게 상담을 추천해요.").append(NEW_LINE).append(NEW_LINE);
+
+            if(commentaryList != null && !commentaryList.isEmpty()){
+                textData.append("4. 해설").append(NEW_LINE);
+                for(int i=0; i<commentaryList.size(); i++){
+                    textData.append(SPACE).append(i+1).append(")").append(SPACE).append(commentaryList.get(i)).append(NEW_LINE);
+                }
+            }
+
+            return textData.toString();
+        }
+
+        // 취득세 해설 리스트 가져오기
+        private List<String> getCalculationBuyCommentaryList(CalculationBuyResultRequest calculationBuyResultRequest, String taxRateCode, String dedCode, List<CalculationBuyOneResult> calculationBuyOneResultList){
+            // 보유주택 수
+            long ownHouseCount = getOwnHouseCount(calculationBuyResultRequest);
+
+            // 해설 리스트
+            List<String> commentaryList = new ArrayList<>();
+
+            // 1.(취득)주택의 전용면적이 85제곱미터 이상인 경우
+            if(calculationBuyResultRequest.getIsAreaOver85()){
+                log.info("(Commentary Add) 1.(취득)주택의 전용면적이 85제곱미터 이상인 경우");
+                commentaryList.add("85제곱미터(국민주택규모) 미만은 농어촌특별세 비과세이며, 주택 외 부동산 및 85제곱미터 이상 주택은 농어촌특별세 0.2% 추가적으로 붙어요.");
+            }
+
+            // 7.항상
+            log.info("(Commentary Add) 7.항상");
+            commentaryList.add("고객님이 취득하시려는 주택외에 기존 보유 주택수는" + (ownHouseCount-1) + "채 에요.");
+
+            // 8.취득일 기준 조정대상지역인 경우
+            if(checkAdjustmentTargetArea(StringUtils.defaultString(calculationBuyResultRequest.getJibunAddr()), calculationBuyResultRequest.getBuyDate())){
+                log.info("(Commentary Add) 8.취득일 기준 조정대상지역인 경우");
+                commentaryList.add("85제곱미터(국민주택규모) 미만은 농어촌특별세 비과세이며, 주택 외 부동산 및 85제곱미터 이상 주택은 농어촌특별세 0.2% 추가적으로 붙어요.");
+            }
+
+            // 9.항상
+            String houseTypeName = EMPTY;
+            // 주택유형(1:아파트 2:연립,다가구 3:입주권 4:단독주택,다세대 5:분양권(주택) 6:주택)
+            if(ONE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "아파트";
+            }else if(TWO.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "연립·다가구";
+            }else if(THREE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "입주권";
+            }else if(FOUR.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "단독주택·다세대";
+            }else if(FIVE.equals(calculationBuyResultRequest.getHouseType())){
+                houseTypeName = "분양권(주택)";
+            }else{
+                houseTypeName = "주택";
+            }
+            log.info("(Commentary Add) 9.항상");
+            commentaryList.add("취득하시려는 주택의 유형은 " + houseTypeName + "이에요.");
+
+            // 10.취득하는 주택의 유형이 준공되는 분양권인 경우
+            if(FIVE.equals(calculationBuyResultRequest.getHouseType())){
+                log.info("(Commentary Add) 10.취득하는 주택의 유형이 준공되는 분양권인 경우");
+                commentaryList.add("취득하실 주택이 '보유하고 계셨던 분양권을 일반주택으로 취득하는 경우'이므로 해당 케이스는 분양권 취득 시점의 상태에 따라 세금이 달라 질 수 있어요.");
+            }
+
+            // 11.항상
+            if(calculationBuyOneResultList != null){
+                for(CalculationBuyOneResult calculationBuyOneResult : calculationBuyOneResultList){
+                    if(calculationBuyOneResult.getBuyTaxRate() != null && !calculationBuyOneResult.getBuyTaxRate().isBlank()){
+                        log.info("(Commentary Add) 11.항상");
+                        commentaryList.add("취득하실 주택의 최종 세율은 " + calculationBuyOneResult.getBuyTaxRate() + "%에요.");
+                        break;
+                    }
+                }
+            }
+
+            return commentaryList;
         }
 
         // (취득주택 포함)보유주택 수 가져오기
@@ -1780,28 +2163,11 @@ public class CalculationBuyService {
         private double calculateGeneralTaxRate(CalculationBuyResultRequest calculationBuyResultRequest, long ownHouseCount, long buyPrice, boolean isAdjustmentTargetArea){
             double taxRate = 0;
 
-            // 1주택
-            if(ownHouseCount == 1){
-                // 6억 이하
-                if(buyPrice <= SIX_HND_MIL){
-                    // 취득세율 : 1%
-                    taxRate = 0.01;
-                }
-                // 6억 초과, 9억 이하
-                else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
-                    // 취득세율 : (((취득가액 / 1억) x 2 / 3 - 3) x 1)%
-                    taxRate = (double)((buyPrice / ONE_HND_MIL) * 2 / 3 - 3) / 100;
-                }
-                // 9억 초과
-                else{
-                    // 취득세율 : 3%
-                    taxRate = 0.03;
-                }
-            }
-            // 2주택
-            else if(ownHouseCount == 2){
-                // 조정대상지역 외(조정대상지역에 대한 취득세율은 다른 프로세스로 접근)
-                if(!isAdjustmentTargetArea){
+            // TODO. 취득세 중과배제 관련 임시 조치
+            // 취득주택의 공시가격이 1억 초과인 경우
+            if(calculationBuyResultRequest.getIsPubLandPriceOver100Mil()){
+                // 1주택
+                if(ownHouseCount == 1){
                     // 6억 이하
                     if(buyPrice <= SIX_HND_MIL){
                         // 취득세율 : 1%
@@ -1818,17 +2184,115 @@ public class CalculationBuyService {
                         taxRate = 0.03;
                     }
                 }
+                // 2주택
+                else if(ownHouseCount == 2){
+                    // 조정대상지역 외
+                    if(!isAdjustmentTargetArea){
+                        // 6억 이하
+                        if(buyPrice <= SIX_HND_MIL){
+                            // 취득세율 : 1%
+                            taxRate = 0.01;
+                        }
+                        // 6억 초과, 9억 이하
+                        else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                            // 취득세율 : (((취득가액 / 1억) x 2 / 3 - 3) x 1)%
+                            taxRate = (double)((buyPrice / ONE_HND_MIL) * 2 / 3 - 3) / 100;
+                        }
+                        // 9억 초과
+                        else{
+                            // 취득세율 : 3%
+                            taxRate = 0.03;
+                        }
+                    }
+                    // 조정대상지역
+                    else{
+                        // 취득세율 : 8%
+                        taxRate = 0.08;
+                    }
+                }
+            }
+            // 취득주택의 공시가격이 1억 이하인 경우
+            else{
+                // 취득세율 : 1%
+                taxRate = 0.01;
             }
 
             return taxRate;
         }
 
-        // 조정대상지역 체크
-        private boolean checkAdjustmentTargetArea(String address){
-            String siGunGu = houseAddressService.separateAddress(address).getSiGunGu();
+        // 조정대상지역 여부 체크
+        private boolean checkAdjustmentTargetArea(String address, LocalDate date){
+            boolean isAdjustmentTargetArea = false;
 
-            // 조정대상지역(용산구, 서초구, 강남구, 송파구)
-            return ADJUSTMENT_TARGET_AREA1.equals(siGunGu) || ADJUSTMENT_TARGET_AREA2.equals(siGunGu) || ADJUSTMENT_TARGET_AREA3.equals(siGunGu) || ADJUSTMENT_TARGET_AREA4.equals(siGunGu);
+            HouseAddressDto houseAddressDto = houseAddressService.separateAddress(address);
+
+            // 지번주소
+            if(houseAddressDto.getAddressType() == 1){
+                List<String> searchAddress = houseAddressDto.getSearchAddress();
+                if(searchAddress != null && searchAddress.get(0) != null){
+                    String[] keywordArr = searchAddress.get(0).split(SPACE);
+                    StringBuilder keywordAssemble = new StringBuilder(EMPTY);
+                    List<AdjustmentTargetAreaInfo> adjustmentTargetAreaInfoList = new ArrayList<>();
+                    boolean isFindAddress = false;
+
+                    for(int i=0; i<keywordArr.length; i++){
+                        String keyword = keywordArr[i];
+
+                        if(!EMPTY.contentEquals(keywordAssemble)){
+                            keywordAssemble.append(SPACE);
+                        }
+
+                        if(keyword != null && !EMPTY.equals(keyword)){
+                            keywordAssemble.append(keyword);
+                        }
+
+                        if(i>0){
+                            adjustmentTargetAreaInfoList = adjustmentTargetAreaRepository.findByTargetAreaStartingWith(keywordAssemble.toString());
+                            if(adjustmentTargetAreaInfoList != null){
+                                // 조회 결과가 1개인 경우(조회결과가 1개가 나올 때까지 반복)
+                                if(adjustmentTargetAreaInfoList.size() == 1){
+                                    isFindAddress = true;
+                                    break;
+                                }else if(adjustmentTargetAreaInfoList.isEmpty()){
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if(isFindAddress){
+                        LocalDate startDate = null;
+                        LocalDate endDate = null;
+
+                        AdjustmentTargetAreaInfo adjustmentTargetAreaInfo = adjustmentTargetAreaInfoList.get(0);
+
+                        if(adjustmentTargetAreaInfo != null){
+                            if(adjustmentTargetAreaInfo.getStartDate() != null){
+                                startDate = adjustmentTargetAreaInfo.getStartDate();
+                            }
+                            if(adjustmentTargetAreaInfo.getEndDate() != null){
+                                endDate = adjustmentTargetAreaInfo.getEndDate();
+                            }
+
+                            if(startDate != null){
+                                if(endDate != null){
+                                    if((date.isEqual(startDate) || date.isAfter(startDate)) && (date.isEqual(endDate) || date.isBefore(endDate))){
+                                        isAdjustmentTargetArea = true;
+                                    }
+                                }else{
+                                    if(date.isEqual(startDate) || date.isAfter(startDate)){
+                                        isAdjustmentTargetArea = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }else{
+                throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "조정대상지역 체크 중 오류가 발생했습니다.(지번주소 아님)");
+            }
+
+            return isAdjustmentTargetArea;
         }
 
         // selectNo 조건 부합 여부 체크

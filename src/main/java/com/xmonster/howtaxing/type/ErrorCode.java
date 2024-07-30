@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ErrorCode {
     /* 사용자 관련 */
-    USER_NOT_FOUND(1, HttpStatus.OK, "ACCOUNT-001", "사용자를 찾을 수 없습니다."),
+    USER_NOT_FOUND(1, HttpStatus.OK, "USER-001", "사용자를 찾을 수 없습니다."),
+    USER_LOGOUT_ERROR(1, HttpStatus.OK, "USER-005", "로그아웃 처리 중 오류가 발생했습니다."),
+    USER_WITHDRAW_ERROR(1, HttpStatus.OK, "USER-006", "회원탈퇴 처리 중 오류가 발생했습니다."),
 
     /* 로그인 관련 */
     LOGIN_COMMON_ERROR(1, HttpStatus.OK, "LOGIN-001", "로그인 중 오류가 발생했습니다."),
@@ -41,6 +43,9 @@ public enum ErrorCode {
     HOUSE_MODIFY_ERROR(1, HttpStatus.OK, "HOUSE-015", "보유주택 수정 중 오류가 발생했습니다."),
     HOUSE_DELETE_ERROR(1, HttpStatus.OK, "HOUSE-016", "보유주택 삭제 중 오류가 발생했습니다."),
     HOUSE_DELETE_ALL_ERROR(1, HttpStatus.OK, "HOUSE-017", "보유주택 전체 삭제 중 오류가 발생했습니다."),
+
+    /* 주소 관련 오류 */
+    ADDRESS_SEPARATE_ERROR(1, HttpStatus.OK, "ADDRESS-001", "주소 데이터 프로세스 중 오류가 발생했습니다."),
     
     /* 추가질의 항목 조회 관련 */
     QUESTION_INPUT_ERROR(1, HttpStatus.OK, "QUESTION-001", "추가질의항목 조회를 위한 입력값이 올바르지 않습니다."),

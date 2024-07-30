@@ -8,6 +8,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 public class AdditionalQuestionResponse {
     private Boolean hasNextQuestion;        // 다음질의존재여부

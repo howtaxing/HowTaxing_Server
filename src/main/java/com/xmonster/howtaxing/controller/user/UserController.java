@@ -10,6 +10,10 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -35,9 +39,16 @@ public class UserController {
         return userService.withdraw();
     }
 
+    // 로그아웃
+    @GetMapping("/user/logout")
+    public Object logout() throws Exception {
+        log.info(">> [Controller]UserController logout - 로그아웃");
+        return userService.logout();
+    }
+
     // (자동)로그인 성공
-    @GetMapping("/oauth2/loginSuccess")
-    public Object loginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
+    @GetMapping("/oauth2/loginSuccess2")
+    public Object loginSuccess2(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
         log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
 
         Map<String, Object> tokenMap = new HashMap<>();
@@ -53,6 +64,26 @@ public class UserController {
         return ApiResponse.success(tokenMap);
     }
 
+    @GetMapping("/oauth2/loginSuccess")
+    public ResponseEntity<String> loginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
+        log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
+
+        if(accessToken == null || refreshToken == null){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
+        }
+
+        String html = "<html><body><pre id='returnValue'>" +
+                "{\"errYn\" : \"N\", \"data\" : " + "{\"accessToken\" : \"" + accessToken + "\", \"refreshToken\" : \"" + refreshToken + "\", \"role\" : \"" + role + "\"}}" +
+                "</pre><script>window.onload = function() {" +
+                "document.getElementById('returnValue').style.display = 'none';" +
+                "};</script></body></html>";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_HTML);
+
+        return new ResponseEntity<>(html, headers, HttpStatus.OK);
+    }
+
     // (자동)로그인 실패
     @GetMapping("/oauth2/loginFail")
     public Object loginFail(@RequestParam String socialType){
@@ -63,5 +94,13 @@ public class UserController {
         }else{
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }
+    }
+
+    @GetMapping("/user/callback")
+    public void userCallback(@RequestParam String userId, @RequestParam String referrerType){
+        log.info(">> [Controller]UserController userCallback - 유저 콜백");
+
+        log.info("userId : " + userId);
+        log.info("referrerType : " + referrerType);
     }
 }
