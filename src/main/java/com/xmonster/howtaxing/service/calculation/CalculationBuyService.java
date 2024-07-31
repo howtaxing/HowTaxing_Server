@@ -2186,15 +2186,15 @@ public class CalculationBuyService {
                 }
                 // 2주택
                 else if(ownHouseCount == 2){
-                    // 조정대상지역 외
-                    if(!isAdjustmentTargetArea){
+                    // 조정대상지역 외 또는 종전주택 3년이내 양도 예정인 경우
+                    if(!isAdjustmentTargetArea || isHasSellPlanIn3Year(calculationBuyResultRequest)){
                         // 6억 이하
                         if(buyPrice <= SIX_HND_MIL){
                             // 취득세율 : 1%
                             taxRate = 0.01;
                         }
                         // 6억 초과, 9억 이하
-                        else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                        else if(buyPrice <= NINE_HND_MIL){
                             // 취득세율 : (((취득가액 / 1억) x 2 / 3 - 3) x 1)%
                             taxRate = (double)((buyPrice / ONE_HND_MIL) * 2 / 3 - 3) / 100;
                         }
@@ -2218,6 +2218,26 @@ public class CalculationBuyService {
             }
 
             return taxRate;
+        }
+
+        // 3년이내 양도예정여부 체크
+        private boolean isHasSellPlanIn3Year(CalculationBuyResultRequest calculationBuyResultRequest) {
+            boolean hasSellPlanIn3Year = false;
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationBuyResultRequest.getAdditionalAnswerList();
+            /*
+             * Q_0010 : 종전주택(분양권 또는 입주권)을 신규 취득 주택(준공분양권)의 취득일 기준으로 3년 이내에 양도할 예정이신가요?
+             * Q_0011 : 신규주택(준공분양권)이 완공된 후 3년 이내에 종전주택 또는 신규 취득 주택을 양도할 예정이신가요?
+             * Q_0012 : 종전주택(분양권 또는 입주권)이 완공된 후 3년 이내에 종전(신축) 주택 또는 신규 취득 주택을 양도할 예정이신가요?
+             * Q_0013 : 종전주택을 신규 취득주택의 취득일 기준으로 3년 이내에 양도할 예정이신가요?
+             */
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                if(Q_0010.equals(answer.getQuestionId()) || Q_0011.equals(answer.getQuestionId()) || Q_0012.equals(answer.getQuestionId()) || Q_0013.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        hasSellPlanIn3Year = true;
+                    }
+                }
+            }
+            return hasSellPlanIn3Year;
         }
 
         // 조정대상지역 여부 체크
