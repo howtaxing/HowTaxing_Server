@@ -2750,14 +2750,21 @@ public class CalculationSellService {
                         if(sellProfitPrice != 0){
                             // 세율1이 비과세인지 체크(비과세대상양도차익금액 세팅여부를 확인)
                             if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                // 비과세대상양도차익금액
+                                // 기준금액(12억)
                                 if(taxRateInfo.getBasePrice() != null){
-                                    nonTaxablePrice = (taxRateInfo.getBasePrice() * sellProfitPrice) / sellPrice;
+                                    //nonTaxablePrice = (taxRateInfo.getBasePrice() * sellProfitPrice) / sellPrice;
+                                    // 과세대상양도차익 = 양도차익 x (양도가액 - 12억) / 양도가액
+                                    taxablePrice = sellProfitPrice * (sellPrice - taxRateInfo.getBasePrice()) / sellPrice;
                                 }
+
+                                // 비과세대상양도차익금액 = 양도차익 - 과세대상양도차익
+                                nonTaxablePrice = sellProfitPrice - taxablePrice;
+                            }else{
+                                taxablePrice = sellProfitPrice;
                             }
 
                             // 과세대상양도차익금액
-                            taxablePrice = sellProfitPrice - nonTaxablePrice;
+                            //taxablePrice = sellProfitPrice - nonTaxablePrice;
 
                             // 양도차익금액이 0보다 작으면 0으로 세팅
                             if(taxablePrice < 0) taxablePrice = 0;
@@ -2815,7 +2822,7 @@ public class CalculationSellService {
                                     }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate2())){
                                         taxRate2 = 0;
                                     }else if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
-                                        taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
+                                        taxRate2 = calculateGeneralTaxRate(taxableStdPrice);
                                     }else{
                                         taxRate2 = Double.parseDouble(StringUtils.defaultString(taxRateInfo.getTaxRate2(), ZERO));
                                     }
