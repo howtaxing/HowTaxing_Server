@@ -832,6 +832,24 @@ public class HouseService {
             // 거래내역 주택 필터링 작업하여 hyphenUserHouseResultInfoList에 결과 세팅
             List<HyphenUserHouseResultInfo> hyphenUserHouseResultInfoList = this.filteringTradeHouseList(tempHyphenUserHouseResultInfoList);
 
+            // 세팅된 주택이 거래내역 매도 목록에 있는지 확인하여 제외
+            Iterator<House> iterator = houseList.iterator();
+            while (iterator.hasNext()) {
+                House house = iterator.next();
+                for (DataDetail2 dataDetail2 : list) {
+                    HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail2.getAddress());
+                    String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
+                    // 거래내역 [매도] 건이면 세팅된 주택에서 주소를 비교하여 제거
+                    if(TWO.equals(tradeType)){
+                        if (houseAddressService.compareAddress(houseAddressDto, house)) {
+                            log.info("제거할 주택 정보 : {}", house.toString());
+                            iterator.remove();
+                            break;
+                        }
+                    }
+                }
+            }
+
             // 도로명주소 검색 API 호출(주소기반산업지원서비스)
             if(!hyphenUserHouseResultInfoList.isEmpty()){
                 for (HyphenUserHouseResultInfo hyphenUserHouseResultInfo : hyphenUserHouseResultInfoList){
