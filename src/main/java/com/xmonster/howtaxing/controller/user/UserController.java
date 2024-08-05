@@ -78,6 +78,8 @@ public class UserController {
                 "document.getElementById('returnValue').style.display = 'none';" +
                 "};</script></body></html>";
 
+        log.info("[GGMANYAR]html : " + html);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_HTML);
 
