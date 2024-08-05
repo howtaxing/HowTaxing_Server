@@ -4,6 +4,7 @@ import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.house.HouseAddressDto;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAdrResponse.Results.JusoDetail;
 import com.xmonster.howtaxing.type.ErrorCode;
+import com.xmonster.howtaxing.model.House;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -55,7 +56,7 @@ public class HouseAddressService {
             if(!splitAddress.isEmpty()){
                 for (int i = 0; i< splitAddress.size(); i++) {
                     String part = splitAddress.get(i);
-                    log.info("part[{}] : {}", i, part);
+                    log.debug("part[{}] : {}", i, part);
 
                     switch (i) {
                         // 시도
@@ -153,7 +154,7 @@ public class HouseAddressService {
                 houseAddressDto.makeDetailAddress();    // 상세주소 생성
                 houseAddressDto.makeSearchAddress();    // 검색 주소(리스트) 생성
 
-                log.info("houseAddressDto.toString() : {}", houseAddressDto.toString());
+                log.debug("houseAddressDto.toString() : {}", houseAddressDto.toString());
             }
         }catch(Exception e){
             throw  new CustomException(ErrorCode.ADDRESS_SEPARATE_ERROR);
@@ -169,7 +170,11 @@ public class HouseAddressService {
             jusoDetail.setRoadAddrPart2(this.replaceSpecialCharacters(jusoDetail.getRoadAddrPart2()));
             jusoDetail.setJibunAddr(this.replaceSpecialCharacters(jusoDetail.getJibunAddr()));
             jusoDetail.setDetBdNmList(this.replaceSpecialCharacters(jusoDetail.getDetBdNmList()));
-            jusoDetail.setBdNm(this.replaceSpecialCharacters(jusoDetail.getBdNm()));
+            if (jusoDetail.getBdNm() == null || jusoDetail.getBdNm() == "") {
+                jusoDetail.setBdNm("기본보유주택명");
+            } else {
+                jusoDetail.setBdNm(this.replaceSpecialCharacters(jusoDetail.getBdNm()));
+            }
         }
 
         return jusoDetail;
@@ -182,8 +187,8 @@ public class HouseAddressService {
         String detailAddr1 = StringUtils.defaultString(houseAddressDto1.getDetailAddress());
         String detailAddr2 = StringUtils.defaultString(houseAddressDto2.getDetailAddress());
 
-        log.info("전입주택 : {} {}", searchAddr1.get(0), detailAddr1);
-        log.info("양도주택 : {} {}", searchAddr2.get(0), detailAddr2);
+        log.debug("첫번째주소 : {} {}", searchAddr1.get(0), detailAddr1);
+        log.debug("두번째주소 : {} {}", searchAddr2.get(0), detailAddr2);
 
         boolean isSame = false;
 
@@ -195,6 +200,31 @@ public class HouseAddressService {
             }
         }
 
+        return isSame;
+    }
+    
+    // 주소 비교 오버로딩
+    public Boolean compareAddress(HouseAddressDto houseAddressDto1, House house) {
+        List<String> searchAddr1 = houseAddressDto1.getSearchAddress();
+        String searchAddr2 = EMPTY;
+        if (houseAddressDto1.getAddressType() == 1) {
+            searchAddr2 = house.getJibunAddr();
+        } else {
+            searchAddr2 = house.getRoadAddr();
+        }
+
+        if (searchAddr1 == null || searchAddr1.isEmpty()) {
+            log.warn("주소 리스트가 비어 있습니다. 비교를 할 수 없습니다.");
+            return false;
+        }
+
+        String compareAddr1 = searchAddr1.get(0) + (searchAddr1.size() > 1 ? " " + searchAddr1.get(1) : "");
+
+        log.info("첫번째주소 : {}", compareAddr1);
+        log.info("두번째주소 : {}", searchAddr2);
+
+        boolean isSame = searchAddr2.contains(compareAddr1);
+        
         return isSame;
     }
 
