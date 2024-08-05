@@ -47,7 +47,7 @@ public class UserController {
     }
 
     // (자동)로그인 성공
-    @GetMapping("/oauth2/loginSuccess2")
+    @GetMapping("/oauth2/loginSuccess")
     public Object loginSuccess2(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
         log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
 
@@ -64,7 +64,7 @@ public class UserController {
         return ApiResponse.success(tokenMap);
     }
 
-    @GetMapping("/oauth2/loginSuccess")
+    @GetMapping("/oauth2/loginSuccess2")
     public ResponseEntity<String> loginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
         log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
 
