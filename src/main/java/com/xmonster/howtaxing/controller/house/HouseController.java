@@ -117,4 +117,16 @@ public class HouseController {
     public Object searchHouseStayPeriodTest(@RequestBody HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
         return houseService.getHouseStayPeriodTest(houseStayPeriodRequest);
     }*/
+
+    // 주소분할 테스트
+    @PostMapping("/house/addressParseTest")
+    public Object addressSeperateTest(@RequestBody String address) throws Exception {
+        return houseService.addressParser(address);
+    }
+
+    // 거래내역 가져오기 테스트
+    @PostMapping("/house/loadHouseTest")
+    public Object checkHouseList() throws Exception {
+        return houseService.checkHouseList();
+    }
 }

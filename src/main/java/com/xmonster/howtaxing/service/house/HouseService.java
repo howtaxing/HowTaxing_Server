@@ -29,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.transaction.Transactional;
+import javax.validation.constraints.Pattern;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -209,6 +211,54 @@ public class HouseService {
                         .listCnt(houseSimpleInfoResponseList.size())
                         .list(houseSimpleInfoResponseList)
                         .build());
+    }
+
+    // 보유주택 확인 TEST
+    public Object checkHouseList() {
+        // 하이픈 주택소유정보 테스트 json data 세팅
+        HyphenUserHouseListResponse hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+
+        // 부동산거래내역 가져오기
+        List<DataDetail2> list2 = hyphenUserHouseListResponse.getHyphenData().getList2();
+
+        List<HyphenUserHouseResultInfo> tempHyphenUserHouseResultInfoList = new ArrayList<>();
+        String buyPrice = ZERO;
+        String sellPrice = ZERO;
+
+        for (DataDetail2 dataDetail2 : list2) {
+            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
+            // System.out.println(houseAddressDto.toString());
+
+            String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
+            String houseType = this.getHouseTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
+            // 매수
+            if(ONE.equals(tradeType)){
+                buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
+            }
+            // 매도
+            else if(TWO.equals(tradeType)){
+                sellPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
+            }
+
+            tempHyphenUserHouseResultInfoList.add(
+                        HyphenUserHouseResultInfo.builder()
+                                .resultListNo(TWO)
+                                .tradeType(tradeType)
+                                .orgAdr(houseAddressDto.getAddress())
+                                .searchAdr(houseAddressDto.getSearchAddress())
+                                .houseType(houseType)
+                                .contractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")))
+                                .balanceDate(LocalDate.parse(dataDetail2.getBalancePaymentDate(), DateTimeFormatter.ofPattern("yyyyMMdd")))
+                                .buyPrice(Long.parseLong(buyPrice))
+                                .sellPrice(Long.parseLong(sellPrice))
+                                .area(new BigDecimal(StringUtils.defaultString(dataDetail2.getArea(), DEFAULT_DECIMAL)))
+                                .build());
+        }
+
+        // 거래내역 주택 필터링 작업하여 hyphenUserHouseResultInfoList에 결과 세팅
+        List<HyphenUserHouseResultInfo> hyphenUserHouseResultInfoList = this.filteringTradeHouseList(tempHyphenUserHouseResultInfoList);
+
+        return hyphenUserHouseResultInfoList;
     }
 
     // 보유주택 목록 조회(DB)
@@ -1379,7 +1429,9 @@ public class HouseService {
                         }
                         
                         // 부동산거래내역의 주소가 보유주택 주소와 일부 일치하는 경우 [취득금액]과 [계약일자] 세팅
-                        if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                        if (houseAddressService.compareAddress(houseAddressDto, house)) {
+                        //if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                            log.debug("주소의 일부가 일치함!", myHouseAddress);
                             buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
 
                             hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
@@ -1451,5 +1503,24 @@ public class HouseService {
             e.printStackTrace();
             throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "Mocked HyphenUserResidentRegistrationResponse 생성 중 오류가 발생했습니다.");
         }
+    }
+
+    // 주소분할 테스트 출력
+    public Object addressParser(String address) {
+        HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
+
+        System.out.println(houseAddressDto.toString());
+
+        Map<String, String> addressMap = new LinkedHashMap<>();
+        if (houseAddressDto.getSiDo() != null) addressMap.put("시도", houseAddressDto.getSiDo());
+        if (houseAddressDto.getSiGunGu() != null) addressMap.put("시군구", houseAddressDto.getSiGunGu());
+        if (houseAddressDto.getEupMyun() != null) addressMap.put("구읍면", houseAddressDto.getEupMyun());
+        if (houseAddressDto.getRoadNm() != null) addressMap.put("도로명", houseAddressDto.getRoadNm());
+        if (houseAddressDto.getBuildingNo() != null) addressMap.put("건물번호", houseAddressDto.getBuildingNo());
+        if (houseAddressDto.getDongRi() != null) addressMap.put("동리", houseAddressDto.getDongRi());
+        if (houseAddressDto.getJibun() != null) addressMap.put("지번", houseAddressDto.getJibun());
+        if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", houseAddressDto.getEtcAddress().toString());
+
+        return ApiResponse.success(addressMap);
     }
 }
