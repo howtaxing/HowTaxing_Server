@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.env.Environment;
 
 import javax.transaction.Transactional;
 import javax.validation.constraints.Pattern;
@@ -55,6 +56,7 @@ public class HouseService {
     private final HouseUtil houseUtil;
 
     private final ObjectMapper objectMapper;
+    private final Environment environment;
 
     private static final int MAX_JUSO_CALL_CNT = 3; // 주소 한건 당 주소기반산업지원서비스 도로명주소 재조회 호출 건수 최대값
 
@@ -213,52 +215,72 @@ public class HouseService {
                         .build());
     }
 
-    // 보유주택 확인 TEST
-    public Object checkHouseList() {
-        // 하이픈 주택소유정보 테스트 json data 세팅
-        HyphenUserHouseListResponse hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+    // 부동산거래내역 기반 보유주택 출력
+    public Object loadHouseFromRealty(HouseListSearchRequest houseListSearchRequest) {
+        String[] activeProfiles = environment.getActiveProfiles();
+        boolean isLocal = Arrays.asList(activeProfiles).contains("local");
+        
+        HyphenUserHouseListResponse hyphenUserHouseListResponse;
+        if (isLocal) {
+            // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
+            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+        } else {
+            // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
+            hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
+        }
 
         // 부동산거래내역 가져오기
         List<DataDetail2> list2 = hyphenUserHouseListResponse.getHyphenData().getList2();
 
-        List<HyphenUserHouseResultInfo> tempHyphenUserHouseResultInfoList = new ArrayList<>();
-        String buyPrice = ZERO;
-        String sellPrice = ZERO;
+        // 매도 거래 세트
+        Set<String> sellAddresses = new HashSet<>();
+        // 매수 거래 리스트
+        List<DataDetail2> buyTransactions = new ArrayList<>();
 
+        // 거래내역에서 주소 비교하여 매수거래만 추출 - 주소비교로직 추가 필요할 수 있음..
         for (DataDetail2 dataDetail2 : list2) {
             HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
-            // System.out.println(houseAddressDto.toString());
+            String address = houseAddressService.formatAddress(houseAddressDto);
+            String tradeType = getTradeTypeFromSellBuyClassification(dataDetail2.getSellBuyClassification());
 
-            String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
-            String houseType = this.getHouseTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
-            // 매수
-            if(ONE.equals(tradeType)){
-                buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
+            if (TWO.equals(tradeType)) {
+                // 매도 거래 주소를 세트에 추가
+                sellAddresses.add(address);
+            } else if (ONE.equals(tradeType)) {
+                // 매수 거래인 경우 매도 거래 주소 목록에 포함되지 않은 경우에 매수 거래로 추가
+                if (!sellAddresses.contains(address)) {
+                    buyTransactions.add(dataDetail2);
+                }
             }
-            // 매도
-            else if(TWO.equals(tradeType)){
-                sellPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
-            }
-
-            tempHyphenUserHouseResultInfoList.add(
-                        HyphenUserHouseResultInfo.builder()
-                                .resultListNo(TWO)
-                                .tradeType(tradeType)
-                                .orgAdr(houseAddressDto.getAddress())
-                                .searchAdr(houseAddressDto.getSearchAddress())
-                                .houseType(houseType)
-                                .contractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")))
-                                .balanceDate(LocalDate.parse(dataDetail2.getBalancePaymentDate(), DateTimeFormatter.ofPattern("yyyyMMdd")))
-                                .buyPrice(Long.parseLong(buyPrice))
-                                .sellPrice(Long.parseLong(sellPrice))
-                                .area(new BigDecimal(StringUtils.defaultString(dataDetail2.getArea(), DEFAULT_DECIMAL)))
-                                .build());
         }
 
-        // 거래내역 주택 필터링 작업하여 hyphenUserHouseResultInfoList에 결과 세팅
-        List<HyphenUserHouseResultInfo> hyphenUserHouseResultInfoList = this.filteringTradeHouseList(tempHyphenUserHouseResultInfoList);
+        // 주택 목록을 담을 리스트
+        List<Map<String, String>> houseList = new ArrayList<>();
 
-        return hyphenUserHouseResultInfoList;
+        for (DataDetail2 dataDetail2 : buyTransactions) {
+            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
+            String address = houseAddressService.formatAddress(houseAddressDto);
+            StringBuilder etcAddress = new StringBuilder();
+            for (String part : houseAddressDto.getEtcAddress()) {
+                houseAddressService.appendIfNotNull(etcAddress, part);
+            }
+
+            System.out.println("주소: " + houseAddressDto.toString());
+
+            Map<String, String> addressMap = new LinkedHashMap<>();
+            // addressMap.put("거래구분", dataDetail2.getSellBuyClassification());
+            addressMap.put("주소", address);
+            addressMap.put("주택명", etcAddress.toString());
+            addressMap.put("매매가", dataDetail2.getTradingPrice());
+            addressMap.put("계약일자", dataDetail2.getContractDate());
+            addressMap.put("잔금지급일", dataDetail2.getBalancePaymentDate());
+            addressMap.put("면적", dataDetail2.getArea());
+
+            houseList.add(addressMap);
+        }
+
+        return ApiResponse.success(houseList);
     }
 
     // 보유주택 목록 조회(DB)
@@ -1520,6 +1542,8 @@ public class HouseService {
         if (houseAddressDto.getDongRi() != null) addressMap.put("동리", houseAddressDto.getDongRi());
         if (houseAddressDto.getJibun() != null) addressMap.put("지번", houseAddressDto.getJibun());
         if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", houseAddressDto.getEtcAddress().toString());
+        if (houseAddressDto.getDetailDong() != null) addressMap.put("동", houseAddressDto.getDetailDong());
+        if (houseAddressDto.getDetailHo() != null) addressMap.put("호", houseAddressDto.getDetailHo());
 
         return ApiResponse.success(addressMap);
     }

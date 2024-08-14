@@ -124,9 +124,9 @@ public class HouseController {
         return houseService.addressParser(address);
     }
 
-    // 거래내역 가져오기 테스트
-    @PostMapping("/house/loadHouseTest")
-    public Object checkHouseList() throws Exception {
-        return houseService.checkHouseList();
+    // 부동산거래내역 기반 매수주택 불러오기(하이픈-청약홈)
+    @PostMapping("/house/loadHouse")
+    public Object loadHouseFromRealty(@RequestBody HouseListSearchRequest houseListSearchRequest) throws Exception {
+        return houseService.loadHouseFromRealty(houseListSearchRequest);
     }
 }

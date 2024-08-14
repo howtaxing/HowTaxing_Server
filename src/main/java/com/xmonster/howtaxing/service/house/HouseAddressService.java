@@ -320,26 +320,36 @@ public class HouseAddressService {
     // 기타주소 입력 처리
     private List<String> seperateEtcAddress(String part, HouseAddressDto houseAddressDto) {
         part = part.replaceAll("[()]", "").trim();  // 괄호 제거 및 트림
-        String[] parts = part.split("\\s*,\\s*");  // 쉼표로 분리
+        // String[] parts = part.split("\\s*,\\s*|\\s+");  // 공백과 쉼표로 분리
+        String[] parts = part.split("\\s*,\\s*|\\s+|\\s*-");  // 공백과 쉼표, 대시로 분리
         List<String> etcParts = new ArrayList<>();
 
         for (String p : parts) {
-            // 지번주소의 동명이 들어있는 경우 분리 후 입력
-            if (p.endsWith("동") && houseAddressDto.getDongRi() == null) {
+            // 지번주소의 동명이 들어있는 경우 분리 후 입력 - 숫자형태 동은 동/리가 아님
+            if (p.endsWith("동") && houseAddressDto.getDongRi() == null && !p.matches("^[\\d]{1,5}[동]")) {
                 houseAddressDto.setDongRi(p);
+            // 숫자형태 동 입력
+            } else if (p.matches("^[\\d]{1,5}[동]")) {
+                houseAddressDto.setDetailDong(removeFrontZero(p));
+            // 숫자형태 호 입력
+            } else if (p.matches("^[\\d]{1,5}[호]")) {
+                houseAddressDto.setDetailHo(removeFrontZero(p));
+            // 별표 포함된 동호수는 버림
+            } else if (p.matches("([\\*]+[동])?(\\-)?([\\*]+[호])?")) {
+                break;
             } else {
                 // 지번주소의 지번이나 도로명주소의 건물번호가 입력이 되어있는 경우, 숫자와 하이픈 타입이면 하이픈으로 분리하여 동호수로 입력
                 if ((houseAddressDto.getAddressType() == 1 && houseAddressDto.getJibun() != null) || (houseAddressDto.getAddressType() == 2 && houseAddressDto.getBuildingNo() != null))
                 {
-                    if (p.matches("^[0-9-]+$") && p.length() > 1) {
+                    if (p.matches("^([\\d]+|[\\d]+[동])\\-([\\d]+|[\\d]+[호])$") && p.length() > 1) {
                         String[] dongPart = p.split("-");
                         log.info("동호수로 분리 : {}동 {}호", dongPart[0], dongPart[1]);
 
                         if (houseAddressDto.getDetailDong() == null) {
-                            houseAddressDto.setDetailDong(dongPart[0] + "동");
+                            houseAddressDto.setDetailDong(dongPart[0] + (dongPart[0].endsWith("동") ? "" : "동"));
                         }
                         if (houseAddressDto.getDetailHo() == null) {
-                            houseAddressDto.setDetailHo(dongPart[1] + "호");
+                            houseAddressDto.setDetailHo(dongPart[1] + (dongPart[1].endsWith("호") ? "" : "호"));
                         }
                         continue;
                     }
@@ -409,5 +419,31 @@ public class HouseAddressService {
         houseAddressDto.makeSearchAddress();
 
         return houseAddressDto;
+    }
+
+    // 주소포맷처리
+    public String formatAddress(HouseAddressDto houseAddressDto) {
+        StringBuilder address = new StringBuilder();
+
+        appendIfNotNull(address, houseAddressDto.getSiDo());
+        appendIfNotNull(address, houseAddressDto.getSiGunGu());
+        appendIfNotNull(address, houseAddressDto.getEupMyun());
+        if (houseAddressDto.getAddressType() == 1) { // 지번주소
+            appendIfNotNull(address, houseAddressDto.getDongRi());
+            appendIfNotNull(address, houseAddressDto.getJibun());
+        } else { //도로명주소
+            appendIfNotNull(address, houseAddressDto.getRoadNm());
+            appendIfNotNull(address, houseAddressDto.getBuildingNo());
+        }
+
+        return address.toString().trim();
+    }
+    public void appendIfNotNull(StringBuilder builder, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append(SPACE);
+            }
+            builder.append(value);
+        }
     }
 }
