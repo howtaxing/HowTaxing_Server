@@ -73,7 +73,7 @@ public class UserController {
         }
 
         // 세션에 사용자정보 저장
-        userService.saveUserSession(accessToken);
+        // userService.saveUserSession(accessToken);
 
         String html = "<html><body><pre id='returnValue'>" +
                 "{\"errYn\" : \"N\", \"data\" : " + "{\"accessToken\" : \"" + accessToken + "\", \"refreshToken\" : \"" + refreshToken + "\", \"role\" : \"" + role + "\"}}" +
