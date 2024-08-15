@@ -240,7 +240,7 @@ public class HouseService {
 
         // 재산세정보 가져오기
         List<DataDetail3> list3 = hyphenUserHouseListResponse.getHyphenData().getList3();
-        redisService.deletePropertyInfo(findUser.getId());  // 저장 전 기존 세션값 초기화
+        redisService.deleteHashMap(findUser.getId(), "property");  // 저장 전 기존 세션값 초기화
         savePropertyInfo(findUser.getId(), list3);          // 재산세정보 세션 저장
 
         // 매도 거래 세트
@@ -264,6 +264,8 @@ public class HouseService {
                 }
             }
         }
+        redisService.deleteHashMap(findUser.getId(), "trade");  // 저장 전 기존 세션값 초기화
+        saveTradingInfo(findUser.getId(), buyTransactions);
 
         // 주택 목록을 담을 리스트
         List<Map<String, String>> houseList = new ArrayList<>();
@@ -1515,6 +1517,23 @@ public class HouseService {
         }
     }
 
+    // 하이픈 부동산거래내역 redis 저장
+    public void saveTradingInfo(Long userId, List<DataDetail2> list) {
+        for (int i = 0; i < list.size(); i++) {
+            Map<String, String> propertyInfo = new HashMap<>();
+            propertyInfo.put("address", list.get(i).getAddress());
+            propertyInfo.put("sellBuyClassification", list.get(i).getSellBuyClassification());
+            propertyInfo.put("area", list.get(i).getArea());
+            propertyInfo.put("tradingPrice", list.get(i).getTradingPrice());
+            propertyInfo.put("balancePaymentDate", list.get(i).getBalancePaymentDate());
+            propertyInfo.put("contractDate", list.get(i).getContractDate());
+            propertyInfo.put("startDate", list.get(i).getStartDate());
+            propertyInfo.put("endDate", list.get(i).getEndDate());
+
+            redisService.saveHashMap(userId, "trade", i + 1, propertyInfo);
+        }
+    }
+
     // 하이픈 재산세정보 redis 저장
     public void savePropertyInfo(Long userId, List<DataDetail3> list) {
         for (int i = 0; i < list.size(); i++) {
@@ -1524,7 +1543,7 @@ public class HouseService {
             propertyInfo.put("acquisitionDate", list.get(i).getAcquisitionDate());
             propertyInfo.put("baseDate", list.get(i).getBaseDate());
 
-            redisService.savePropertyInfo(userId, i + 1, propertyInfo);
+            redisService.saveHashMap(userId, "property", i + 1, propertyInfo);
         }
     }
 

@@ -14,19 +14,32 @@ public class RedisService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    // 재산세정보 저장
-    public void savePropertyInfo(Long userId, int houseNo, Map<String, String> propertyInfo) {
-        String hashKey = "user:" + userId + ":property:" + houseNo;
+    // hashMap 타입 세션저장
+    public void saveHashMap(Long userId, String type, Map<String, String> hashMap) {
+        String hashKey = "user:" + userId + ":" + type;
 
-        redisTemplate.opsForHash().putAll(hashKey, propertyInfo);
+        redisTemplate.opsForHash().putAll(hashKey, hashMap);
+        redisTemplate.expire(hashKey, 1, TimeUnit.DAYS);
+    }
+    public void saveHashMap(Long userId, String type, int id, Map<String, String> hashMap) {
+        String hashKey = "user:" + userId + ":" + type + ":" + id;
+
+        redisTemplate.opsForHash().putAll(hashKey, hashMap);
         redisTemplate.expire(hashKey, 1, TimeUnit.DAYS);
     }
 
-    // 사용자 재산세정보 일괄삭제
-    public void deletePropertyInfo(Long userId) {
-        String hashKey = "user:" + userId + ":property:*";
+    // hashMap 타입 일괄삭제
+    public void deleteHashMap(Long userId, String type) {
+        String hashKey = "user:" + userId + ":" + type + ":*";
         Set<String> keys = redisTemplate.keys(hashKey);
 
         redisTemplate.delete(keys);
+    }
+
+    // 사용자정보 삭제
+    public void deleteForUser(Long userId) {
+        String hashKey = "user:" + userId + ":userInfo";
+
+        redisTemplate.delete(hashKey);
     }
 }

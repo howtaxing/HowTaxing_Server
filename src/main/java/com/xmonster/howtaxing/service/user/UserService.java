@@ -11,6 +11,7 @@ import com.xmonster.howtaxing.feign.naver.NaverAuthApi;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.repository.user.UserRepository;
+import com.xmonster.howtaxing.service.redis.RedisService;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.type.SocialType;
 import com.xmonster.howtaxing.utils.UserUtil;
@@ -37,6 +38,7 @@ public class UserService {
     private final UserUtil userUtil;
     private final KakaoUserApi kakaoUserApi;
     private final NaverAuthApi naverAuthApi;
+    private final RedisService redisService;
     //private final PasswordEncoder passwordEncoder;
 
     @Value("${spring.security.oauth2.client.registration.naver.client-id}")
@@ -192,6 +194,19 @@ public class UserService {
         }
 
         return resultFlag;
+    }
+
+    // 사용자정보 세션저장
+    public void saveUserSession(String accessToken) {
+        User findUser = userUtil.findCurrentUser();
+
+        Map<String, String> userInfo = new HashMap<>();
+        userInfo.put("email", findUser.getEmail());
+        userInfo.put("socialId", findUser.getSocialId());
+        userInfo.put("accessToken", accessToken);
+        userInfo.put("refreshToken", findUser.getRefreshToken());
+
+        redisService.saveHashMap(findUser.getId(), "userInfo", userInfo);
     }
 
     private Object convertJsonToData(String jsonString) {
