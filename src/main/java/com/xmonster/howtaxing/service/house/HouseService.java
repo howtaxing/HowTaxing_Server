@@ -18,6 +18,7 @@ import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse.HyphenData.
 import com.xmonster.howtaxing.model.House;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
+import com.xmonster.howtaxing.service.redis.RedisService;
 import com.xmonster.howtaxing.type.ErrorCode;
 
 import com.xmonster.howtaxing.utils.HouseUtil;
@@ -49,6 +50,7 @@ public class HouseService {
     private final HyphenService hyphenService;
     private final JusoGovService jusoGovService;
     private final HouseAddressService houseAddressService;
+    private final RedisService redisService;
 
     private final HouseRepository houseRepository;
 
@@ -230,8 +232,16 @@ public class HouseService {
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
         }
 
+        // 사용자 정보 가져오기
+        User findUser = userUtil.findCurrentUser();
+
         // 부동산거래내역 가져오기
         List<DataDetail2> list2 = hyphenUserHouseListResponse.getHyphenData().getList2();
+
+        // 재산세정보 가져오기
+        List<DataDetail3> list3 = hyphenUserHouseListResponse.getHyphenData().getList3();
+        redisService.deletePropertyInfo(findUser.getId());  // 저장 전 기존 세션값 초기화
+        savePropertyInfo(findUser.getId(), list3);          // 재산세정보 세션 저장
 
         // 매도 거래 세트
         Set<String> sellAddresses = new HashSet<>();
@@ -270,12 +280,12 @@ public class HouseService {
 
             Map<String, String> addressMap = new LinkedHashMap<>();
             // addressMap.put("거래구분", dataDetail2.getSellBuyClassification());
-            addressMap.put("주소", address);
-            addressMap.put("주택명", etcAddress.toString());
-            addressMap.put("매매가", dataDetail2.getTradingPrice());
-            addressMap.put("계약일자", dataDetail2.getContractDate());
-            addressMap.put("잔금지급일", dataDetail2.getBalancePaymentDate());
-            addressMap.put("면적", dataDetail2.getArea());
+            addressMap.put("houseName", etcAddress.toString());
+            addressMap.put("address", address);
+            addressMap.put("tradingPrice", dataDetail2.getTradingPrice());
+            addressMap.put("contractDate", dataDetail2.getContractDate());
+            addressMap.put("balancePaymentDate", dataDetail2.getBalancePaymentDate());
+            addressMap.put("area", dataDetail2.getArea());
 
             houseList.add(addressMap);
         }
@@ -1505,6 +1515,19 @@ public class HouseService {
         }
     }
 
+    // 하이픈 재산세정보 redis 저장
+    public void savePropertyInfo(Long userId, List<DataDetail3> list) {
+        for (int i = 0; i < list.size(); i++) {
+            Map<String, String> propertyInfo = new HashMap<>();
+            propertyInfo.put("address", list.get(i).getAddress());
+            propertyInfo.put("area", list.get(i).getArea());
+            propertyInfo.put("acquisitionDate", list.get(i).getAcquisitionDate());
+            propertyInfo.put("baseDate", list.get(i).getBaseDate());
+
+            redisService.savePropertyInfo(userId, i + 1, propertyInfo);
+        }
+    }
+
     private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse() {
         // 하이픈 응답값 세팅
         String json = "";
@@ -1537,11 +1560,13 @@ public class HouseService {
         if (houseAddressDto.getSiDo() != null) addressMap.put("시도", houseAddressDto.getSiDo());
         if (houseAddressDto.getSiGunGu() != null) addressMap.put("시군구", houseAddressDto.getSiGunGu());
         if (houseAddressDto.getEupMyun() != null) addressMap.put("구읍면", houseAddressDto.getEupMyun());
-        if (houseAddressDto.getRoadNm() != null) addressMap.put("도로명", houseAddressDto.getRoadNm());
-        if (houseAddressDto.getBuildingNo() != null) addressMap.put("건물번호", houseAddressDto.getBuildingNo());
         if (houseAddressDto.getDongRi() != null) addressMap.put("동리", houseAddressDto.getDongRi());
         if (houseAddressDto.getJibun() != null) addressMap.put("지번", houseAddressDto.getJibun());
-        if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", houseAddressDto.getEtcAddress().toString());
+        if (houseAddressDto.getRoadNm() != null) addressMap.put("도로명", houseAddressDto.getRoadNm());
+        if (houseAddressDto.getBuildingNo() != null) addressMap.put("건물번호", houseAddressDto.getBuildingNo());
+        StringBuilder etcAddress = new StringBuilder();
+        for (String part : houseAddressDto.getEtcAddress()) houseAddressService.appendIfNotNull(etcAddress, part);
+        if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", etcAddress.toString().trim());
         if (houseAddressDto.getDetailDong() != null) addressMap.put("동", houseAddressDto.getDetailDong());
         if (houseAddressDto.getDetailHo() != null) addressMap.put("호", houseAddressDto.getDetailHo());
 

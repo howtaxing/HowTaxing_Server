@@ -34,10 +34,19 @@ spring:
       initialize-schema: never
     job:
       enabled: false
+  redis:
+    host: devapp.how-taxing.com
+    port: 6379
+    password: Xmonster11@@
   mvc:
     custom-uri-logging-filter:
       enabled: true
-      level: info
+      level: debug
+
+logging:
+  level:
+    root: INFO
+    com.xmonster.howtaxing: DEBUG
 
 --- # dev 설정
 spring:
@@ -91,7 +100,9 @@ spring:
       time-between-eviction-runs-millis: 3000
   batch:
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
+    job:
+      enabled: false
   mvc:
     custom-uri-logging-filter:
       enabled: true
