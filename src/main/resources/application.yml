@@ -73,6 +73,10 @@ spring:
       initialize-schema: never
     job:
       enabled: false
+  redis:
+    host: devapp.how-taxing.com
+    port: 6379
+    password: Xmonster11@@
   mvc:
     custom-uri-logging-filter:
       enabled: true
