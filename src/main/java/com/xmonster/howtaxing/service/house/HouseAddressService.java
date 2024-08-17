@@ -329,14 +329,17 @@ public class HouseAddressService {
             if (p.endsWith("동") && houseAddressDto.getDongRi() == null && !p.matches("^[\\d]{1,5}[동]")) {
                 houseAddressDto.setDongRi(p);
             // 숫자형태 동 입력
-            } else if (p.matches("^[\\d]{1,5}[동]")) {
+            } else if (removeFrontZero(p).matches("^[\\d]{1,5}[동]")) {
                 houseAddressDto.setDetailDong(removeFrontZero(p));
             // 숫자형태 호 입력
             } else if (p.matches("^[\\d]{1,5}[호]")) {
                 houseAddressDto.setDetailHo(removeFrontZero(p));
             // 별표 포함된 동호수는 버림
             } else if (p.matches("([\\*]+[동])?(\\-)?([\\*]+[호])?")) {
-                break;
+                continue;
+            } else if (p.matches("(동|외|[\\d+]+필지|산[\\d]+)")) {
+                // 외, 산, 필지 등 제외
+                continue;
             } else {
                 // 지번주소의 지번이나 도로명주소의 건물번호가 입력이 되어있는 경우, 숫자와 하이픈 타입이면 하이픈으로 분리하여 동호수로 입력
                 if ((houseAddressDto.getAddressType() == 1 && houseAddressDto.getJibun() != null) || (houseAddressDto.getAddressType() == 2 && houseAddressDto.getBuildingNo() != null))
@@ -373,7 +376,7 @@ public class HouseAddressService {
         // 도로명주소 판별
         if (roadMatcher.find()) {
             // 도로명주소 분할
-            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d]+)(.+)?";
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
             Pattern pattern = Pattern.compile(regEx);
             Matcher matcher = pattern.matcher(address);
 
@@ -416,6 +419,7 @@ public class HouseAddressService {
                 log.info("주소를 파싱할 수 없습니다.");
             }
         }
+        houseAddressDto.makeDetailAddress();
         houseAddressDto.makeSearchAddress();
 
         return houseAddressDto;
