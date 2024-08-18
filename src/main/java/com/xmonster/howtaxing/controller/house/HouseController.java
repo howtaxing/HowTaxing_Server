@@ -5,6 +5,7 @@ import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrDetailRequest;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrListRequest;
 import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaRequest;
 import com.xmonster.howtaxing.dto.vworld.VworldPubLandPriceAndAreaRequest;
+import com.xmonster.howtaxing.dto.hyphen.HyphenUserSessionRequest;
 import com.xmonster.howtaxing.service.house.HouseService;
 
 import com.xmonster.howtaxing.service.house.JusoGovService;
@@ -127,6 +128,14 @@ public class HouseController {
     // 부동산거래내역 기반 매수주택 불러오기(하이픈-청약홈)
     @PostMapping("/house/loadHouse")
     public Object loadHouseFromRealty(@RequestBody HouseListSearchRequest houseListSearchRequest) throws Exception {
+        log.info(">> [Controller]HouseController loadHouseFromRealty - 부동산거래내역 기반 매수주택 불러오기");
         return houseService.loadHouseFromRealty(houseListSearchRequest);
+    }
+
+    // 세션 기반 주택정보 불려오기
+    @PostMapping("/house/getHouseInfo")
+    public Object getHouseInfo(@RequestBody HyphenUserSessionRequest hyphenUserSessionRequest) throws Exception {
+        log.info(">> [Controller]HouseController getHouseInfo - 부동산거래내역 기반 매수주택 불러오기");
+        return houseService.getHouseInfo(hyphenUserSessionRequest);
     }
 }

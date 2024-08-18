@@ -62,6 +62,11 @@ public final class CommonConstant {
 
     public final static String MOVE_IN_KEYWORD = "전입";
 
+    /* 하이픈 청약홈 조회결과 세션값 */
+    public final static String BUILDING = "building";   // 건축물대장
+    public final static String TRADE = "trade";         // 부동산거래내역
+    public final static String PROPERTY = "property";   // 재산세내역
+
     /* 계산 유형 */
     public final static String CALC_TYPE_BUY = "01";                // 취득세
     public final static String CALC_TYPE_SELL = "02";               // 양도소득세

@@ -163,6 +163,67 @@ public class HouseAddressService {
         return houseAddressDto;
     }
 
+    // 정규식 이용한 주소분할 신규로직
+    public HouseAddressDto parseAddress(String address) {
+        HouseAddressDto houseAddressDto = new HouseAddressDto(address);
+
+        // 도로명주소 여부 판별 정규식
+        String roadRegex = "[가-힣A-Za-z·\\d~\\-\\.]+(로|길).[\\d]+";
+        Pattern roadPattern = Pattern.compile(roadRegex);
+        Matcher roadMatcher = roadPattern.matcher(address);
+
+        // 도로명주소 판별
+        if (roadMatcher.find()) {
+            // 도로명주소 분할
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
+            Pattern pattern = Pattern.compile(regEx);
+            Matcher matcher = pattern.matcher(address);
+
+            if (matcher.matches()) {
+                houseAddressDto.setAddressType(2);
+
+                houseAddressDto.setSiDo(matcher.group(1));
+                houseAddressDto.setSiGunGu(matcher.group(2));
+                houseAddressDto.setEupMyun(matcher.group(3));
+                houseAddressDto.setRoadNm(matcher.group(4));
+                houseAddressDto.setBuildingNo(matcher.group(5));
+                if (matcher.group(6) != null) {
+                    for (String etcAddress : seperateEtcAddress(matcher.group(6), houseAddressDto)) {
+                        houseAddressDto.appendToEtcAddress(etcAddress);
+                    }
+                }
+            } else {
+                log.info("주소를 파싱할 수 없습니다.");
+            }
+        } else {
+            // 지번주소 분할
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구|읍|면])?\\s?([가-힣]+[동|리])?.([\\d\\-\\d]+)?(.+)?";
+            Pattern pattern = Pattern.compile(regEx);
+            Matcher matcher = pattern.matcher(address);
+
+            if (matcher.matches()) {
+                houseAddressDto.setAddressType(1);
+
+                houseAddressDto.setSiDo(matcher.group(1));
+                houseAddressDto.setSiGunGu(matcher.group(2));
+                houseAddressDto.setEupMyun(matcher.group(3));
+                houseAddressDto.setDongRi(matcher.group(4));
+                houseAddressDto.setJibun(matcher.group(5));
+                if (matcher.group(6) != null) {
+                    for (String etcAddress : seperateEtcAddress(matcher.group(6), houseAddressDto)) {
+                        houseAddressDto.appendToEtcAddress(etcAddress);
+                    }
+                }
+            } else {
+                log.info("주소를 파싱할 수 없습니다.");
+            }
+        }
+        houseAddressDto.makeDetailAddress();    // 상세주소 생성
+        houseAddressDto.makeSearchAddress();    // 검색용주소 생성
+
+        return houseAddressDto;
+    }
+
     public JusoDetail replaceSpecialCharactersForJusoDetail(JusoDetail jusoDetail){
         if(jusoDetail != null){
             jusoDetail.setRoadAddr(this.replaceSpecialCharacters(jusoDetail.getRoadAddr()));
@@ -362,67 +423,6 @@ public class HouseAddressService {
         }
 
         return etcParts;
-    }
-
-    // 정규식 이용한 주소분할 신규로직
-    public HouseAddressDto parseAddress(String address) {
-        HouseAddressDto houseAddressDto = new HouseAddressDto(address);
-
-        // 도로명주소 여부 판별 정규식
-        String roadRegex = "[가-힣A-Za-z·\\d~\\-\\.]+(로|길).[\\d]+";
-        Pattern roadPattern = Pattern.compile(roadRegex);
-        Matcher roadMatcher = roadPattern.matcher(address);
-
-        // 도로명주소 판별
-        if (roadMatcher.find()) {
-            // 도로명주소 분할
-            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
-            Pattern pattern = Pattern.compile(regEx);
-            Matcher matcher = pattern.matcher(address);
-
-            if (matcher.matches()) {
-                houseAddressDto.setAddressType(2);
-
-                houseAddressDto.setSiDo(matcher.group(1));
-                houseAddressDto.setSiGunGu(matcher.group(2));
-                houseAddressDto.setEupMyun(matcher.group(3));
-                houseAddressDto.setRoadNm(matcher.group(4));
-                houseAddressDto.setBuildingNo(matcher.group(5));
-                if (matcher.group(6) != null) {
-                    for (String etcAddress : seperateEtcAddress(matcher.group(6), houseAddressDto)) {
-                        houseAddressDto.appendToEtcAddress(etcAddress);
-                    }
-                }
-            } else {
-                log.info("주소를 파싱할 수 없습니다.");
-            }
-        } else {
-            // 지번주소 분할
-            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구|읍|면])?\\s?([가-힣]+[동|리])?.([\\d\\-\\d]+)?(.+)?";
-            Pattern pattern = Pattern.compile(regEx);
-            Matcher matcher = pattern.matcher(address);
-
-            if (matcher.matches()) {
-                houseAddressDto.setAddressType(1);
-
-                houseAddressDto.setSiDo(matcher.group(1));
-                houseAddressDto.setSiGunGu(matcher.group(2));
-                houseAddressDto.setEupMyun(matcher.group(3));
-                houseAddressDto.setDongRi(matcher.group(4));
-                houseAddressDto.setJibun(matcher.group(5));
-                if (matcher.group(6) != null) {
-                    for (String etcAddress : seperateEtcAddress(matcher.group(6), houseAddressDto)) {
-                        houseAddressDto.appendToEtcAddress(etcAddress);
-                    }
-                }
-            } else {
-                log.info("주소를 파싱할 수 없습니다.");
-            }
-        }
-        houseAddressDto.makeDetailAddress();
-        houseAddressDto.makeSearchAddress();
-
-        return houseAddressDto;
     }
 
     // 주소포맷처리
