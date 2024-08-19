@@ -175,7 +175,7 @@ public class HouseAddressService {
         // 도로명주소 판별
         if (roadMatcher.find()) {
             // 도로명주소 분할
-            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구|읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
             Pattern pattern = Pattern.compile(regEx);
             Matcher matcher = pattern.matcher(address);
 
@@ -193,7 +193,7 @@ public class HouseAddressService {
                     }
                 }
             } else {
-                log.info("주소를 파싱할 수 없습니다.");
+                log.info("주소를 파싱할 수 없습니다. {}", address);
             }
         } else {
             // 지번주소 분할
@@ -215,7 +215,7 @@ public class HouseAddressService {
                     }
                 }
             } else {
-                log.info("주소를 파싱할 수 없습니다.");
+                log.info("주소를 파싱할 수 없습니다. {}", address);
             }
         }
         houseAddressDto.makeDetailAddress();    // 상세주소 생성
