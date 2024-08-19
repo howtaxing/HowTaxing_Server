@@ -223,9 +223,10 @@ public class HouseService {
     public Object loadHouseFromRealty(HouseListSearchRequest houseListSearchRequest) {
         String[] activeProfiles = environment.getActiveProfiles();
         boolean isLocal = Arrays.asList(activeProfiles).contains("local");
+        boolean isDev = Arrays.asList(activeProfiles).contains("dev");
         
         HyphenUserHouseListResponse hyphenUserHouseListResponse;
-        if (isLocal) {
+        if (isLocal || isDev) {
             // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
             hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
         } else {
@@ -1771,7 +1772,7 @@ public class HouseService {
 
     private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse() {
         // 하이픈 응답값 세팅
-        String json = "";
+        String json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408050000023444\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 서원대로 290 (명륜동)\",\"area\":\"84.9836\",\"approvalDate\":\"20211129\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20220317\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"245000\",\"baseDate\":\"20240805\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 산31 원주 더샵 센트럴파크 2단지 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9836\",\"tradingPrice\":\"334000000\",\"balancePaymentDate\":\"20220131\",\"contractDate\":\"20191214\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"84.4516\",\"tradingPrice\":\"680000000\",\"balancePaymentDate\":\"20200207\",\"contractDate\":\"20191117\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"555000000\",\"balancePaymentDate\":\"20200103\",\"contractDate\":\"20191018\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 두산위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매수(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"426000000\",\"balancePaymentDate\":\"20170331\",\"contractDate\":\"20170329\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매수(기존주택)\",\"area\":\"84.4516\",\"tradingPrice\":\"437000000\",\"balancePaymentDate\":\"20160610\",\"contractDate\":\"20160409\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 856 더샵 원주센트럴파크 2단지                          0207동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20220226\",\"baseDate\":\"20240327\"}]}}";
         try {
             return objectMapper.readValue(json, HyphenUserHouseListResponse.class);
         } catch (Exception e) {
