@@ -175,7 +175,7 @@ public class HouseAddressService {
         // 도로명주소 판별
         if (roadMatcher.find()) {
             // 도로명주소 분할
-            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구|읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
             Pattern pattern = Pattern.compile(regEx);
             Matcher matcher = pattern.matcher(address);
 
@@ -184,11 +184,12 @@ public class HouseAddressService {
 
                 houseAddressDto.setSiDo(matcher.group(1));
                 houseAddressDto.setSiGunGu(matcher.group(2));
-                houseAddressDto.setEupMyun(matcher.group(3));
-                houseAddressDto.setRoadNm(matcher.group(4));
-                houseAddressDto.setBuildingNo(matcher.group(5));
-                if (matcher.group(6) != null) {
-                    for (String etcAddress : seperateEtcAddress(matcher.group(6), houseAddressDto)) {
+                houseAddressDto.setGu(matcher.group(3));
+                houseAddressDto.setEupMyun(matcher.group(4));
+                houseAddressDto.setRoadNm(matcher.group(5));
+                houseAddressDto.setBuildingNo(matcher.group(6));
+                if (matcher.group(7) != null) {
+                    for (String etcAddress : seperateEtcAddress(matcher.group(7), houseAddressDto)) {
                         houseAddressDto.appendToEtcAddress(etcAddress);
                     }
                 }
@@ -197,7 +198,7 @@ public class HouseAddressService {
             }
         } else {
             // 지번주소 분할
-            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구|읍|면])?\\s?([가-힣]+[동|리])?.([\\d\\-\\d]+)?(.+)?";
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣]+[동|리])?.([\\d\\-\\d]+)?(.+)?";
             Pattern pattern = Pattern.compile(regEx);
             Matcher matcher = pattern.matcher(address);
 
@@ -206,11 +207,12 @@ public class HouseAddressService {
 
                 houseAddressDto.setSiDo(matcher.group(1));
                 houseAddressDto.setSiGunGu(matcher.group(2));
-                houseAddressDto.setEupMyun(matcher.group(3));
-                houseAddressDto.setDongRi(matcher.group(4));
-                houseAddressDto.setJibun(matcher.group(5));
-                if (matcher.group(6) != null) {
-                    for (String etcAddress : seperateEtcAddress(matcher.group(6), houseAddressDto)) {
+                houseAddressDto.setGu(matcher.group(3));
+                houseAddressDto.setEupMyun(matcher.group(4));
+                houseAddressDto.setDongRi(matcher.group(5));
+                houseAddressDto.setJibun(matcher.group(6));
+                if (matcher.group(7) != null) {
+                    for (String etcAddress : seperateEtcAddress(matcher.group(7), houseAddressDto)) {
                         houseAddressDto.appendToEtcAddress(etcAddress);
                     }
                 }
@@ -382,7 +384,7 @@ public class HouseAddressService {
     private List<String> seperateEtcAddress(String part, HouseAddressDto houseAddressDto) {
         part = part.replaceAll("[()]", "").trim();  // 괄호 제거 및 트림
         // String[] parts = part.split("\\s*,\\s*|\\s+");  // 공백과 쉼표로 분리
-        String[] parts = part.split("\\s*,\\s*|\\s+|\\s*-");  // 공백과 쉼표, 대시로 분리
+        String[] parts = part.split("\\s*,\\s*|\\s+|\\s*(?<=[가-힣])-");  // 공백과 쉼표, 대시로 분리
         List<String> etcParts = new ArrayList<>();
 
         for (String p : parts) {
@@ -400,6 +402,9 @@ public class HouseAddressService {
                 continue;
             } else if (p.matches("(동|외|[\\d+]+필지|산[\\d]+)")) {
                 // 외, 산, 필지 등 제외
+                continue;
+            } else if (p.contains("BL")) {
+                // 재개발구역 제외
                 continue;
             } else {
                 // 지번주소의 지번이나 도로명주소의 건물번호가 입력이 되어있는 경우, 숫자와 하이픈 타입이면 하이픈으로 분리하여 동호수로 입력

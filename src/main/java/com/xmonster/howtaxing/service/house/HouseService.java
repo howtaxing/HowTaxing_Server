@@ -277,6 +277,11 @@ public class HouseService {
             house.setUserId(userId);
             house.setHouseType(SIX);
             house.setHouseName(etcAddress.toString());
+            if (houseAddressDto.getAddressType() == 1) {
+                house.setJibunAddr(address);
+            } else {
+                house.setRoadAddr(address);
+            }
             house.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
             house.setBalanceDate(LocalDate.parse(dataDetail2.getBalancePaymentDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
             house.setBuyPrice(Long.parseLong(dataDetail2.getTradingPrice()));
@@ -1630,7 +1635,9 @@ public class HouseService {
             return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "면적이 잘못 입력되었습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
         }
         String roadAddress = hyphenUserSessionRequest.getRoadAddress();     // 도로명주소
+        HouseAddressDto roadAddressDto = houseAddressService.parseAddress(roadAddress);
         String jibunAddress = hyphenUserSessionRequest.getJibunAddress();   // 지번주소
+        HouseAddressDto jibunAddressDto = houseAddressService.parseAddress(jibunAddress);
 
         // 세션개수 가져오기
         int cnt = redisService.countKey(userId, type);
@@ -1649,21 +1656,27 @@ public class HouseService {
             log.debug("{} 세션에 저장된 주소 : {}", type, sessionAddress);
             log.debug("비교할 도로명주소: {}", roadAddress);
             log.debug("비교할 지번주소: {}", jibunAddress);
-            if (roadAddress.contains(sessionAddress)) {
-                log.debug("도로명주소 일치함");
-                // 입력받은 주소의 면적과 세션에 저장된 면적을 비교
-                String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
-                String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
-                if (houseArea.equals(sessionArea)) {
-                    isMatch = true;
+            if (houseAddressDto.getAddressType() == 1) {
+                // 지번주소 비교
+                if (houseAddressDto.isSameAddress(jibunAddressDto)) {
+                    log.debug("지번주소 일치함");
+                    // 입력받은 주소의 면적과 세션에 저장된 면적을 비교
+                    String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
+                    String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
+                    if (houseArea.equals(sessionArea)) {
+                        isMatch = true;
+                    }
                 }
-            } else if (jibunAddress.contains(sessionAddress)) {
-                log.debug("지번주소 일치함");
-                // 입력받은 주소의 면적과 세션에 저장된 면적을 비교
-                String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
-                String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
-                if (houseArea.equals(sessionArea)) {
-                    isMatch = true;
+            } else {
+                // 도로명주소 비교
+                if (houseAddressDto.isSameAddress(roadAddressDto)) {
+                    log.debug("도로명주소 일치함");
+                    // 입력받은 주소의 면적과 세션에 저장된 면적을 비교
+                    String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
+                    String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
+                    if (houseArea.equals(sessionArea)) {
+                        isMatch = true;
+                    }
                 }
             }
 
@@ -1772,7 +1785,7 @@ public class HouseService {
 
     private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse() {
         // 하이픈 응답값 세팅
-        String json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408050000023444\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 서원대로 290 (명륜동)\",\"area\":\"84.9836\",\"approvalDate\":\"20211129\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20220317\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"245000\",\"baseDate\":\"20240805\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 산31 원주 더샵 센트럴파크 2단지 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9836\",\"tradingPrice\":\"334000000\",\"balancePaymentDate\":\"20220131\",\"contractDate\":\"20191214\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"84.4516\",\"tradingPrice\":\"680000000\",\"balancePaymentDate\":\"20200207\",\"contractDate\":\"20191117\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"555000000\",\"balancePaymentDate\":\"20200103\",\"contractDate\":\"20191018\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 두산위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매수(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"426000000\",\"balancePaymentDate\":\"20170331\",\"contractDate\":\"20170329\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매수(기존주택)\",\"area\":\"84.4516\",\"tradingPrice\":\"437000000\",\"balancePaymentDate\":\"20160610\",\"contractDate\":\"20160409\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 856 더샵 원주센트럴파크 2단지                          0207동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20220226\",\"baseDate\":\"20240327\"}]}}";
+        String json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408050000023444\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 서원대로 290 (명륜동)\",\"area\":\"84.9836\",\"approvalDate\":\"20211129\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20220317\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"245000\",\"baseDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주시 흥덕구 송화로214번길 29 (송절동)\",\"area\":\"84.9365\",\"approvalDate\":\"20180726\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20181026\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"261000\",\"baseDate\":\"20240805\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 산31 원주 더샵 센트럴파크 2단지 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9836\",\"tradingPrice\":\"334000000\",\"balancePaymentDate\":\"20220131\",\"contractDate\":\"20191214\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"84.4516\",\"tradingPrice\":\"680000000\",\"balancePaymentDate\":\"20200207\",\"contractDate\":\"20191117\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"555000000\",\"balancePaymentDate\":\"20200103\",\"contractDate\":\"20191018\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 두산위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매수(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"426000000\",\"balancePaymentDate\":\"20170331\",\"contractDate\":\"20170329\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매수(기존주택)\",\"area\":\"84.4516\",\"tradingPrice\":\"437000000\",\"balancePaymentDate\":\"20160610\",\"contractDate\":\"20160409\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 BL-A-5 청주 테크노폴리스 우미린 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9365\",\"tradingPrice\":\"296800000\",\"balancePaymentDate\":\"20180801\",\"contractDate\":\"20170731\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 856 더샵 원주센트럴파크 2단지                          0207동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20220226\",\"baseDate\":\"20240327\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 850 테크노폴리스 우미린                                0104동 00801호\",\"area\":\"84.93\",\"acquisitionDate\":\"20180810\",\"baseDate\":\"20240327\"}]}}";
         try {
             return objectMapper.readValue(json, HyphenUserHouseListResponse.class);
         } catch (Exception e) {
@@ -1801,7 +1814,8 @@ public class HouseService {
         Map<String, String> addressMap = new LinkedHashMap<>();
         if (houseAddressDto.getSiDo() != null) addressMap.put("시도", houseAddressDto.getSiDo());
         if (houseAddressDto.getSiGunGu() != null) addressMap.put("시군구", houseAddressDto.getSiGunGu());
-        if (houseAddressDto.getEupMyun() != null) addressMap.put("구읍면", houseAddressDto.getEupMyun());
+        if (houseAddressDto.getGu() != null) addressMap.put("구", houseAddressDto.getGu());
+        if (houseAddressDto.getEupMyun() != null) addressMap.put("읍면", houseAddressDto.getEupMyun());
         if (houseAddressDto.getDongRi() != null) addressMap.put("동리", houseAddressDto.getDongRi());
         if (houseAddressDto.getJibun() != null) addressMap.put("지번", houseAddressDto.getJibun());
         if (houseAddressDto.getRoadNm() != null) addressMap.put("도로명", houseAddressDto.getRoadNm());
