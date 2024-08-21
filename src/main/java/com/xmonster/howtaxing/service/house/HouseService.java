@@ -1846,9 +1846,9 @@ public class HouseService {
         if (houseAddressDto.getRoadNm() != null) addressMap.put("도로명", houseAddressDto.getRoadNm());
         if (houseAddressDto.getBuildingNo() != null) addressMap.put("건물번호", houseAddressDto.getBuildingNo());
         if (houseAddressDto.getDetailDong() != null) addressMap.put("상세주소", houseAddressDto.getDetailAddress());
-        StringBuilder etcAddress = new StringBuilder();
-        for (String part : houseAddressDto.getEtcAddress()) houseAddressService.appendIfNotNull(etcAddress, part);
-        if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", etcAddress.toString().trim());
+        // StringBuilder etcAddress = new StringBuilder();
+        // for (String part : houseAddressDto.getEtcAddress()) houseAddressService.appendIfNotNull(etcAddress, part);
+        if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", houseAddressDto.getEtcAddress().toString().trim());
 
         return ApiResponse.success(addressMap);
     }
