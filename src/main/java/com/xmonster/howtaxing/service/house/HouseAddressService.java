@@ -429,30 +429,4 @@ public class HouseAddressService {
 
         return etcParts;
     }
-
-    // 주소포맷처리
-    public String formatAddress(HouseAddressDto houseAddressDto) {
-        StringBuilder address = new StringBuilder();
-
-        appendIfNotNull(address, houseAddressDto.getSiDo());
-        appendIfNotNull(address, houseAddressDto.getSiGunGu());
-        appendIfNotNull(address, houseAddressDto.getEupMyun());
-        if (houseAddressDto.getAddressType() == 1) { // 지번주소
-            appendIfNotNull(address, houseAddressDto.getDongRi());
-            appendIfNotNull(address, houseAddressDto.getJibun());
-        } else { //도로명주소
-            appendIfNotNull(address, houseAddressDto.getRoadNm());
-            appendIfNotNull(address, houseAddressDto.getBuildingNo());
-        }
-
-        return address.toString().trim();
-    }
-    public void appendIfNotNull(StringBuilder builder, String value) {
-        if (value != null && !value.trim().isEmpty()) {
-            if (builder.length() > 0) {
-                builder.append(SPACE);
-            }
-            builder.append(value);
-        }
-    }
 }

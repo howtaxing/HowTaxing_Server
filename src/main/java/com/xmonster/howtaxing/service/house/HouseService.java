@@ -264,12 +264,17 @@ public class HouseService {
          */
         for (DataDetail2 dataDetail2 : buyTransactions) {
             HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
-            String address = houseAddressService.formatAddress(houseAddressDto);
+            String address = houseAddressDto.formatAddress();
 
-            // 주소검색을 위한 기타주소
+            // 주소검색을 위한 기타주소 병합
             StringBuilder etcAddress = new StringBuilder();
             for (String part : houseAddressDto.getEtcAddress()) {
-                houseAddressService.appendIfNotNull(etcAddress, part);
+                if (part != null && !part.trim().isEmpty()) {
+                    if (etcAddress.length() > 0) {
+                        etcAddress.append(SPACE);
+                    }
+                    etcAddress.append(part);
+                }
             }
 
             // 주택정보 입력
@@ -320,12 +325,12 @@ public class HouseService {
                 */
                 hyphenUserSessionRequest.setType(BUILDING);
 
-                Object buildingResult = getHouseInfo(hyphenUserSessionRequest);
+                Object buildingResult = getHouseInfoForType(hyphenUserSessionRequest);
 
                 if (buildingResult instanceof ApiResponse) {
-                    ApiResponse response = (ApiResponse) buildingResult;
+                    ApiResponse<?> response = (ApiResponse<?>) buildingResult;
 
-                    if ("N".equals(response.getErrYn())) {
+                    if (NO.equals(response.getErrYn())) {
                         DataDetail1 dataDetail1 = (DataDetail1) response.getData();
                         house.setBuyDate(LocalDate.parse(dataDetail1.getOwnershipChangeDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
                         house.setPubLandPrice(Long.parseLong(dataDetail1.getPublishedPrice())*1000);
@@ -340,11 +345,11 @@ public class HouseService {
                 */
                 hyphenUserSessionRequest.setType(PROPERTY);
 
-                Object propertyResult = getHouseInfo(hyphenUserSessionRequest);
+                Object propertyResult = getHouseInfoForType(hyphenUserSessionRequest);
                 if (propertyResult instanceof ApiResponse) {
-                    ApiResponse response = (ApiResponse) propertyResult;
+                    ApiResponse<?> response = (ApiResponse<?>) propertyResult;
 
-                    if ("N".equals(response.getErrYn())) {
+                    if (NO.equals(response.getErrYn())) {
                         DataDetail3 dataDetail3 = (DataDetail3) response.getData();
                         HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
                         house.setDetailAdr(houseAddressDto3.getDetailAddress());
@@ -1591,7 +1596,7 @@ public class HouseService {
 
         for (DataDetail2 dataDetail2 : list2) {
             HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
-            String address = houseAddressService.formatAddress(houseAddressDto);
+            String address = houseAddressDto.formatAddress();
             String tradeType = getTradeTypeFromSellBuyClassification(dataDetail2.getSellBuyClassification());
 
             if (TWO.equals(tradeType)) {
@@ -1616,7 +1621,7 @@ public class HouseService {
     * description : 비교할 수 있는 정보가 주소와 면적밖에 없음
     * ##########################################
     */
-    public Object getHouseInfo(HyphenUserSessionRequest hyphenUserSessionRequest) {
+    public Object getHouseInfoForType(HyphenUserSessionRequest hyphenUserSessionRequest) {
         if (EMPTY.equals(hyphenUserSessionRequest.getArea().trim())) {
             return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "면적이 입력되지 않았습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
         }
@@ -1634,28 +1639,22 @@ public class HouseService {
         } catch (Exception e) {
             return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "면적이 잘못 입력되었습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
         }
-        String roadAddress = hyphenUserSessionRequest.getRoadAddress();     // 도로명주소
-        HouseAddressDto roadAddressDto = houseAddressService.parseAddress(roadAddress);
-        String jibunAddress = hyphenUserSessionRequest.getJibunAddress();   // 지번주소
-        HouseAddressDto jibunAddressDto = houseAddressService.parseAddress(jibunAddress);
+
+        HouseAddressDto roadAddressDto = houseAddressService.parseAddress(hyphenUserSessionRequest.getRoadAddress());
+        HouseAddressDto jibunAddressDto = houseAddressService.parseAddress(hyphenUserSessionRequest.getJibunAddress());
 
         // 세션개수 가져오기
         int cnt = redisService.countKey(userId, type);
-        boolean isMatch = false;
         // 세션에서 저장된 주소와 입력받은 주소 비교
         for (int i = 0; i < cnt; i++) {
             log.debug("총 개수 {}개 중 {}번째", cnt, i+1);
-            String address = redisService.getHashMapValue(userId, type, String.valueOf(i+1), "address");
-            BigDecimal area = new BigDecimal(redisService.getHashMapValue(userId, type, String.valueOf(i + 1), "area"));
+            Map<Object, Object> getRedis = redisService.getHashMap(userId, type, String.valueOf(i + 1));
+            String address = getRedis.get("address").toString();
+            BigDecimal area = new BigDecimal(getRedis.get("area").toString());
             
             // 세션에서 가져온 주소 분할
             HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
-            String sessionAddress = houseAddressService.formatAddress(houseAddressDto);
-            
             // 주소비교 후 면적까지 비교 - 추후 메소드 분리 필요
-            log.debug("{} 세션에 저장된 주소 : {}", type, sessionAddress);
-            log.debug("비교할 도로명주소: {}", roadAddress);
-            log.debug("비교할 지번주소: {}", jibunAddress);
             if (houseAddressDto.getAddressType() == 1) {
                 // 지번주소 비교
                 if (houseAddressDto.isSameAddress(jibunAddressDto)) {
@@ -1664,7 +1663,7 @@ public class HouseService {
                     String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
                     String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
                     if (houseArea.equals(sessionArea)) {
-                        isMatch = true;
+                        return getMatchingResponse(type, getRedis);
                     }
                 }
             } else {
@@ -1675,43 +1674,69 @@ public class HouseService {
                     String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
                     String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
                     if (houseArea.equals(sessionArea)) {
-                        isMatch = true;
+                        return getMatchingResponse(type, getRedis);
                     }
                 }
             }
-
-            // 일치하는 결과가 있으면 출력 - 추후 메소드 분리 검토
-            if(isMatch) {
-                Map<Object, Object> getRedis = redisService.getHashMap(userId, type, String.valueOf(i + 1));
-
-                if (BUILDING.equals(type)) {
-                    // 건축물대장 DTO생성 및 데이터 세팅
-                    DataDetail1 dataDetail1 = new DataDetail1();
-                    dataDetail1.setAddress(getRedis.get("address").toString());
-                    dataDetail1.setArea(getRedis.get("area").toString());
-                    dataDetail1.setApprovalDate(getRedis.get("approvalDate").toString());
-                    dataDetail1.setReasonChangeOwnership(getRedis.get("reasonChangeOwnership").toString());
-                    dataDetail1.setOwnershipChangeDate(getRedis.get("ownershipChangeDate").toString());
-                    dataDetail1.setBaseDate(getRedis.get("baseDate").toString());
-                    dataDetail1.setPublicationBaseDate(getRedis.get("publicationBaseDate").toString());
-                    dataDetail1.setPublishedPrice(getRedis.get("publishedPrice").toString());
-
-                    return ApiResponse.success(dataDetail1);
-                } else if (PROPERTY.equals(type)) {
-                    // 재산세내역 DTO생성 및 데이터 세팅
-                    DataDetail3 dataDetail3 = new DataDetail3();
-                    dataDetail3.setAddress(getRedis.get("address").toString());
-                    dataDetail3.setArea(getRedis.get("area").toString());
-                    dataDetail3.setAcquisitionDate(getRedis.get("acquisitionDate").toString());
-                    dataDetail3.setBaseDate(getRedis.get("baseDate").toString());
-
-                    return ApiResponse.success(dataDetail3);
-                }
-                break;
-            }
         }
 
-        return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_NOT_FOUND.getMessage(), "주소조회 결과가 없습니다.", ErrorCode.HOUSE_GET_INFO_NOT_FOUND.getCode());
+        return ApiResponse.success(null);
+    }
+    private ApiResponse getMatchingResponse(String type, Map<Object, Object> redisData) {
+        if (BUILDING.equals(type)) {
+            // 건축물대장 DTO생성 및 데이터 세팅
+            DataDetail1 dataDetail1 = new DataDetail1();
+            dataDetail1.setAddress(redisData.get("address").toString());
+            dataDetail1.setArea(redisData.get("area").toString());
+            dataDetail1.setApprovalDate(redisData.get("approvalDate").toString());
+            dataDetail1.setReasonChangeOwnership(redisData.get("reasonChangeOwnership").toString());
+            dataDetail1.setOwnershipChangeDate(redisData.get("ownershipChangeDate").toString());
+            dataDetail1.setBaseDate(redisData.get("baseDate").toString());
+            dataDetail1.setPublicationBaseDate(redisData.get("publicationBaseDate").toString());
+            dataDetail1.setPublishedPrice(redisData.get("publishedPrice").toString());
+
+            return ApiResponse.success(dataDetail1);
+            // return dataDetail1;
+        } else if (PROPERTY.equals(type)) {
+            // 재산세내역 DTO생성 및 데이터 세팅
+            DataDetail3 dataDetail3 = new DataDetail3();
+            dataDetail3.setAddress(redisData.get("address").toString());
+            dataDetail3.setArea(redisData.get("area").toString());
+            dataDetail3.setAcquisitionDate(redisData.get("acquisitionDate").toString());
+            dataDetail3.setBaseDate(redisData.get("baseDate").toString());
+
+            return ApiResponse.success(dataDetail3);
+        }
+        return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "조회타입 입력이 잘못되었습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
+    }
+
+    // 재산세, 건축물대장 한번에 조회
+    public Object getHouseInfo(HyphenUserSessionRequest hyphenUserSessionRequest) {
+        Map<String, Object> combinedInfo = new LinkedHashMap<>();
+
+        hyphenUserSessionRequest.setType(BUILDING);
+        ApiResponse<?> buildingRes = (ApiResponse<?>) getHouseInfoForType(hyphenUserSessionRequest);
+        if (NO.equals(buildingRes.getErrYn())) {
+            Object dataDetail1 = buildingRes.getData();
+            if (dataDetail1 instanceof DataDetail1) {
+                combinedInfo.put("buildingInfo", dataDetail1);
+            }
+        } else {
+            return ApiResponse.error(buildingRes.getErrMsg(), buildingRes.getErrMsgDtl(), buildingRes.getErrCode());
+        }
+        
+        hyphenUserSessionRequest.setType(PROPERTY);
+        ApiResponse<?> propertyRes = (ApiResponse<?>) getHouseInfoForType(hyphenUserSessionRequest);
+        if (NO.equals(propertyRes.getErrYn())) {
+            Object dataDetail3 = propertyRes.getData();
+            if (dataDetail3 instanceof DataDetail3) {
+                combinedInfo.put("propertyInfo", dataDetail3);
+            }
+        } else {
+            return ApiResponse.error(propertyRes.getErrMsg(), propertyRes.getErrMsgDtl(), propertyRes.getErrCode());
+        }
+
+        return ApiResponse.success(combinedInfo);
     }
 
     // 하이픈 건축물대장정보 redis 저장

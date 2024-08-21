@@ -106,6 +106,35 @@ public class HouseAddressDto {
         return result.toString();
     }
 
+    // 주소포맷처리
+    public String formatAddress() {
+        StringBuilder address = new StringBuilder();
+
+        appendIfNotNull(address, this.getSiDo());
+        appendIfNotNull(address, this.getSiGunGu());
+        appendIfNotNull(address, this.getEupMyun());
+        
+        // 지번주소
+        if (this.getAddressType() == 1) {
+            appendIfNotNull(address, this.getDongRi());
+            appendIfNotNull(address, this.getJibun());
+        // 도로명주소
+        } else {
+            appendIfNotNull(address, this.getRoadNm());
+            appendIfNotNull(address, this.getBuildingNo());
+        }
+
+        return address.toString().trim();
+    }
+    private void appendIfNotNull(StringBuilder builder, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append(SPACE);
+            }
+            builder.append(value);
+        }
+    }
+
     // 주소비교로직
     public boolean isSameAddress(HouseAddressDto compare) {
         // 시도 비교
