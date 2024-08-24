@@ -5,6 +5,7 @@ import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrDetailRequest;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrListRequest;
 import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaRequest;
 import com.xmonster.howtaxing.dto.vworld.VworldPubLandPriceAndAreaRequest;
+import com.xmonster.howtaxing.model.House;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserSessionRequest;
 import com.xmonster.howtaxing.service.house.HouseService;
 
@@ -12,6 +13,7 @@ import com.xmonster.howtaxing.service.house.JusoGovService;
 import com.xmonster.howtaxing.service.house.VworldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -133,9 +135,19 @@ public class HouseController {
     }
 
     // 세션 기반 주택정보 불려오기
-    @PostMapping("/house/getHouseInfo")
+    @GetMapping("/house/getHouseInfo")
     public Object getHouseInfo(@RequestBody HyphenUserSessionRequest hyphenUserSessionRequest) throws Exception {
-        log.info(">> [Controller]HouseController getHouseInfo - 부동산거래내역 기반 매수주택 불러오기");
+        log.info(">> [Controller]HouseController getHouseInfo - 세션에 저장된 주택정보 불러오기");
         return houseService.getHouseInfo(hyphenUserSessionRequest);
     }
+
+    // 로드한 정보의 입력값을 모두 채운 후 주택 목록 전체를 보유주택으로 저장
+    @PostMapping("/house/saveAllHouse")
+    public Object saveAllHouse(@RequestBody List<House> houses) throws Exception {
+        //TODO: process POST request
+        log.info(">> [Controller]HouseController saveAllHouse - 보유주택 리스트 일괄 저장");
+        
+        return houseService.saveAllHouse(houses);
+    }
+    
 }

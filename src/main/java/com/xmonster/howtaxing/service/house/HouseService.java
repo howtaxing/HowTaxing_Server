@@ -17,6 +17,7 @@ import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAdrResponse.Results.JusoDet
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse.HyphenCommon;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse.HyphenData.*;
 import com.xmonster.howtaxing.model.House;
+import com.xmonster.howtaxing.model.LoadHouse;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.service.redis.RedisService;
@@ -40,6 +41,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -254,7 +256,7 @@ public class HouseService {
         List<DataDetail2> buyTransactions = createBuyTransactions(list2);
         saveTradingInfo(userId, buyTransactions);   // 매수거래내역 세션 저장
 
-        List<House> houseList = new ArrayList<>();  // 보유주택 목록
+        List<LoadHouse> houseList = new ArrayList<>();  // 보유주택 목록
         JusoDetail jusoDetail = null;
 
         /*
@@ -278,7 +280,7 @@ public class HouseService {
             }
 
             // 주택정보 입력
-            House house = new House();
+            LoadHouse house = new LoadHouse();
             house.setUserId(userId);
             house.setHouseType(SIX);
             house.setHouseName(etcAddress.toString());
@@ -353,6 +355,7 @@ public class HouseService {
                         DataDetail3 dataDetail3 = (DataDetail3) response.getData();
                         HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
                         house.setDetailAdr(houseAddressDto3.getDetailAddress());
+                        house.setComplete(true);
                     }
                 }
             }
@@ -564,6 +567,23 @@ public class HouseService {
         }
 
         return ApiResponse.success(Map.of("result", "전체 보유주택이 삭제되었습니다."));
+    }
+
+    // 보유주택 일괄등록
+    public Object saveAllHouse(List<House> houses) throws Exception {
+        if (houses == null || houses.isEmpty()) {
+            throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "등록할 주택이 입력되지 않았습니다.");
+        }
+
+        User findUser = userUtil.findCurrentUser();
+
+        // 청약홈(하이픈)에서 가져온 주택 일괄삭제
+        houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
+
+        houses.forEach(house -> house.setSourceType(ONE));
+        List<House> saveHouses = houseRepository.saveAll(houses);
+
+        return ApiResponse.success(saveHouses);
     }
 
     // (양도주택)거주기간 조회
@@ -1682,7 +1702,7 @@ public class HouseService {
 
         return ApiResponse.success(null);
     }
-    private ApiResponse getMatchingResponse(String type, Map<Object, Object> redisData) {
+    private ApiResponse<?> getMatchingResponse(String type, Map<Object, Object> redisData) {
         if (BUILDING.equals(type)) {
             // 건축물대장 DTO생성 및 데이터 세팅
             DataDetail1 dataDetail1 = new DataDetail1();
@@ -1719,7 +1739,7 @@ public class HouseService {
         if (NO.equals(buildingRes.getErrYn())) {
             Object dataDetail1 = buildingRes.getData();
             if (dataDetail1 instanceof DataDetail1) {
-                combinedInfo.put("buildingInfo", dataDetail1);
+                combinedInfo.put("building", dataDetail1);
             }
         } else {
             return ApiResponse.error(buildingRes.getErrMsg(), buildingRes.getErrMsgDtl(), buildingRes.getErrCode());
@@ -1730,7 +1750,7 @@ public class HouseService {
         if (NO.equals(propertyRes.getErrYn())) {
             Object dataDetail3 = propertyRes.getData();
             if (dataDetail3 instanceof DataDetail3) {
-                combinedInfo.put("propertyInfo", dataDetail3);
+                combinedInfo.put("property", dataDetail3);
             }
         } else {
             return ApiResponse.error(propertyRes.getErrMsg(), propertyRes.getErrMsgDtl(), propertyRes.getErrCode());
@@ -1846,8 +1866,6 @@ public class HouseService {
         if (houseAddressDto.getRoadNm() != null) addressMap.put("도로명", houseAddressDto.getRoadNm());
         if (houseAddressDto.getBuildingNo() != null) addressMap.put("건물번호", houseAddressDto.getBuildingNo());
         if (houseAddressDto.getDetailDong() != null) addressMap.put("상세주소", houseAddressDto.getDetailAddress());
-        // StringBuilder etcAddress = new StringBuilder();
-        // for (String part : houseAddressDto.getEtcAddress()) houseAddressService.appendIfNotNull(etcAddress, part);
         if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", houseAddressDto.getEtcAddress().toString().trim());
 
         return ApiResponse.success(addressMap);
