@@ -60,13 +60,6 @@ public class HouseController {
         return houseService.getHouseListSearch(houseListSearchRequest);
     }
 
-    // 보유주택 조회(하이픈-청약홈-주택소유확인) 테스트
-    @PostMapping("/house/searchTest")
-    public Object getHouseListSearchTest(@RequestBody HouseListSearchRequest houseListSearchRequest) throws Exception {
-        log.info(">> [Controller]HouseController getHouseListSearchTest - 보유주택 조회(하이픈-청약홈-주택소유확인) 테스트");
-        return houseService.getHouseListSearchTest(houseListSearchRequest);
-    }
-
     // 보유주택 목록 조회
     @GetMapping("/house/list")
     public Object getHouseList(@RequestParam String calcType) throws Exception {
@@ -114,12 +107,6 @@ public class HouseController {
     public Object searchHouseStayPeriod(@RequestBody HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
         return houseService.getHouseStayPeriod(houseStayPeriodRequest);
     }
-
-    // (양도)주택 거주기간 조회(하이픈-정부24-주민등록초본)
-    /*@PostMapping("/house/stayPeriodTest")
-    public Object searchHouseStayPeriodTest(@RequestBody HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
-        return houseService.getHouseStayPeriodTest(houseStayPeriodRequest);
-    }*/
 
     // 주소분할 테스트
     @PostMapping("/house/addressParseTest")

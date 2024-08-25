@@ -70,91 +70,24 @@ public class HouseService {
     public Object getHouseListSearch(HouseListSearchRequest houseListSearchRequest) {
         log.info(">> [Service]HouseService getHouseListSearch - 보유주택 조회(하이픈-청약홈)");
 
+        String[] activeProfiles = environment.getActiveProfiles();
+        boolean isLocal = Arrays.asList(activeProfiles).contains("local");
+        
+        HyphenUserHouseListResponse hyphenUserHouseListResponse;
+        if (isLocal) {
+            // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
+            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+        } else {
+            // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
+            hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
+        }
+
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
-
-        // 하이픈 주택소유정보 조회 호출
-        HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
 
         // 3. 하이픈 보유주택조회 결과가 정상인지 체크하여, 정상인 경우 조회 결과를 정리하여 별도 DTO에 저장
         //List<HyphenUserHouseResultInfo> hyphenUserHouseResultInfoList = null;
-        List<House> houseList = new ArrayList<>();
-        HyphenCommon hyphenCommon = hyphenUserHouseListResponse.getHyphenCommon();
-        List<DataDetail1> list1 = hyphenUserHouseListResponse.getHyphenData().getList1();
-        List<DataDetail2> list2 = hyphenUserHouseListResponse.getHyphenData().getList2();
-        List<DataDetail3> list3 = hyphenUserHouseListResponse.getHyphenData().getList3();
-
-        if(this.isSuccessHyphenUserHouseListResponse(hyphenCommon)){
-            // 하이픈 보유주택조회 결과 List를 HouseList에 세팅(3->1->2 순서로 호출)
-            this.setList3ToHouseEntity(list3, houseList);
-            this.setList1ToHouseEntity(list1, houseList);
-            this.setList2ToHouseEntity(list2, houseList);
-
-            // 각 리스트를 다시 사용하여 필요한 빈 값을 채워넣기
-            this.fillEmptyValuesFromLists(list1, list2, list3, houseList);
-
-            // 전체 보유주택에 사용자id 세팅
-            for(House house : houseList){
-                house.setUserId(findUser.getId());
-            }
-
-            // houseList 출력 테스트
-            log.info("----- houseList 출력 테스트 Start -----");
-            for(House house : houseList){
-                log.info("------------------------------------------");
-                log.info("주택유형 : " + house.getHouseType());
-                log.info("주택명 : " + house.getHouseName());
-                log.info("상세주소 : " + house.getDetailAdr());
-                log.info("사용자ID : " + house.getUserId());
-                log.info("------------------------------------------");
-            }
-            log.info("----- houseList 출력 테스트 End -----");
-
-            // 청약홈(하이픈)에서 가져와 house 테이블에 세팅한 해당 사용자의 주택 정보를 모두 삭제
-            houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
-
-            // house 테이블에 houseList 저장
-            houseRepository.saveAllAndFlush(houseList);
-        }else{
-            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈 보유주택조회 중 오류가 발생했습니다.");
-        }
-
-        List<House> houseListFromDB = houseRepository.findByUserId(findUser.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
-        List<HouseSimpleInfoResponse> houseSimpleInfoResponseList = new ArrayList<>();
-
-        for(House house : houseListFromDB){
-            houseSimpleInfoResponseList.add(
-                    HouseSimpleInfoResponse.builder()
-                            .houseId(house.getHouseId())
-                            .houseType(house.getHouseType())
-                            .houseName(house.getHouseName())
-                            .roadAddr(house.getRoadAddr())
-                            .detailAdr(house.getDetailAdr())
-                            .isMoveInRight(house.getIsMoveInRight())
-                            .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
-                            .build());
-        }
-
-        return ApiResponse.success(
-                HouseListSearchResponse.builder()
-                        .listCnt(houseSimpleInfoResponseList.size())
-                        .list(houseSimpleInfoResponseList)
-                        .build());
-    }
-
-    // 보유주택 조회(하이픈-청약홈) 테스트(하이픈 조회 데이터만 DUMMY)
-    public Object getHouseListSearchTest(HouseListSearchRequest houseListSearchRequest) {
-        log.info(">> [Service]HouseService getHouseListSearchTest - 보유주택 조회(하이픈-청약홈) 테스트");
-
-        // 호출 사용자 조회
-        User findUser = userUtil.findCurrentUser();
-
-        // 하이픈 주택소유정보 테스트 json data 세팅
-        HyphenUserHouseListResponse hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
-
         List<House> houseList = new ArrayList<>();
         HyphenCommon hyphenCommon = hyphenUserHouseListResponse.getHyphenCommon();
         List<DataDetail1> list1 = hyphenUserHouseListResponse.getHyphenData().getList1();
@@ -580,19 +513,44 @@ public class HouseService {
         // 청약홈(하이픈)에서 가져온 주택 일괄삭제
         houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
 
-        houses.forEach(house -> house.setSourceType(ONE));
+        houses.forEach(house -> {
+            house.setSourceType(ONE);
+            house.setIsMoveInRight(false);
+        });
         List<House> saveHouses = houseRepository.saveAll(houses);
+        // House 엔티티에서 필요한 필드만 추출하여 Map으로 변환
+        List<Map<String, Object>> response = saveHouses.stream()
+                .map(house -> {
+                    Map<String, Object> houseMap = new HashMap<>();
+                    houseMap.put("houseId", house.getHouseId());
+                    houseMap.put("houseType", house.getHouseType());
+                    houseMap.put("houseName", house.getHouseName());
+                    houseMap.put("detailAdr", house.getDetailAdr());
+                    houseMap.put("isMoveInRight", house.getIsMoveInRight());
+                    return houseMap;
+                })
+                .collect(Collectors.toList());
 
-        return ApiResponse.success(saveHouses);
+        return ApiResponse.success(response);
     }
 
     // (양도주택)거주기간 조회
     public Object getHouseStayPeriod(HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
         log.info(">> [Service]HouseService getHouseStayPeriod - (양도주택)거주기간 조회");
 
-        HyphenUserResidentRegistrationResponse hyphenUserResidentRegistrationResponse
+        String[] activeProfiles = environment.getActiveProfiles();
+        boolean isLocal = Arrays.asList(activeProfiles).contains("local");
+
+        HyphenUserResidentRegistrationResponse hyphenUserResidentRegistrationResponse;
+        if (isLocal) {
+            // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
+            hyphenUserResidentRegistrationResponse = getMockedHyphenUserResidentRegistrationResponse();
+        } else {
+            // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
+            hyphenUserResidentRegistrationResponse
                 = hyphenService.getUserStayPeriodInfo(houseStayPeriodRequest)
                 .orElseThrow(() -> new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR));
+        }
 
         HyphenUserResidentRegistrationData hyphenUserResidentRegistrationData
                 = hyphenUserResidentRegistrationResponse.getHyphenUserResidentRegistrationData();
@@ -764,142 +722,6 @@ public class HouseService {
                     .stayPeriodInfo(stayPeriodInfo)
                     .stayPeriodCount(stayPeriodCount)
                     .ownPeriodDetail(ownPeriodDetail)
-                    .stayPeriodDetailList(stayPeriodDetailList)
-                    .build();
-        }
-
-        return ApiResponse.success(houseStayPeriodResponse);
-    }
-
-    // (양도주택)거주기간 조회 테스트
-    public Object getHouseStayPeriodTest(HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
-        log.info(">> [Service]HouseService getHouseStayPeriodTest - (양도주택)거주기간 조회 샘플데이터 조회");
-
-        // 테스트데이터세팅
-        HyphenUserResidentRegistrationResponse hyphenUserResidentRegistrationResponse = getMockedHyphenUserResidentRegistrationResponse();
-
-        HyphenUserResidentRegistrationData hyphenUserResidentRegistrationData
-                = hyphenUserResidentRegistrationResponse.getHyphenUserResidentRegistrationData();
-
-        Long houseId = houseStayPeriodRequest.getHouseId();
-
-        if(houseId == null || houseId == 0) throw new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR, "주택ID 값이 입력되지 않았습니다.");
-
-        House house = houseRepository.findByHouseId(houseId)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
-        HouseStayPeriodResponse houseStayPeriodResponse = null;
-
-        String step = houseStayPeriodRequest.getStep();
-
-        // 로그인 단계 : 1(init)
-        if(INIT.equals(step)){
-            houseStayPeriodResponse = HouseStayPeriodResponse.builder()
-                    .houseId(houseId)
-                    .step(step)
-                    .stepData(hyphenUserResidentRegistrationData.getStepData())
-                    .build();
-        }
-        // 로그인 단계 : 2(sign)
-        else if(SIGN.equals(step)){
-            // 양도주택과 동일한 주택을 찾아 거주기간을 계산
-            // STEP1 : 변동사유가 '전입'인 항목만 체크
-            // STEP2 : 주소가 양도주택과 동일한 경우(주소 분할하여 도로명주소와 지번주소 중 동일한 값이 있는지 확인하고, 상세주소도 비교)
-            // STEP3 : 해당 주택의 '신고일'과 다음 건의 '신고일'의 날짜 차이를 계산
-            // STEP4 : 날짜 차이를 응답 값의 '거주기간일자'에 세팅
-            // STEP5 : 거주기간일자를 x년 y개월로 변경하여 응답값의 '거주기간정보'에 세팅
-            // STEP6 : 해당 주택에 언제부터 언제까지 거주했는지를 정리하여 응답값의 '거주기간상세내용'에 세팅
-
-            boolean hasStayInfo = false;                // 거주정보존재여부
-            String stayPeriodInfo = EMPTY;              // 거주기간정보
-            String stayPeriodCount = EMPTY;             // 거주기간일자
-            List<String> stayPeriodDetailList = new ArrayList<>();  // 거주기간 상세 리스트
-            // String stayPeriodDetailContent = EMPTY;     // 거주기간상세내용
-
-            List<ChangeHistory> list = hyphenUserResidentRegistrationData.getChangeHistoryList();
-
-            if(list != null){
-                int index = 0;
-                for(ChangeHistory history : list){
-                    if(hasStayInfo) break;  // 거주정보존재여부가 true이면 반복문 종료
-
-                    // STEP1 : 변동사유가 '전입'인 항목만 체크
-                    if(MOVE_IN_KEYWORD.equals(history.getChangeReason())){
-                        // 본인이 세대주인 경우만 체크 - 확인필요
-                        if(history.getHeadOfHouseHoldAndRelationShip().contains("본인")){
-                            String address = StringUtils.defaultString(history.getAddress());
-
-                            if(!EMPTY.equals(address)){
-                                HouseAddressDto historyAddressDto = houseAddressService.separateAddress(address);
-                                HouseAddressDto sellHouseAddressDto = null;
-
-                                if(historyAddressDto.getAddressType() == 1){
-                                    sellHouseAddressDto = houseAddressService.separateAddress(house.getJibunAddr());
-                                } else {
-                                    sellHouseAddressDto = houseAddressService.separateAddress(house.getRoadAddr());
-                                }
-                                // 동일주택여부 판단을 위한 상세주소 세팅
-                                sellHouseAddressDto.setDetailAddress(house.getDetailAdr());
-
-                                if(historyAddressDto != null && sellHouseAddressDto != null){
-                                    // STEP2 : 주소가 양도주택과 동일한 경우(주소 분할하여 도로명주소와 지번주소 중 동일한 값이 있는지 확인하고, 상세주소도 비교)
-                                    if(houseAddressService.compareAddress(historyAddressDto, sellHouseAddressDto)){
-                                        hasStayInfo = true; // 거주정보 존재함으로 세팅
-
-                                        String curReportDate = history.getReportDate();
-                                        String nextReportDate = EMPTY;
-
-                                        for(int i=index+1; i<list.size(); i++){
-                                            if(MOVE_IN_KEYWORD.equals(history.getChangeReason())){
-                                                nextReportDate = StringUtils.defaultString(list.get(i).getReportDate());
-                                                break;
-                                            }
-                                        }
-
-                                        // STEP3 : 해당 주택의 '신고일'과 다음 건의 '신고일'의 날짜 차이를 계산
-                                        if(!EMPTY.equals(curReportDate)){
-                                            LocalDate crDate = LocalDate.parse(curReportDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
-                                            LocalDate nrDate = null;
-
-                                            // 다음 전입 신고일이 존재하는 경우
-                                            if(!EMPTY.equals(nextReportDate)){
-                                                nrDate = LocalDate.parse(nextReportDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
-                                            }
-                                            // 다음 전입 신고일이 존재하지 않는 경우(해당 주택에서 현재까지 계속 거주하고 있는 경우)
-                                            else{
-                                                nrDate = LocalDate.now();
-                                            }
-
-                                            Long stayPeriodByDay = ChronoUnit.DAYS.between(crDate, nrDate);
-                                            Long stayPeriodByMonth = ChronoUnit.MONTHS.between(crDate, nrDate);
-                                            Long stayPeriodByYear = ChronoUnit.YEARS.between(crDate, nrDate);
-
-                                            // 거주기간이 하루 이상은 되어야 세팅
-                                            if(ChronoUnit.DAYS.between(crDate, nrDate) > 0){
-                                                stayPeriodDetailList.add(crDate + "부터 " + nrDate + "까지 거주");
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    index++;
-                }
-            }else{
-                throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR);
-            }
-
-            houseStayPeriodResponse = HouseStayPeriodResponse.builder()
-                    .houseId(houseId)
-                    .step(step)
-                    .stepData(hyphenUserResidentRegistrationData.getStepData())
-                    .houseName(house.getHouseName())
-                    .detailAdr(house.getDetailAdr())
-                    .hasStayInfo(hasStayInfo)
-                    .stayPeriodInfo(stayPeriodInfo)
-                    .stayPeriodCount(stayPeriodCount)
                     .stayPeriodDetailList(stayPeriodDetailList)
                     .build();
         }
