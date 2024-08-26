@@ -206,7 +206,7 @@ public class HouseService {
             LoadHouse house = new LoadHouse();
             house.setUserId(userId);
             house.setHouseType(SIX);
-            house.setHouseName(etcAddress);
+            house.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
             house.setSourceType(ONE);
             if (houseAddressDto.getAddressType() == 1) {
                 house.setJibunAddr(address);
@@ -221,9 +221,17 @@ public class HouseService {
             String keyword = address + SPACE + etcAddress;   // 주소검색을 위한 키워드
 
             // 주소기반산업지원서비스 API호출
-            JusoGovRoadAdrResponse jusoGovRoadAdrResponse = jusoGovService.getRoadAdrInfo(keyword);
+            JusoGovRoadAdrResponse jusoGovRoadAdrResponse = jusoGovService.getRoadAdrInfo(address);
             int totalCount = Integer.parseInt(jusoGovRoadAdrResponse.getResults().getCommon().getTotalCount());
-            log.debug("검색어 {}: 주소검색결과 {}건", keyword, totalCount);
+            log.debug("검색어 {}: 주소검색결과 {}건", address, totalCount);
+            // 검색결과가 많은 경우 기타주소를 추가하여 검색
+            if (totalCount > 1) {
+                String keywordWithEtc = address + SPACE + etcAddress;
+                jusoGovRoadAdrResponse = jusoGovService.getRoadAdrInfo(keywordWithEtc);
+                totalCount = Integer.parseInt(jusoGovRoadAdrResponse.getResults().getCommon().getTotalCount());
+                log.debug("재검색어 {}: 주소검색결과 {}건", keyword, totalCount);
+            }
+
             if (totalCount == 1) {  // 주소기반 검색으로 매칭이 되는 경우 주택정보 세팅
                 jusoDetail = jusoGovRoadAdrResponse.getResults().getJuso().get(0);
                 jusoDetail = houseAddressService.replaceSpecialCharactersForJusoDetail(jusoDetail);
@@ -1670,7 +1678,8 @@ public class HouseService {
             }
             etcHouse.setArea(new BigDecimal(getRedis.get("area").toString()));
             etcHouse.setDetailAdr(houseAddressDto.getDetailAddress());
-            etcHouse.setHouseName(houseAddressDto.formatEtcAddress());
+            etcHouse.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+            etcHouse.setSourceType(ONE);
 
             // 주소비교
             boolean isMatched = houseListFromDB.stream().anyMatch(house -> {
@@ -1723,16 +1732,9 @@ public class HouseService {
         System.out.println(houseAddressDto.toString());
 
         Map<String, String> addressMap = new LinkedHashMap<>();
-        if (houseAddressDto.getSiDo() != null) addressMap.put("시도", houseAddressDto.getSiDo());
-        if (houseAddressDto.getSiGunGu() != null) addressMap.put("시군구", houseAddressDto.getSiGunGu());
-        if (houseAddressDto.getGu() != null) addressMap.put("구", houseAddressDto.getGu());
-        if (houseAddressDto.getEupMyun() != null) addressMap.put("읍면", houseAddressDto.getEupMyun());
-        if (houseAddressDto.getDongRi() != null) addressMap.put("동리", houseAddressDto.getDongRi());
-        if (houseAddressDto.getJibun() != null) addressMap.put("지번", houseAddressDto.getJibun());
-        if (houseAddressDto.getRoadNm() != null) addressMap.put("도로명", houseAddressDto.getRoadNm());
-        if (houseAddressDto.getBuildingNo() != null) addressMap.put("건물번호", houseAddressDto.getBuildingNo());
-        if (houseAddressDto.getDetailDong() != null) addressMap.put("상세주소", houseAddressDto.getDetailAddress());
-        if (houseAddressDto.getEtcAddress() != null) addressMap.put("기타주소", houseAddressDto.getEtcAddress().toString().trim());
+        addressMap.put("주소", houseAddressDto.formatAddress());
+        addressMap.put("상세주소", houseAddressDto.getDetailAddress());
+        addressMap.put("주택명", (houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
 
         return ApiResponse.success(addressMap);
     }
