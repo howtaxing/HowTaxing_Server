@@ -122,7 +122,7 @@ public class HouseController {
     }
 
     // 세션 기반 주택정보 불려오기
-    @GetMapping("/house/getHouseInfo")
+    @PostMapping("/house/getHouseInfo")
     public Object getHouseInfo(@RequestBody HyphenUserSessionRequest hyphenUserSessionRequest) throws Exception {
         log.info(">> [Controller]HouseController getHouseInfo - 세션에 저장된 주택정보 불러오기");
         return houseService.getHouseInfo(hyphenUserSessionRequest);
