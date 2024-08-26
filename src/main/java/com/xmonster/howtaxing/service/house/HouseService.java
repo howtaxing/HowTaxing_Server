@@ -200,7 +200,7 @@ public class HouseService {
         for (DataDetail2 dataDetail2 : buyTransactions) {
             HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
             String address = houseAddressDto.formatAddress();
-            String etcAddress = houseAddressDto.formatAddress();
+            String etcAddress = houseAddressDto.formatEtcAddress();
 
             // 주택정보 입력
             LoadHouse house = new LoadHouse();
