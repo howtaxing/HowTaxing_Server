@@ -92,6 +92,21 @@ public class HouseAddressDto {
         }
     }
 
+    // 기타 주소 문자열로 출력
+    public String formatEtcAddress() {
+        StringBuilder etcAddress = new StringBuilder();
+        for (String part : this.getEtcAddress()) {
+            if (part != null && !part.trim().isEmpty()) {
+                if (etcAddress.length() > 0) {
+                    etcAddress.append(SPACE);
+                }
+                etcAddress.append(part);
+            }
+        }
+
+        return etcAddress.toString();
+    }
+
     // 공백과 함께 문자열 추가
     private String appendStringWithSpace(String part, String total){
         StringBuilder result = new StringBuilder((total == null) ? EMPTY : total);

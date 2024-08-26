@@ -1,5 +1,7 @@
 package com.xmonster.howtaxing.dto.hyphen;
 
+import javax.validation.constraints.NotNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,8 +14,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @Builder
 public class HyphenUserSessionRequest {
-    String type;            // 검색타입
-    String roadAddress;     // 도로명주소
-    String jibunAddress;    // 지번주소
-    String area;            // 면적
+    private String type;            // 검색타입
+    private String roadAddress;     // 도로명주소
+    private String jibunAddress;    // 지번주소
+    private String area;            // 면적
 }
