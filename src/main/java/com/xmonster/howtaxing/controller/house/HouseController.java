@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
@@ -135,6 +137,13 @@ public class HouseController {
         log.info(">> [Controller]HouseController saveAllHouse - 보유주택 리스트 일괄 저장");
         
         return houseService.saveAllHouse(houses);
+    }
+
+    // 재산세 기반 주택 불러오기
+    @GetMapping("/house/getEtcHouse")
+    public Object getEtcHouse() {
+        log.info(">> [Controller]HouseController getEtcHouse - 매수 외 주택 목록");
+        return houseService.getEtcHouse();
     }
     
 }
