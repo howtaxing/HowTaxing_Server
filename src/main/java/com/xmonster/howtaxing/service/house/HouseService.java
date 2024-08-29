@@ -244,7 +244,7 @@ public class HouseService {
                 house.setAdmCd(jusoDetail.getAdmCd());
                 house.setRnMgtSn(jusoDetail.getRnMgtSn());
 
-                saveHouseInfo(userId, house);   // 보유주택정보 세션저장
+                saveHouseInfo(userId, house);   // 보유주택정보 세션저장(테스트중..)
 
                 // 주택정보 불러오기 API호출을 위한 생성
                 HyphenUserSessionRequest hyphenUserSessionRequest = new HyphenUserSessionRequest();
@@ -1660,7 +1660,7 @@ public class HouseService {
         List<House> houseListFromDB = houseRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
 
-        List<House> etcHouseList = new ArrayList<>();
+        List<LoadHouse> etcHouseList = new ArrayList<>();
         
         // redis에서 재산세 주택 가져오기
         int cnt = redisService.countKey(userId, PROPERTY);
@@ -1669,7 +1669,7 @@ public class HouseService {
             Map<Object, Object> getRedis = redisService.getHashMap(userId, PROPERTY, String.valueOf(i + 1));
             String address = getRedis.get("address").toString();
 
-            House etcHouse = new House();   // 재산세 내역 중 기타주소 담을 엔티티
+            LoadHouse etcHouse = new LoadHouse();   // 재산세 내역 중 기타주소 담을 엔티티
             etcHouse.setUserId(userId);
 
             // 가져온 주택정보 HouseAddressDto로 전환
@@ -1683,6 +1683,7 @@ public class HouseService {
             etcHouse.setDetailAdr(houseAddressDto.getDetailAddress());
             etcHouse.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
             etcHouse.setSourceType(ONE);
+            etcHouse.setComplete(false);
 
             // 주소비교
             boolean isMatched = houseListFromDB.stream().anyMatch(house -> {
@@ -1692,14 +1693,14 @@ public class HouseService {
                 } else {
                     hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
                 }
-                log.debug("주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
+                log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
                 return houseAddressDto.isSameAddress(hasHouseAddressDto);
             });
 
             // 일치하지 않으면 기타주소 리스트에 추가
             if (!isMatched) {
                 etcHouseList.add(etcHouse);
-                log.debug("기타 주택으로 추가: {}", etcHouse);
+                log.debug("기타 주택으로 추가: {}", etcHouse.getHouseName());
             }
         }
 
