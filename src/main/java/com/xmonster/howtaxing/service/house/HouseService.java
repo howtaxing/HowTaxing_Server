@@ -238,6 +238,7 @@ public class HouseService {
 
                 // 주소기반에서 가져온 정보 주택정보 추가입력
                 house.setHouseName(jusoDetail.getBdNm());
+                house.setHouseTypeByName();
                 house.setJibunAddr(jusoDetail.getJibunAddr());
                 house.setRoadAddr(jusoDetail.getRoadAddr());
                 house.setBdMgtSn(jusoDetail.getBdMgtSn());
@@ -1682,6 +1683,7 @@ public class HouseService {
             etcHouse.setArea(new BigDecimal(getRedis.get("area").toString()));
             etcHouse.setDetailAdr(houseAddressDto.getDetailAddress());
             etcHouse.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+            etcHouse.setHouseTypeByName();
             etcHouse.setSourceType(ONE);
             etcHouse.setComplete(false);
 
