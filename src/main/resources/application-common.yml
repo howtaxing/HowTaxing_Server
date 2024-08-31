@@ -30,3 +30,9 @@ logging:
         type:
           descriptor:
             sql: trace
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 60000
