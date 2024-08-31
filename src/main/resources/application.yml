@@ -74,7 +74,7 @@ spring:
     job:
       enabled: false
   redis:
-    host: devapp.how-taxing.com
+    host: 3.39.27.126
     port: 6379
     password: Xmonster11@@
   mvc:
