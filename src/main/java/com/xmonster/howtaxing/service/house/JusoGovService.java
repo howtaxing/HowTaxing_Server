@@ -266,8 +266,9 @@ public class JusoGovService {
                 NO
         );
 
-        log.info("jusogov road address response");
-        log.info(response.toString());
+        log.debug("keyword: {}", keyword);
+        // log.debug("jusogov road address response");
+        // log.debug(response.toString());
 
         String jsonString = EMPTY;
         if(response.getBody() != null) jsonString = response.getBody().toString();
