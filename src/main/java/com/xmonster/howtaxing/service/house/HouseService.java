@@ -511,11 +511,6 @@ public class HouseService {
             throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "등록할 주택이 입력되지 않았습니다.");
         }
 
-        User findUser = userUtil.findCurrentUser();
-
-        // 청약홈(하이픈)에서 가져온 주택 일괄삭제
-        // houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
-
         houses.forEach(house -> {
             house.setSourceType(ONE);
             house.setIsMoveInRight(false);
@@ -1558,6 +1553,7 @@ public class HouseService {
     // 재산세, 건축물대장 한번에 조회
     public Object getHouseInfo(HyphenUserSessionRequest hyphenUserSessionRequest) {
         Map<String, Object> combinedInfo = new LinkedHashMap<>();
+        log.info("조회할 주소: {}", hyphenUserSessionRequest.getRoadAddress());
 
         hyphenUserSessionRequest.setType(BUILDING);
         ApiResponse<?> buildingRes = (ApiResponse<?>) getHouseInfoForType(hyphenUserSessionRequest);
@@ -1666,7 +1662,7 @@ public class HouseService {
         // redis에서 재산세 주택 가져오기
         int cnt = redisService.countKey(userId, PROPERTY);
         for (int i = 0; i < cnt; i++) {
-            log.debug("총 개수 {}개 중 {}번째", cnt, i+1);
+            log.info("총 개수 {}개 중 {}번째", cnt, i+1);
             Map<Object, Object> getRedis = redisService.getHashMap(userId, PROPERTY, String.valueOf(i + 1));
             String address = getRedis.get("address").toString();
 
@@ -1702,7 +1698,7 @@ public class HouseService {
             // 일치하지 않으면 기타주소 리스트에 추가
             if (!isMatched) {
                 etcHouseList.add(etcHouse);
-                log.debug("기타 주택으로 추가: {}", etcHouse.getHouseName());
+                log.info("기타 주택으로 추가: {}", etcHouse.getHouseName());
             }
         }
 
