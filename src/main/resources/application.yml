@@ -107,6 +107,10 @@ spring:
       initialize-schema: never
     job:
       enabled: false
+  redis:
+    host: 172.18.0.3
+    port: 6379
+    password: Xmonster11@@
   mvc:
     custom-uri-logging-filter:
       enabled: true
