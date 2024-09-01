@@ -5,6 +5,7 @@ import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.regex.Pattern;
 
 @Entity
 @Builder
@@ -49,4 +50,14 @@ public class House extends DateEntity {
     private Integer userProportion;     // 본인지분비율
     private Boolean isMoveInRight;      // 입주권여부
     private String sourceType;          // 출처유형
+
+    // 주택명으로 하우스타입 지정
+    public void setHouseTypeByName() {
+        Pattern pattern = Pattern.compile(".*(아파트|단지).*");
+        if (pattern.matcher(houseName).matches()) {
+            this.houseType = "1";
+        } else {
+            this.houseType = "6";
+        }
+    }
 }

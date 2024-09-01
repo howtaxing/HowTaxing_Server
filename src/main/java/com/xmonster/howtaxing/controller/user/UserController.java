@@ -72,6 +72,9 @@ public class UserController {
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }
 
+        // 세션에 사용자정보 저장
+        // userService.saveUserSession(accessToken);
+
         String html = "<html><body><pre id='returnValue'>" +
                 "{\"errYn\" : \"N\", \"data\" : " + "{\"accessToken\" : \"" + accessToken + "\", \"refreshToken\" : \"" + refreshToken + "\", \"role\" : \"" + role + "\"}}" +
                 "</pre><script>window.onload = function() {" +

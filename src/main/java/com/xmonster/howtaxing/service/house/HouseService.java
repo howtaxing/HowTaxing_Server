@@ -11,13 +11,16 @@ import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseResultInfo;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserResidentRegistrationResponse;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserResidentRegistrationResponse.HyphenUserResidentRegistrationData;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserResidentRegistrationResponse.HyphenUserResidentRegistrationData.ChangeHistory;
+import com.xmonster.howtaxing.dto.hyphen.HyphenUserSessionRequest;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAdrResponse;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAdrResponse.Results.JusoDetail;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse.HyphenCommon;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse.HyphenData.*;
 import com.xmonster.howtaxing.model.House;
+import com.xmonster.howtaxing.model.LoadHouse;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
+import com.xmonster.howtaxing.service.redis.RedisService;
 import com.xmonster.howtaxing.type.ErrorCode;
 
 import com.xmonster.howtaxing.utils.HouseUtil;
@@ -27,13 +30,18 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.env.Environment;
 
 import javax.transaction.Transactional;
+import javax.validation.constraints.Pattern;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -46,6 +54,7 @@ public class HouseService {
     private final HyphenService hyphenService;
     private final JusoGovService jusoGovService;
     private final HouseAddressService houseAddressService;
+    private final RedisService redisService;
 
     private final HouseRepository houseRepository;
 
@@ -53,6 +62,7 @@ public class HouseService {
     private final HouseUtil houseUtil;
 
     private final ObjectMapper objectMapper;
+    private final Environment environment;
 
     private static final int MAX_JUSO_CALL_CNT = 3; // 주소 한건 당 주소기반산업지원서비스 도로명주소 재조회 호출 건수 최대값
 
@@ -60,12 +70,21 @@ public class HouseService {
     public Object getHouseListSearch(HouseListSearchRequest houseListSearchRequest) {
         log.info(">> [Service]HouseService getHouseListSearch - 보유주택 조회(하이픈-청약홈)");
 
+        String[] activeProfiles = environment.getActiveProfiles();
+        boolean isLocal = Arrays.asList(activeProfiles).contains("local");
+        
+        HyphenUserHouseListResponse hyphenUserHouseListResponse;
+        if (isLocal) {
+            // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
+            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+        } else {
+            // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
+            hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
+        }
+
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
-
-        // 하이픈 주택소유정보 조회 호출
-        HyphenUserHouseListResponse hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
 
         // 3. 하이픈 보유주택조회 결과가 정상인지 체크하여, 정상인 경우 조회 결과를 정리하여 별도 DTO에 저장
         //List<HyphenUserHouseResultInfo> hyphenUserHouseResultInfoList = null;
@@ -135,80 +154,151 @@ public class HouseService {
                         .build());
     }
 
-    // 보유주택 조회(하이픈-청약홈) 테스트(하이픈 조회 데이터만 DUMMY)
-    public Object getHouseListSearchTest(HouseListSearchRequest houseListSearchRequest) {
-        log.info(">> [Service]HouseService getHouseListSearchTest - 보유주택 조회(하이픈-청약홈) 테스트");
+    // 부동산거래내역 기반 보유주택 출력
+    public Object loadHouseFromRealty(HouseListSearchRequest houseListSearchRequest) {
+        String[] activeProfiles = environment.getActiveProfiles();
+        boolean isLocal = Arrays.asList(activeProfiles).contains("local");
+        boolean isDev = Arrays.asList(activeProfiles).contains("dev");
+        
+        HyphenUserHouseListResponse hyphenUserHouseListResponse;
+        if (isLocal || isDev) {
+            // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
+            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+        } else {
+            // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
+            hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR));
+        }
 
-        // 호출 사용자 조회
+        // 사용자 정보 가져오기
         User findUser = userUtil.findCurrentUser();
+        Long userId = findUser.getId();
 
-        // 하이픈 주택소유정보 테스트 json data 세팅
-        HyphenUserHouseListResponse hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
-
-        List<House> houseList = new ArrayList<>();
-        HyphenCommon hyphenCommon = hyphenUserHouseListResponse.getHyphenCommon();
+        // 건축물대장정보 가져오기
         List<DataDetail1> list1 = hyphenUserHouseListResponse.getHyphenData().getList1();
+        saveBuildingInfo(userId, list1);    // 건축물대장정보 세션 저장
+
+        // 부동산거래내역 가져오기
         List<DataDetail2> list2 = hyphenUserHouseListResponse.getHyphenData().getList2();
+
+        // 재산세정보 가져오기
         List<DataDetail3> list3 = hyphenUserHouseListResponse.getHyphenData().getList3();
+        savePropertyInfo(userId, list3);    // 재산세정보 세션 저장
+        
+        // 부동산거래내역 중 매수거래만 추출
+        List<DataDetail2> buyTransactions = createBuyTransactions(list2);
+        saveTradingInfo(userId, buyTransactions);   // 매수거래내역 세션 저장
 
-        if(this.isSuccessHyphenUserHouseListResponse(hyphenCommon)){
-            // 하이픈 보유주택조회 결과 List를 HouseList에 세팅(3->1->2 순서로 호출)
-            this.setList3ToHouseEntity(list3, houseList);
-            this.setList1ToHouseEntity(list1, houseList);
-            this.setList2ToHouseEntity(list2, houseList);
+        List<LoadHouse> houseList = new ArrayList<>();  // 보유주택 목록
+        JusoDetail jusoDetail = null;
 
-            // 각 리스트를 다시 사용하여 필요한 빈 값을 채워넣기
-            this.fillEmptyValuesFromLists(list1, list2, list3, houseList);
+        /*
+         * ##########################################
+         * 매수거래내역 주택 주소기반에서 검색 후 주택정보 세팅
+         * ##########################################
+         */
+        for (DataDetail2 dataDetail2 : buyTransactions) {
+            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
+            String address = houseAddressDto.formatAddress();
+            String etcAddress = houseAddressDto.formatEtcAddress();
 
-            // 전체 보유주택에 사용자id 세팅
-            for(House house : houseList){
-                house.setUserId(findUser.getId());
+            // 주택정보 입력
+            LoadHouse house = new LoadHouse();
+            house.setUserId(userId);
+            house.setHouseType(SIX);
+            house.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+            house.setSourceType(ONE);
+            if (houseAddressDto.getAddressType() == 1) {
+                house.setJibunAddr(address);
+            } else {
+                house.setRoadAddr(address);
+            }
+            house.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+            house.setBalanceDate(LocalDate.parse(dataDetail2.getBalancePaymentDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+            house.setBuyPrice(Long.parseLong(dataDetail2.getTradingPrice()));
+            house.setArea(new BigDecimal(dataDetail2.getArea()));
+
+            String keyword = address + SPACE + etcAddress;   // 주소검색을 위한 키워드
+
+            // 주소기반산업지원서비스 API호출
+            JusoGovRoadAdrResponse jusoGovRoadAdrResponse = jusoGovService.getRoadAdrInfo(address);
+            int totalCount = Integer.parseInt(jusoGovRoadAdrResponse.getResults().getCommon().getTotalCount());
+            log.debug("검색어 {}: 주소검색결과 {}건", address, totalCount);
+            // 검색결과가 많은 경우 기타주소를 추가하여 검색
+            if (totalCount > 1) {
+                String keywordWithEtc = address + SPACE + etcAddress;
+                jusoGovRoadAdrResponse = jusoGovService.getRoadAdrInfo(keywordWithEtc);
+                totalCount = Integer.parseInt(jusoGovRoadAdrResponse.getResults().getCommon().getTotalCount());
+                log.debug("재검색어 {}: 주소검색결과 {}건", keyword, totalCount);
             }
 
-            // houseList 출력 테스트
-            log.info("----- houseList 출력 테스트 Start -----");
-            for(House house : houseList){
-                log.info("------------------------------------------");
-                log.info("주택유형 : " + house.getHouseType());
-                log.info("주택명 : " + house.getHouseName());
-                log.info("상세주소 : " + house.getDetailAdr());
-                log.info("사용자ID : " + house.getUserId());
-                log.info("------------------------------------------");
+            if (totalCount == 1) {  // 주소기반 검색으로 매칭이 되는 경우 주택정보 세팅
+                jusoDetail = jusoGovRoadAdrResponse.getResults().getJuso().get(0);
+                jusoDetail = houseAddressService.replaceSpecialCharactersForJusoDetail(jusoDetail);
+
+                // 주소기반에서 가져온 정보 주택정보 추가입력
+                house.setHouseName(jusoDetail.getBdNm());
+                house.setHouseTypeByName();
+                house.setJibunAddr(jusoDetail.getJibunAddr());
+                house.setRoadAddr(jusoDetail.getRoadAddr());
+                house.setBdMgtSn(jusoDetail.getBdMgtSn());
+                house.setAdmCd(jusoDetail.getAdmCd());
+                house.setRnMgtSn(jusoDetail.getRnMgtSn());
+
+                saveHouseInfo(userId, house);   // 보유주택정보 세션저장(테스트중..)
+
+                // 주택정보 불러오기 API호출을 위한 생성
+                HyphenUserSessionRequest hyphenUserSessionRequest = new HyphenUserSessionRequest();
+                hyphenUserSessionRequest.setRoadAddress(house.getRoadAddr());
+                hyphenUserSessionRequest.setJibunAddress(house.getJibunAddr());
+                hyphenUserSessionRequest.setArea(house.getArea().toString());
+                /*
+                * ##########################################
+                * 주택정보조회 API 직접 호출하여 정보 세팅(건축물대장)
+                * /house/getHouseInfo
+                * ##########################################
+                */
+                hyphenUserSessionRequest.setType(BUILDING);
+
+                Object buildingResult = getHouseInfoForType(hyphenUserSessionRequest);
+
+                if (buildingResult instanceof ApiResponse) {
+                    ApiResponse<?> response = (ApiResponse<?>) buildingResult;
+
+                    if (NO.equals(response.getErrYn())) {
+                        DataDetail1 dataDetail1 = (DataDetail1) response.getData();
+                        house.setBuyDate(LocalDate.parse(dataDetail1.getOwnershipChangeDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                        house.setPubLandPrice(Long.parseLong(dataDetail1.getPublishedPrice())*1000);
+                    }
+                }
+
+                /*
+                * ##########################################
+                * 주택정보조회 API 직접 호출하여 정보 세팅(재산세)
+                * /house/getHouseInfo
+                * ##########################################
+                */
+                hyphenUserSessionRequest.setType(PROPERTY);
+
+                Object propertyResult = getHouseInfoForType(hyphenUserSessionRequest);
+                if (propertyResult instanceof ApiResponse) {
+                    ApiResponse<?> response = (ApiResponse<?>) propertyResult;
+
+                    if (NO.equals(response.getErrYn())) {
+                        DataDetail3 dataDetail3 = (DataDetail3) response.getData();
+                        HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
+                        house.setDetailAdr(houseAddressDto3.getDetailAddress());
+                        house.setComplete(true);
+                    }
+                }
             }
-            log.info("----- houseList 출력 테스트 End -----");
 
-            // 청약홈(하이픈)에서 가져와 house 테이블에 세팅한 해당 사용자의 주택 정보를 모두 삭제
-            houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
-
-            // house 테이블에 houseList 저장
-            houseRepository.saveAllAndFlush(houseList);
-        }else{
-            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈 보유주택조회 중 오류가 발생했습니다.");
+            houseList.add(house);
         }
+        // 청약홈(하이픈)에서 가져온 주택 일괄삭제
+        houseRepository.deleteByUserIdAndSourceType(findUser.getId(), ONE);
 
-        List<House> houseListFromDB = houseRepository.findByUserId(findUser.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
-        List<HouseSimpleInfoResponse> houseSimpleInfoResponseList = new ArrayList<>();
-
-        for(House house : houseListFromDB){
-            houseSimpleInfoResponseList.add(
-                    HouseSimpleInfoResponse.builder()
-                            .houseId(house.getHouseId())
-                            .houseType(house.getHouseType())
-                            .houseName(house.getHouseName())
-                            .roadAddr(house.getRoadAddr())
-                            .detailAdr(house.getDetailAdr())
-                            .isMoveInRight(house.getIsMoveInRight())
-                            .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
-                            .build());
-        }
-
-        return ApiResponse.success(
-                HouseListSearchResponse.builder()
-                        .listCnt(houseSimpleInfoResponseList.size())
-                        .list(houseSimpleInfoResponseList)
-                        .build());
+        return ApiResponse.success(houseList);
     }
 
     // 보유주택 목록 조회(DB)
@@ -415,13 +505,50 @@ public class HouseService {
         return ApiResponse.success(Map.of("result", "전체 보유주택이 삭제되었습니다."));
     }
 
+    // 보유주택 일괄등록
+    public Object saveAllHouse(List<House> houses) throws Exception {
+        if (houses == null || houses.isEmpty()) {
+            throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "등록할 주택이 입력되지 않았습니다.");
+        }
+
+        houses.forEach(house -> {
+            house.setSourceType(ONE);
+            house.setIsMoveInRight(false);
+        });
+        List<House> saveHouses = houseRepository.saveAll(houses);
+        // House 엔티티에서 필요한 필드만 추출하여 Map으로 변환
+        List<Map<String, Object>> response = saveHouses.stream()
+                .map(house -> {
+                    Map<String, Object> houseMap = new HashMap<>();
+                    houseMap.put("houseId", house.getHouseId());
+                    houseMap.put("houseType", house.getHouseType());
+                    houseMap.put("houseName", house.getHouseName());
+                    houseMap.put("detailAdr", house.getDetailAdr());
+                    houseMap.put("isMoveInRight", house.getIsMoveInRight());
+                    return houseMap;
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.success(response);
+    }
+
     // (양도주택)거주기간 조회
     public Object getHouseStayPeriod(HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
         log.info(">> [Service]HouseService getHouseStayPeriod - (양도주택)거주기간 조회");
 
-        HyphenUserResidentRegistrationResponse hyphenUserResidentRegistrationResponse
+        String[] activeProfiles = environment.getActiveProfiles();
+        boolean isLocal = Arrays.asList(activeProfiles).contains("local");
+
+        HyphenUserResidentRegistrationResponse hyphenUserResidentRegistrationResponse;
+        if (isLocal) {
+            // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
+            hyphenUserResidentRegistrationResponse = getMockedHyphenUserResidentRegistrationResponse();
+        } else {
+            // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
+            hyphenUserResidentRegistrationResponse
                 = hyphenService.getUserStayPeriodInfo(houseStayPeriodRequest)
                 .orElseThrow(() -> new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR));
+        }
 
         HyphenUserResidentRegistrationData hyphenUserResidentRegistrationData
                 = hyphenUserResidentRegistrationResponse.getHyphenUserResidentRegistrationData();
@@ -593,142 +720,6 @@ public class HouseService {
                     .stayPeriodInfo(stayPeriodInfo)
                     .stayPeriodCount(stayPeriodCount)
                     .ownPeriodDetail(ownPeriodDetail)
-                    .stayPeriodDetailList(stayPeriodDetailList)
-                    .build();
-        }
-
-        return ApiResponse.success(houseStayPeriodResponse);
-    }
-
-    // (양도주택)거주기간 조회 테스트
-    public Object getHouseStayPeriodTest(HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
-        log.info(">> [Service]HouseService getHouseStayPeriodTest - (양도주택)거주기간 조회 샘플데이터 조회");
-
-        // 테스트데이터세팅
-        HyphenUserResidentRegistrationResponse hyphenUserResidentRegistrationResponse = getMockedHyphenUserResidentRegistrationResponse();
-
-        HyphenUserResidentRegistrationData hyphenUserResidentRegistrationData
-                = hyphenUserResidentRegistrationResponse.getHyphenUserResidentRegistrationData();
-
-        Long houseId = houseStayPeriodRequest.getHouseId();
-
-        if(houseId == null || houseId == 0) throw new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR, "주택ID 값이 입력되지 않았습니다.");
-
-        House house = houseRepository.findByHouseId(houseId)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
-        HouseStayPeriodResponse houseStayPeriodResponse = null;
-
-        String step = houseStayPeriodRequest.getStep();
-
-        // 로그인 단계 : 1(init)
-        if(INIT.equals(step)){
-            houseStayPeriodResponse = HouseStayPeriodResponse.builder()
-                    .houseId(houseId)
-                    .step(step)
-                    .stepData(hyphenUserResidentRegistrationData.getStepData())
-                    .build();
-        }
-        // 로그인 단계 : 2(sign)
-        else if(SIGN.equals(step)){
-            // 양도주택과 동일한 주택을 찾아 거주기간을 계산
-            // STEP1 : 변동사유가 '전입'인 항목만 체크
-            // STEP2 : 주소가 양도주택과 동일한 경우(주소 분할하여 도로명주소와 지번주소 중 동일한 값이 있는지 확인하고, 상세주소도 비교)
-            // STEP3 : 해당 주택의 '신고일'과 다음 건의 '신고일'의 날짜 차이를 계산
-            // STEP4 : 날짜 차이를 응답 값의 '거주기간일자'에 세팅
-            // STEP5 : 거주기간일자를 x년 y개월로 변경하여 응답값의 '거주기간정보'에 세팅
-            // STEP6 : 해당 주택에 언제부터 언제까지 거주했는지를 정리하여 응답값의 '거주기간상세내용'에 세팅
-
-            boolean hasStayInfo = false;                // 거주정보존재여부
-            String stayPeriodInfo = EMPTY;              // 거주기간정보
-            String stayPeriodCount = EMPTY;             // 거주기간일자
-            List<String> stayPeriodDetailList = new ArrayList<>();  // 거주기간 상세 리스트
-            // String stayPeriodDetailContent = EMPTY;     // 거주기간상세내용
-
-            List<ChangeHistory> list = hyphenUserResidentRegistrationData.getChangeHistoryList();
-
-            if(list != null){
-                int index = 0;
-                for(ChangeHistory history : list){
-                    if(hasStayInfo) break;  // 거주정보존재여부가 true이면 반복문 종료
-
-                    // STEP1 : 변동사유가 '전입'인 항목만 체크
-                    if(MOVE_IN_KEYWORD.equals(history.getChangeReason())){
-                        // 본인이 세대주인 경우만 체크 - 확인필요
-                        if(history.getHeadOfHouseHoldAndRelationShip().contains("본인")){
-                            String address = StringUtils.defaultString(history.getAddress());
-
-                            if(!EMPTY.equals(address)){
-                                HouseAddressDto historyAddressDto = houseAddressService.separateAddress(address);
-                                HouseAddressDto sellHouseAddressDto = null;
-
-                                if(historyAddressDto.getAddressType() == 1){
-                                    sellHouseAddressDto = houseAddressService.separateAddress(house.getJibunAddr());
-                                } else {
-                                    sellHouseAddressDto = houseAddressService.separateAddress(house.getRoadAddr());
-                                }
-                                // 동일주택여부 판단을 위한 상세주소 세팅
-                                sellHouseAddressDto.setDetailAddress(house.getDetailAdr());
-
-                                if(historyAddressDto != null && sellHouseAddressDto != null){
-                                    // STEP2 : 주소가 양도주택과 동일한 경우(주소 분할하여 도로명주소와 지번주소 중 동일한 값이 있는지 확인하고, 상세주소도 비교)
-                                    if(houseAddressService.compareAddress(historyAddressDto, sellHouseAddressDto)){
-                                        hasStayInfo = true; // 거주정보 존재함으로 세팅
-
-                                        String curReportDate = history.getReportDate();
-                                        String nextReportDate = EMPTY;
-
-                                        for(int i=index+1; i<list.size(); i++){
-                                            if(MOVE_IN_KEYWORD.equals(history.getChangeReason())){
-                                                nextReportDate = StringUtils.defaultString(list.get(i).getReportDate());
-                                                break;
-                                            }
-                                        }
-
-                                        // STEP3 : 해당 주택의 '신고일'과 다음 건의 '신고일'의 날짜 차이를 계산
-                                        if(!EMPTY.equals(curReportDate)){
-                                            LocalDate crDate = LocalDate.parse(curReportDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
-                                            LocalDate nrDate = null;
-
-                                            // 다음 전입 신고일이 존재하는 경우
-                                            if(!EMPTY.equals(nextReportDate)){
-                                                nrDate = LocalDate.parse(nextReportDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
-                                            }
-                                            // 다음 전입 신고일이 존재하지 않는 경우(해당 주택에서 현재까지 계속 거주하고 있는 경우)
-                                            else{
-                                                nrDate = LocalDate.now();
-                                            }
-
-                                            Long stayPeriodByDay = ChronoUnit.DAYS.between(crDate, nrDate);
-                                            Long stayPeriodByMonth = ChronoUnit.MONTHS.between(crDate, nrDate);
-                                            Long stayPeriodByYear = ChronoUnit.YEARS.between(crDate, nrDate);
-
-                                            // 거주기간이 하루 이상은 되어야 세팅
-                                            if(ChronoUnit.DAYS.between(crDate, nrDate) > 0){
-                                                stayPeriodDetailList.add(crDate + "부터 " + nrDate + "까지 거주");
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    index++;
-                }
-            }else{
-                throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR);
-            }
-
-            houseStayPeriodResponse = HouseStayPeriodResponse.builder()
-                    .houseId(houseId)
-                    .step(step)
-                    .stepData(hyphenUserResidentRegistrationData.getStepData())
-                    .houseName(house.getHouseName())
-                    .detailAdr(house.getDetailAdr())
-                    .hasStayInfo(hasStayInfo)
-                    .stayPeriodInfo(stayPeriodInfo)
-                    .stayPeriodCount(stayPeriodCount)
                     .stayPeriodDetailList(stayPeriodDetailList)
                     .build();
         }
@@ -1379,7 +1370,9 @@ public class HouseService {
                         }
                         
                         // 부동산거래내역의 주소가 보유주택 주소와 일부 일치하는 경우 [취득금액]과 [계약일자] 세팅
-                        if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                        if (houseAddressService.compareAddress(houseAddressDto, house)) {
+                        //if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                            log.debug("주소의 일부가 일치함!", myHouseAddress);
                             buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
 
                             hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
@@ -1431,9 +1424,290 @@ public class HouseService {
         }
     }
 
+    /*
+    * ##########################################
+    * 거래내역 리스트에서 매수거래만 추출하기
+    * - 추후 주소비교로직 추가 수정 필요할 수 있음
+    * ##########################################
+    */
+    private List<DataDetail2> createBuyTransactions(List<DataDetail2> list2) {
+        Set<String> sellAddresses = new HashSet<>();            // 매도 거래 세트
+        List<DataDetail2> buyTransactions = new ArrayList<>();  // 매수 거래 리스트
+
+        for (DataDetail2 dataDetail2 : list2) {
+            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
+            String address = houseAddressDto.formatAddress();
+            String tradeType = getTradeTypeFromSellBuyClassification(dataDetail2.getSellBuyClassification());
+
+            if (TWO.equals(tradeType)) {
+                // 매도 거래 주소를 세트에 추가
+                sellAddresses.add(address);
+            } else if (ONE.equals(tradeType)) {
+                // 매수 거래인 경우 매도 거래 주소 목록에 포함되지 않은 경우에 매수 거래 리스트에 추가
+                if (!sellAddresses.contains(address)) {
+                    buyTransactions.add(dataDetail2);
+                }
+            }
+        }
+
+        return buyTransactions;
+    }
+
+    /*
+    * ##########################################
+    * 세션에서 동일한 주소정보 검색
+    * @Input  : 검색할 타입, 도로명주소, 지번주소, 면적
+    * @Output : 일치하는 건축물대장 정보
+    * description : 비교할 수 있는 정보가 주소와 면적밖에 없음
+    * ##########################################
+    */
+    public Object getHouseInfoForType(HyphenUserSessionRequest hyphenUserSessionRequest) {
+        if (EMPTY.equals(hyphenUserSessionRequest.getArea().trim())) {
+            return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "면적이 입력되지 않았습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
+        }
+        if (EMPTY.equals(hyphenUserSessionRequest.getType())) {
+            return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "조회 타입이 입력되지 않았습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
+        }
+        // 로그인 사용자 정보 가져오기
+        User findUser = userUtil.findCurrentUser();
+        Long userId = findUser.getId();
+
+        String type = hyphenUserSessionRequest.getType();
+        BigDecimal compareArea;
+        try {
+            compareArea  = new BigDecimal(hyphenUserSessionRequest.getArea());    // 면적
+        } catch (Exception e) {
+            return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "면적이 잘못 입력되었습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
+        }
+
+        HouseAddressDto roadAddressDto = houseAddressService.parseAddress(hyphenUserSessionRequest.getRoadAddress());
+        HouseAddressDto jibunAddressDto = houseAddressService.parseAddress(hyphenUserSessionRequest.getJibunAddress());
+
+        // 세션개수 가져오기
+        int cnt = redisService.countKey(userId, type);
+        // 세션에서 저장된 주소와 입력받은 주소 비교
+        for (int i = 0; i < cnt; i++) {
+            log.debug("총 개수 {}개 중 {}번째", cnt, i+1);
+            Map<Object, Object> getRedis = redisService.getHashMap(userId, type, String.valueOf(i + 1));
+            String address = getRedis.get("address").toString();
+            BigDecimal area = new BigDecimal(getRedis.get("area").toString());
+            
+            // 세션에서 가져온 주소 분할
+            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
+            // 주소비교 후 면적까지 비교 - 추후 메소드 분리 필요
+            if (houseAddressDto.getAddressType() == 1) {
+                // 지번주소 비교
+                if (houseAddressDto.isSameAddress(jibunAddressDto)) {
+                    log.debug("지번주소 일치함");
+                    // 입력받은 주소의 면적과 세션에 저장된 면적을 비교
+                    String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
+                    String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
+                    if (houseArea.equals(sessionArea)) {
+                        return getMatchingResponse(type, getRedis);
+                    }
+                }
+            } else {
+                // 도로명주소 비교
+                if (houseAddressDto.isSameAddress(roadAddressDto)) {
+                    log.debug("도로명주소 일치함");
+                    // 입력받은 주소의 면적과 세션에 저장된 면적을 비교
+                    String houseArea = compareArea.setScale(0, RoundingMode.DOWN).toString();
+                    String sessionArea = area.setScale(0, RoundingMode.DOWN).toString();
+                    if (houseArea.equals(sessionArea)) {
+                        return getMatchingResponse(type, getRedis);
+                    }
+                }
+            }
+        }
+
+        return ApiResponse.success(null);
+    }
+    private ApiResponse<?> getMatchingResponse(String type, Map<Object, Object> redisData) {
+        if (BUILDING.equals(type)) {
+            // 건축물대장 DTO생성 및 데이터 세팅
+            DataDetail1 dataDetail1 = new DataDetail1();
+            dataDetail1.setAddress(redisData.get("address").toString());
+            dataDetail1.setArea(redisData.get("area").toString());
+            dataDetail1.setApprovalDate(redisData.get("approvalDate").toString());
+            dataDetail1.setReasonChangeOwnership(redisData.get("reasonChangeOwnership").toString());
+            dataDetail1.setOwnershipChangeDate(redisData.get("ownershipChangeDate").toString());
+            dataDetail1.setBaseDate(redisData.get("baseDate").toString());
+            dataDetail1.setPublicationBaseDate(redisData.get("publicationBaseDate").toString());
+            dataDetail1.setPublishedPrice(redisData.get("publishedPrice").toString());
+
+            return ApiResponse.success(dataDetail1);
+            // return dataDetail1;
+        } else if (PROPERTY.equals(type)) {
+            // 재산세내역 DTO생성 및 데이터 세팅
+            DataDetail3 dataDetail3 = new DataDetail3();
+            dataDetail3.setAddress(redisData.get("address").toString());
+            dataDetail3.setArea(redisData.get("area").toString());
+            dataDetail3.setAcquisitionDate(redisData.get("acquisitionDate").toString());
+            dataDetail3.setBaseDate(redisData.get("baseDate").toString());
+
+            return ApiResponse.success(dataDetail3);
+        }
+        return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "조회타입 입력이 잘못되었습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
+    }
+
+    // 재산세, 건축물대장 한번에 조회
+    public Object getHouseInfo(HyphenUserSessionRequest hyphenUserSessionRequest) {
+        Map<String, Object> combinedInfo = new LinkedHashMap<>();
+        log.info("조회할 주소: {}", hyphenUserSessionRequest.getRoadAddress());
+
+        hyphenUserSessionRequest.setType(BUILDING);
+        ApiResponse<?> buildingRes = (ApiResponse<?>) getHouseInfoForType(hyphenUserSessionRequest);
+        if (NO.equals(buildingRes.getErrYn())) {
+            Object dataDetail1 = buildingRes.getData();
+            if (dataDetail1 instanceof DataDetail1) {
+                combinedInfo.put("building", dataDetail1);
+            }
+        } else {
+            return ApiResponse.error(buildingRes.getErrMsg(), buildingRes.getErrMsgDtl(), buildingRes.getErrCode());
+        }
+        
+        hyphenUserSessionRequest.setType(PROPERTY);
+        ApiResponse<?> propertyRes = (ApiResponse<?>) getHouseInfoForType(hyphenUserSessionRequest);
+        if (NO.equals(propertyRes.getErrYn())) {
+            Object dataDetail3 = propertyRes.getData();
+            if (dataDetail3 instanceof DataDetail3) {
+                combinedInfo.put("property", dataDetail3);
+            }
+        } else {
+            return ApiResponse.error(propertyRes.getErrMsg(), propertyRes.getErrMsgDtl(), propertyRes.getErrCode());
+        }
+
+        return ApiResponse.success(combinedInfo);
+    }
+
+    // 하이픈 건축물대장정보 redis 저장
+    public void saveBuildingInfo(Long userId, List<DataDetail1> list) {
+        redisService.deleteHashMap(userId, BUILDING);  // 기존 세션값 초기화
+
+        for (int i = 0; i < list.size(); i++) {
+            Map<String, String> propertyInfo = new HashMap<>();
+            propertyInfo.put("address", list.get(i).getAddress());
+            propertyInfo.put("area", list.get(i).getArea());
+            propertyInfo.put("approvalDate", list.get(i).getApprovalDate());
+            propertyInfo.put("reasonChangeOwnership", list.get(i).getReasonChangeOwnership());
+            propertyInfo.put("ownershipChangeDate", list.get(i).getOwnershipChangeDate());
+            propertyInfo.put("publicationBaseDate", list.get(i).getPublicationBaseDate());
+            propertyInfo.put("publishedPrice", list.get(i).getPublishedPrice());
+            propertyInfo.put("baseDate", list.get(i).getBaseDate());
+
+            redisService.saveHashMap(userId, BUILDING, String.valueOf(i + 1), propertyInfo);
+        }
+    }
+
+    // 하이픈 부동산거래내역 redis 저장
+    public void saveTradingInfo(Long userId, List<DataDetail2> list) {
+        redisService.deleteHashMap(userId, TRADE);  // 기존 세션값 초기화
+
+        for (int i = 0; i < list.size(); i++) {
+            Map<String, String> propertyInfo = new HashMap<>();
+            propertyInfo.put("address", list.get(i).getAddress());
+            propertyInfo.put("sellBuyClassification", list.get(i).getSellBuyClassification());
+            propertyInfo.put("area", list.get(i).getArea());
+            propertyInfo.put("tradingPrice", list.get(i).getTradingPrice());
+            propertyInfo.put("balancePaymentDate", list.get(i).getBalancePaymentDate());
+            propertyInfo.put("contractDate", list.get(i).getContractDate());
+            propertyInfo.put("startDate", list.get(i).getStartDate());
+            propertyInfo.put("endDate", list.get(i).getEndDate());
+
+            redisService.saveHashMap(userId, TRADE, String.valueOf(i + 1), propertyInfo);
+        }
+    }
+
+    // 하이픈 재산세정보 redis 저장
+    public void savePropertyInfo(Long userId, List<DataDetail3> list) {
+        redisService.deleteHashMap(userId, PROPERTY);  // 기존 세션값 초기화
+
+        for (int i = 0; i < list.size(); i++) {
+            Map<String, String> propertyInfo = new HashMap<>();
+            propertyInfo.put("address", list.get(i).getAddress());
+            propertyInfo.put("area", list.get(i).getArea());
+            propertyInfo.put("acquisitionDate", list.get(i).getAcquisitionDate());
+            propertyInfo.put("baseDate", list.get(i).getBaseDate());
+
+            redisService.saveHashMap(userId, PROPERTY, String.valueOf(i + 1), propertyInfo);
+        }
+    }
+
+    // 보유주택정보 redis 저장
+    public void saveHouseInfo(Long userId, House house) {
+        Map<String, String> houseInfo = new HashMap<>();
+        houseInfo.put("bdMgtSn", house.getBdMgtSn());
+        houseInfo.put("houseName", house.getHouseName());
+        houseInfo.put("jibunAddr", house.getJibunAddr());
+        houseInfo.put("roadAddr", house.getRoadAddr());
+        houseInfo.put("contractDate", house.getContractDate().toString());
+        houseInfo.put("balbanceDate", house.getBalanceDate().toString());
+        houseInfo.put("buyPriace", house.getBuyPrice().toString());
+        houseInfo.put("area", house.getArea().toString());
+
+        // 건물관리번호가 key인데 동일 주택 2채 보유의 경우 고려 필요할듯
+        redisService.saveHashMap(userId, "house", house.getBdMgtSn(), houseInfo);
+    }
+
+    // 건축물대장 기준 매매 외 취득주택 추출
+    public Object getEtcHouse() {
+        Long userId = userUtil.findCurrentUser().getId();
+
+        // DB에서 보유주택 목록 가져오기
+        List<House> houseListFromDB = houseRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
+
+        List<LoadHouse> etcHouseList = new ArrayList<>();
+        
+        // redis에서 재산세 주택 가져오기
+        int cnt = redisService.countKey(userId, PROPERTY);
+        for (int i = 0; i < cnt; i++) {
+            log.info("총 개수 {}개 중 {}번째", cnt, i+1);
+            Map<Object, Object> getRedis = redisService.getHashMap(userId, PROPERTY, String.valueOf(i + 1));
+            String address = getRedis.get("address").toString();
+
+            LoadHouse etcHouse = new LoadHouse();   // 재산세 내역 중 기타주소 담을 엔티티
+            etcHouse.setUserId(userId);
+
+            // 가져온 주택정보 HouseAddressDto로 전환
+            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
+            if (houseAddressDto.getAddressType() == 1) {
+                etcHouse.setJibunAddr(houseAddressDto.formatAddress());
+            } else {
+                etcHouse.setRoadAddr(houseAddressDto.formatAddress());
+            }
+            etcHouse.setArea(new BigDecimal(getRedis.get("area").toString()));
+            etcHouse.setDetailAdr(houseAddressDto.getDetailAddress());
+            etcHouse.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+            etcHouse.setHouseTypeByName();
+            etcHouse.setSourceType(ONE);
+            etcHouse.setComplete(false);
+
+            // 주소비교
+            boolean isMatched = houseListFromDB.stream().anyMatch(house -> {
+                HouseAddressDto hasHouseAddressDto;
+                if (houseAddressDto.getAddressType() == 1) {
+                    hasHouseAddressDto = houseAddressService.parseAddress(house.getJibunAddr());
+                } else {
+                    hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
+                }
+                log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
+                return houseAddressDto.isSameAddress(hasHouseAddressDto);
+            });
+
+            // 일치하지 않으면 기타주소 리스트에 추가
+            if (!isMatched) {
+                etcHouseList.add(etcHouse);
+                log.info("기타 주택으로 추가: {}", etcHouse.getHouseName());
+            }
+        }
+
+        return ApiResponse.success(etcHouseList);
+    }
+
     private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse() {
         // 하이픈 응답값 세팅
-        String json = "";
+        String json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408050000023444\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 서원대로 290 (명륜동)\",\"area\":\"84.9836\",\"approvalDate\":\"20211129\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20220317\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"245000\",\"baseDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주시 흥덕구 송화로214번길 29 (송절동)\",\"area\":\"84.9365\",\"approvalDate\":\"20180726\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20181026\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"261000\",\"baseDate\":\"20240805\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 산31 원주 더샵 센트럴파크 2단지 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9836\",\"tradingPrice\":\"334000000\",\"balancePaymentDate\":\"20220131\",\"contractDate\":\"20191214\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"84.4516\",\"tradingPrice\":\"680000000\",\"balancePaymentDate\":\"20200207\",\"contractDate\":\"20191117\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"555000000\",\"balancePaymentDate\":\"20200103\",\"contractDate\":\"20191018\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 두산위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매수(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"426000000\",\"balancePaymentDate\":\"20170331\",\"contractDate\":\"20170329\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매수(기존주택)\",\"area\":\"84.4516\",\"tradingPrice\":\"437000000\",\"balancePaymentDate\":\"20160610\",\"contractDate\":\"20160409\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 BL-A-5 청주 테크노폴리스 우미린 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9365\",\"tradingPrice\":\"296800000\",\"balancePaymentDate\":\"20180801\",\"contractDate\":\"20170731\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 856 더샵 원주센트럴파크 2단지                          0207동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20220226\",\"baseDate\":\"20240327\"},{\"name\":\"이**\",\"address\":\"경상남도 김해시 율하동 1297 율상마을 푸르지오3단지                             0305동 00401호\",\"area\":\"84.96\",\"acquisitionDate\":\"20210112\",\"baseDate\":\"20240327\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 850 테크노폴리스 우미린                                0104동 00801호\",\"area\":\"84.93\",\"acquisitionDate\":\"20180810\",\"baseDate\":\"20240327\"},{\"name\":\"김**\",\"address\":\"경기도 의왕시 내손동 845 인덕원 센트럴 자이                                 0206동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20181102\",\"baseDate\":\"20240327\"}]}}";
         try {
             return objectMapper.readValue(json, HyphenUserHouseListResponse.class);
         } catch (Exception e) {
@@ -1451,5 +1725,19 @@ public class HouseService {
             e.printStackTrace();
             throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "Mocked HyphenUserResidentRegistrationResponse 생성 중 오류가 발생했습니다.");
         }
+    }
+
+    // 주소분할 테스트 출력
+    public Object addressParser(String address) {
+        HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
+
+        System.out.println(houseAddressDto.toString());
+
+        Map<String, String> addressMap = new LinkedHashMap<>();
+        addressMap.put("주소", houseAddressDto.formatAddress());
+        addressMap.put("상세주소", houseAddressDto.getDetailAddress());
+        addressMap.put("주택명", (houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+
+        return ApiResponse.success(addressMap);
     }
 }

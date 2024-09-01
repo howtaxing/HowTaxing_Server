@@ -5,14 +5,19 @@ import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrDetailRequest;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAddrListRequest;
 import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaRequest;
 import com.xmonster.howtaxing.dto.vworld.VworldPubLandPriceAndAreaRequest;
+import com.xmonster.howtaxing.model.House;
+import com.xmonster.howtaxing.dto.hyphen.HyphenUserSessionRequest;
 import com.xmonster.howtaxing.service.house.HouseService;
 
 import com.xmonster.howtaxing.service.house.JusoGovService;
 import com.xmonster.howtaxing.service.house.VworldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
@@ -55,13 +60,6 @@ public class HouseController {
     public Object getHouseListSearch(@RequestBody HouseListSearchRequest houseListSearchRequest) throws Exception {
         log.info(">> [Controller]HouseController getHouseListSearch - 보유주택 조회(하이픈-청약홈-주택소유확인)");
         return houseService.getHouseListSearch(houseListSearchRequest);
-    }
-
-    // 보유주택 조회(하이픈-청약홈-주택소유확인) 테스트
-    @PostMapping("/house/searchTest")
-    public Object getHouseListSearchTest(@RequestBody HouseListSearchRequest houseListSearchRequest) throws Exception {
-        log.info(">> [Controller]HouseController getHouseListSearchTest - 보유주택 조회(하이픈-청약홈-주택소유확인) 테스트");
-        return houseService.getHouseListSearchTest(houseListSearchRequest);
     }
 
     // 보유주택 목록 조회
@@ -112,9 +110,40 @@ public class HouseController {
         return houseService.getHouseStayPeriod(houseStayPeriodRequest);
     }
 
-    // (양도)주택 거주기간 조회(하이픈-정부24-주민등록초본)
-    /*@PostMapping("/house/stayPeriodTest")
-    public Object searchHouseStayPeriodTest(@RequestBody HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {
-        return houseService.getHouseStayPeriodTest(houseStayPeriodRequest);
-    }*/
+    // 주소분할 테스트
+    @PostMapping("/house/addressParseTest")
+    public Object addressSeperateTest(@RequestBody String address) throws Exception {
+        return houseService.addressParser(address);
+    }
+
+    // 부동산거래내역 기반 매수주택 불러오기(하이픈-청약홈)
+    @PostMapping("/house/loadHouse")
+    public Object loadHouseFromRealty(@RequestBody HouseListSearchRequest houseListSearchRequest) throws Exception {
+        log.info(">> [Controller]HouseController loadHouseFromRealty - 부동산거래내역 기반 매수주택 불러오기");
+        return houseService.loadHouseFromRealty(houseListSearchRequest);
+    }
+
+    // 세션 기반 주택정보 불려오기
+    @PostMapping("/house/getHouseInfo")
+    public Object getHouseInfo(@RequestBody HyphenUserSessionRequest hyphenUserSessionRequest) throws Exception {
+        log.info(">> [Controller]HouseController getHouseInfo - 세션에 저장된 주택정보 불러오기");
+        return houseService.getHouseInfo(hyphenUserSessionRequest);
+    }
+
+    // 로드한 정보의 입력값을 모두 채운 후 주택 목록 전체를 보유주택으로 저장
+    @PostMapping("/house/saveAllHouse")
+    public Object saveAllHouse(@RequestBody List<House> houses) throws Exception {
+        //TODO: process POST request
+        log.info(">> [Controller]HouseController saveAllHouse - 보유주택 리스트 일괄 저장");
+        
+        return houseService.saveAllHouse(houses);
+    }
+
+    // 재산세 기반 주택 불러오기
+    @GetMapping("/house/getEtcHouse")
+    public Object getEtcHouse() {
+        log.info(">> [Controller]HouseController getEtcHouse - 매수 외 주택 목록");
+        return houseService.getEtcHouse();
+    }
+    
 }

@@ -163,6 +163,69 @@ public class HouseAddressService {
         return houseAddressDto;
     }
 
+    // 정규식 이용한 주소분할 신규로직
+    public HouseAddressDto parseAddress(String address) {
+        HouseAddressDto houseAddressDto = new HouseAddressDto(address);
+
+        // 도로명주소 여부 판별 정규식
+        String roadRegex = "[가-힣A-Za-z·\\d~\\-\\.]+(로|길).[\\d]+";
+        Pattern roadPattern = Pattern.compile(roadRegex);
+        Matcher roadMatcher = roadPattern.matcher(address);
+
+        // 도로명주소 판별
+        if (roadMatcher.find()) {
+            // 도로명주소 분할
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣A-Za-z·\\d~\\-\\.]+[로|길]).([\\d\\-\\d]+)(.+)?";
+            Pattern pattern = Pattern.compile(regEx);
+            Matcher matcher = pattern.matcher(address);
+
+            if (matcher.matches()) {
+                houseAddressDto.setAddressType(2);
+
+                houseAddressDto.setSiDo(matcher.group(1));
+                houseAddressDto.setSiGunGu(matcher.group(2));
+                houseAddressDto.setGu(matcher.group(3));
+                houseAddressDto.setEupMyun(matcher.group(4));
+                houseAddressDto.setRoadNm(matcher.group(5));
+                houseAddressDto.setBuildingNo(matcher.group(6));
+                if (matcher.group(7) != null) {
+                    for (String etcAddress : seperateEtcAddress(matcher.group(7), houseAddressDto)) {
+                        houseAddressDto.appendToEtcAddress(etcAddress);
+                    }
+                }
+            } else {
+                log.info("주소를 파싱할 수 없습니다. {}", address);
+            }
+        } else {
+            // 지번주소 분할
+            String regEx = "([가-힣]+[시|도])\\s([가-힣]+[시|군|구])?\\s?([가-힣]+[구])?\\s?([가-힣]+[읍|면])?\\s?([가-힣]+[동|리])?.([\\d\\-\\d]+)?(.+)?";
+            Pattern pattern = Pattern.compile(regEx);
+            Matcher matcher = pattern.matcher(address);
+
+            if (matcher.matches()) {
+                houseAddressDto.setAddressType(1);
+
+                houseAddressDto.setSiDo(matcher.group(1));
+                houseAddressDto.setSiGunGu(matcher.group(2));
+                houseAddressDto.setGu(matcher.group(3));
+                houseAddressDto.setEupMyun(matcher.group(4));
+                houseAddressDto.setDongRi(matcher.group(5));
+                houseAddressDto.setJibun(matcher.group(6));
+                if (matcher.group(7) != null) {
+                    for (String etcAddress : seperateEtcAddress(matcher.group(7), houseAddressDto)) {
+                        houseAddressDto.appendToEtcAddress(etcAddress);
+                    }
+                }
+            } else {
+                log.info("주소를 파싱할 수 없습니다. {}", address);
+            }
+        }
+        houseAddressDto.makeDetailAddress();    // 상세주소 생성
+        houseAddressDto.makeSearchAddress();    // 검색용주소 생성
+
+        return houseAddressDto;
+    }
+
     public JusoDetail replaceSpecialCharactersForJusoDetail(JusoDetail jusoDetail){
         if(jusoDetail != null){
             jusoDetail.setRoadAddr(this.replaceSpecialCharacters(jusoDetail.getRoadAddr()));
@@ -224,7 +287,7 @@ public class HouseAddressService {
         log.info("두번째주소 : {}", searchAddr2);
 
         boolean isSame = searchAddr2.contains(compareAddr1);
-        
+
         return isSame;
     }
 
@@ -320,26 +383,42 @@ public class HouseAddressService {
     // 기타주소 입력 처리
     private List<String> seperateEtcAddress(String part, HouseAddressDto houseAddressDto) {
         part = part.replaceAll("[()]", "").trim();  // 괄호 제거 및 트림
-        String[] parts = part.split("\\s*,\\s*");  // 쉼표로 분리
+        // String[] parts = part.split("\\s*,\\s*|\\s+");  // 공백과 쉼표로 분리
+        String[] parts = part.split("\\s*,\\s*|\\s+|\\s*(?<=[가-힣])-");  // 공백과 쉼표, 대시로 분리
         List<String> etcParts = new ArrayList<>();
 
         for (String p : parts) {
-            // 지번주소의 동명이 들어있는 경우 분리 후 입력
-            if (p.endsWith("동") && houseAddressDto.getDongRi() == null) {
+            // 지번주소의 동명이 들어있는 경우 분리 후 입력 - 숫자형태 동은 동/리가 아님
+            if (p.endsWith("동") && houseAddressDto.getDongRi() == null && !p.matches("^[\\d]{1,5}[동]")) {
                 houseAddressDto.setDongRi(p);
+            // 숫자형태 동 입력
+            } else if (removeFrontZero(p).matches("^[\\d]{1,5}[동]")) {
+                houseAddressDto.setDetailDong(removeFrontZero(p));
+            // 숫자형태 호 입력
+            } else if (p.matches("^[\\d]{1,5}[호]")) {
+                houseAddressDto.setDetailHo(removeFrontZero(p));
+            // 별표 포함된 동호수는 버림
+            } else if (p.matches("([\\*]+[동])?(\\-)?([\\*]+[호])?")) {
+                continue;
+            } else if (p.matches("(동|외|[\\d+]+필지|산[\\d]+)")) {
+                // 외, 산, 필지 등 제외
+                continue;
+            } else if (p.contains("BL")) {
+                // 재개발구역 제외
+                continue;
             } else {
                 // 지번주소의 지번이나 도로명주소의 건물번호가 입력이 되어있는 경우, 숫자와 하이픈 타입이면 하이픈으로 분리하여 동호수로 입력
                 if ((houseAddressDto.getAddressType() == 1 && houseAddressDto.getJibun() != null) || (houseAddressDto.getAddressType() == 2 && houseAddressDto.getBuildingNo() != null))
                 {
-                    if (p.matches("^[0-9-]+$") && p.length() > 1) {
+                    if (p.matches("^([\\d]+|[\\d]+[동])\\-([\\d]+|[\\d]+[호])$") && p.length() > 1) {
                         String[] dongPart = p.split("-");
                         log.info("동호수로 분리 : {}동 {}호", dongPart[0], dongPart[1]);
 
                         if (houseAddressDto.getDetailDong() == null) {
-                            houseAddressDto.setDetailDong(dongPart[0] + "동");
+                            houseAddressDto.setDetailDong(dongPart[0] + (dongPart[0].endsWith("동") ? "" : "동"));
                         }
                         if (houseAddressDto.getDetailHo() == null) {
-                            houseAddressDto.setDetailHo(dongPart[1] + "호");
+                            houseAddressDto.setDetailHo(dongPart[1] + (dongPart[1].endsWith("호") ? "" : "호"));
                         }
                         continue;
                     }

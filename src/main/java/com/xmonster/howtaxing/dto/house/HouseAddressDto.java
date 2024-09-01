@@ -8,6 +8,7 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Setter
 @Getter
@@ -91,6 +92,21 @@ public class HouseAddressDto {
         }
     }
 
+    // 기타 주소 문자열로 출력
+    public String formatEtcAddress() {
+        StringBuilder etcAddress = new StringBuilder();
+        for (String part : this.getEtcAddress()) {
+            if (part != null && !part.trim().isEmpty()) {
+                if (etcAddress.length() > 0) {
+                    etcAddress.append(SPACE);
+                }
+                etcAddress.append(part);
+            }
+        }
+
+        return etcAddress.toString();
+    }
+
     // 공백과 함께 문자열 추가
     private String appendStringWithSpace(String part, String total){
         StringBuilder result = new StringBuilder((total == null) ? EMPTY : total);
@@ -103,5 +119,72 @@ public class HouseAddressDto {
         }
 
         return result.toString();
+    }
+
+    // 주소포맷처리
+    public String formatAddress() {
+        StringBuilder address = new StringBuilder();
+
+        appendIfNotNull(address, this.getSiDo());
+        appendIfNotNull(address, this.getSiGunGu());
+        appendIfNotNull(address, this.getEupMyun());
+        
+        // 지번주소
+        if (this.getAddressType() == 1) {
+            appendIfNotNull(address, this.getDongRi());
+            appendIfNotNull(address, this.getJibun());
+        // 도로명주소
+        } else {
+            appendIfNotNull(address, this.getRoadNm());
+            appendIfNotNull(address, this.getBuildingNo());
+        }
+
+        return address.toString().trim();
+    }
+    private void appendIfNotNull(StringBuilder builder, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append(SPACE);
+            }
+            builder.append(value);
+        }
+    }
+
+    // 주소비교로직
+    public boolean isSameAddress(HouseAddressDto compare) {
+        // 시도 비교
+        if (!Objects.equals(this.siDo, compare.siDo)) {
+            return false;
+        }
+        // 시군구 비교 (구/군을 합쳐서 비교)
+        if (!standardizeSiGunGu(this.siGunGu, this.gu).equals(standardizeSiGunGu(compare.siGunGu, compare.gu))) {
+            return false;
+        }
+        // 읍면동 비교
+        if (!Objects.equals(this.eupMyun, compare.eupMyun)) {
+            return false;
+        }
+        // 도로명 or 지번 비교
+        if (this.addressType == 1 && compare.addressType == 1) {
+            // 지번주소 비교
+            if (!Objects.equals(this.dongRi, compare.dongRi) || !Objects.equals(this.jibun, compare.jibun)) {
+                return false;
+            }
+        } else if (this.addressType == 2 && compare.addressType == 2) {
+            // 도로명주소 비교
+            if (!Objects.equals(this.roadNm, compare.roadNm) || !Objects.equals(this.buildingNo, compare.buildingNo)) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        return true;
+    }
+    // 시군구, 구 연속하는 경우 주소처리
+    // ex) 안양시 동안구 <> 안양동안구, 청주시 흥덕구 <> 청주흥덕구
+    private String standardizeSiGunGu(String siGunGu, String gu) {
+        String combined = (siGunGu != null ? siGunGu.substring(0, siGunGu.length() - 1) : "") + (gu != null ? gu.substring(0, gu.length() - 1) : "");
+        return combined;
     }
 }
