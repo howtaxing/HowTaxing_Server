@@ -246,6 +246,8 @@ public class HouseService {
                 house.setRnMgtSn(jusoDetail.getRnMgtSn());
 
                 saveHouseInfo(userId, house);   // 보유주택정보 세션저장(테스트중..)
+                boolean buildingComplete = false;      // 주택데이터 완성여부 판단(테스트중..)
+                boolean propertyComplete = false;      // 주택데이터 완성여부 판단(테스트중..)
 
                 // 주택정보 불러오기 API호출을 위한 생성
                 HyphenUserSessionRequest hyphenUserSessionRequest = new HyphenUserSessionRequest();
@@ -264,11 +266,15 @@ public class HouseService {
 
                 if (buildingResult instanceof ApiResponse) {
                     ApiResponse<?> response = (ApiResponse<?>) buildingResult;
+                    log.debug("building response: {}", response.getData());
 
                     if (NO.equals(response.getErrYn())) {
                         DataDetail1 dataDetail1 = (DataDetail1) response.getData();
-                        house.setBuyDate(LocalDate.parse(dataDetail1.getOwnershipChangeDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
-                        house.setPubLandPrice(Long.parseLong(dataDetail1.getPublishedPrice())*1000);
+                        if (dataDetail1 != null) {
+                            house.setBuyDate(LocalDate.parse(dataDetail1.getOwnershipChangeDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                            house.setPubLandPrice(Long.parseLong(dataDetail1.getPublishedPrice())*1000);
+                            buildingComplete = true;
+                        }
                     }
                 }
 
@@ -283,13 +289,20 @@ public class HouseService {
                 Object propertyResult = getHouseInfoForType(hyphenUserSessionRequest);
                 if (propertyResult instanceof ApiResponse) {
                     ApiResponse<?> response = (ApiResponse<?>) propertyResult;
+                    log.debug("property response: {}", response.toString());
 
                     if (NO.equals(response.getErrYn())) {
                         DataDetail3 dataDetail3 = (DataDetail3) response.getData();
-                        HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
-                        house.setDetailAdr(houseAddressDto3.getDetailAddress());
-                        house.setComplete(true);
+                        if (dataDetail3 != null) {
+                            HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
+                            house.setDetailAdr(houseAddressDto3.getDetailAddress());
+                            // house.setComplete(true);
+                            propertyComplete = true;
+                        }
                     }
+                }
+                if (buildingComplete && propertyComplete) {
+                    house.setComplete(true);
                 }
             }
 
