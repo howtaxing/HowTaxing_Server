@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -38,8 +39,12 @@ public class ConsultingService {
     private final UserUtil userUtil;
 
     // 상담가능일정 조회
-    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, LocalDate searchDate){
+    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate){
         log.info(">> [Service]ConsultingService getConsultingAvailableSchedule - 상담가능일정 조회");
+
+        log.info("consultantId : " + consultantId);
+        log.info("searchType : " + searchType);
+        log.info("searchDate : " + searchDate);
 
         validationCheckForGetConsultingAvailableSchedule(consultantId, searchType, searchDate);
 
@@ -53,7 +58,13 @@ public class ConsultingService {
         // 상담가능일자 조회
         if(ONE.equals(searchType)){
             consultingAvailableDateResponseList = new ArrayList<>();
-            List<ConsultingScheduleManagement> consultingScheduleManagementList = consultingScheduleManagementRepository.findByConsultantIdAfterToday(checkedConsultantId, LocalDate.now());
+            List<ConsultingScheduleManagement> consultingScheduleManagementList = new ArrayList<>();
+
+            try{
+                consultingScheduleManagementList = consultingScheduleManagementRepository.findByConsultantIdAfterToday(checkedConsultantId, LocalDate.now());
+            }catch (Exception e){
+                throw new CustomException(ErrorCode.CONSULTING_SCHEDULE_OUTPUT_ERROR);
+            }
 
             if(consultingScheduleManagementList != null && !consultingScheduleManagementList.isEmpty()){
                 for(ConsultingScheduleManagement consultingScheduleManagement : consultingScheduleManagementList){
@@ -71,7 +82,7 @@ public class ConsultingService {
             ConsultingScheduleManagement consultingScheduleManagement = consultingScheduleManagementRepository.findByConsultingScheduleId(
                     ConsultingScheduleId.builder()
                             .consultantId(checkedConsultantId)
-                            .reservationDate(searchDate)
+                            .reservationDate(LocalDate.parse(searchDate, DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                             .build());
 
             if(consultingScheduleManagement != null){
@@ -90,12 +101,12 @@ public class ConsultingService {
                         .build());
     }
 
-    private void validationCheckForGetConsultingAvailableSchedule(Long consultantId, String searchType, LocalDate searchDate){
+    private void validationCheckForGetConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate){
         if(StringUtils.isBlank(searchType)){
             throw new CustomException(ErrorCode.CONSULTING_SCHEDULE_INPUT_ERROR, "상담가능일정 조회를 위한 조회구분이 입력되지 않았습니다.");
         }else{
             if(TWO.equals(searchType)){
-                if(searchDate != null){
+                if(StringUtils.isBlank(searchDate)){
                     throw new CustomException(ErrorCode.CONSULTING_SCHEDULE_INPUT_ERROR, "상담가능일정 조회를 위한 조회일자가 입력되지 않았거나 값이 올바르지 않습니다.");
                 }
             }else{
@@ -107,8 +118,10 @@ public class ConsultingService {
     }
 
     private List<ConsultingAvailableTimeResponse> getReservationAvailableTimeList(ConsultingScheduleManagement consultingScheduleManagement){
-        String reservationAvailableStartTime = consultingScheduleManagement.getReservationAvailableStartTime();
-        String reservationAvailableEndTime = consultingScheduleManagement.getReservationAvailableEndTime();
+        //String reservationAvailableStartTime = consultingScheduleManagement.getReservationAvailableStartTime();
+        //String reservationAvailableEndTime = consultingScheduleManagement.getReservationAvailableEndTime();
+        LocalTime reservationAvailableStartTime = consultingScheduleManagement.getReservationAvailableStartTime();
+        LocalTime reservationAvailableEndTime = consultingScheduleManagement.getReservationAvailableEndTime();
         int reservationTimeUnit = consultingScheduleManagement.getReservationTimeUnit();
         String reservationUnavailableTime = consultingScheduleManagement.getReservationUnavailableTime();
 
@@ -116,14 +129,14 @@ public class ConsultingService {
         List<ConsultingAvailableTimeResponse> timeList = new ArrayList<>();
 
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-        LocalTime startTime = LocalTime.parse(reservationAvailableStartTime, timeFormatter);
-        LocalTime endTime = LocalTime.parse(reservationAvailableEndTime, timeFormatter);
+        //LocalTime startTime = LocalTime.parse(reservationAvailableStartTime, timeFormatter);
+        //LocalTime endTime = LocalTime.parse(reservationAvailableEndTime, timeFormatter);
 
         reservationUnavailableTimeList = Arrays.asList(reservationUnavailableTime.split(COMMA));
 
-        LocalTime compareTime = startTime;
+        LocalTime compareTime = reservationAvailableStartTime;
 
-        while(compareTime.isBefore(endTime)){
+        while(compareTime.isBefore(reservationAvailableEndTime)){
             String compareTimeStr = compareTime.format(timeFormatter);
             String reservationStatus = ONE; // 예약대기
 

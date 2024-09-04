@@ -17,7 +17,7 @@ public class ConsultingController {
 
     // 상담 가능 일정 조회
     @GetMapping("/consulting/availableSchedule")
-    public Object getConsultingAvailableSchedule(@RequestParam Long consultantId, @RequestParam String searchType, @RequestParam LocalDate searchDate) throws Exception {
+    public Object getConsultingAvailableSchedule(@RequestParam Long consultantId, @RequestParam String searchType, @RequestParam(defaultValue = "") String searchDate) throws Exception {
         log.info(">> [Controller]ConsultingController getConsultingAvailableSchedule - 상담 가능 일정 조회");
         return consultingService.getConsultingAvailableSchedule(consultantId, searchType, searchDate);
     }

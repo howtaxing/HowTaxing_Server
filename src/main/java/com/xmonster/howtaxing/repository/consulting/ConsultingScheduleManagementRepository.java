@@ -13,7 +13,8 @@ import java.util.Optional;
 
 public interface ConsultingScheduleManagementRepository extends JpaRepository<ConsultingScheduleManagement, ConsultingScheduleId> {
 
-     @Query(value = "SELECT consultant_id, reservation_date, is_reservation_available FROM consulting_schedule_management c WHERE (c.consultant_id = :consultantId AND c.reservation_date >= :today)", nativeQuery = true)
+     //@Query(value = "SELECT consultant_id, reservation_date, is_reservation_available FROM consulting_schedule_management c WHERE (c.consultant_id = :consultantId AND c.reservation_date >= :today)", nativeQuery = true)
+     @Query(value = "SELECT * FROM consulting_schedule_management c WHERE (c.consultant_id = :consultantId AND c.reservation_date >= :today)", nativeQuery = true)
      List<ConsultingScheduleManagement> findByConsultantIdAfterToday(@Param("consultantId") Long consultantId, @Param("today") LocalDate today);
 
      ConsultingScheduleManagement findByConsultingScheduleId(ConsultingScheduleId consultingScheduleId);
