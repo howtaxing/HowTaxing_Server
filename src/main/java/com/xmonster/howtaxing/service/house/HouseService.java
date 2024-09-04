@@ -1744,7 +1744,7 @@ public class HouseService {
     public Object addressParser(String address) {
         HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
 
-        System.out.println(houseAddressDto.toString());
+        log.debug(houseAddressDto.toString());
 
         Map<String, String> addressMap = new LinkedHashMap<>();
         addressMap.put("주소", houseAddressDto.formatAddress());
