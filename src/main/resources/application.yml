@@ -46,6 +46,7 @@ spring:
 logging:
   level:
     root: WARN
+    log4jdbc.log4j2: WARN
     com.xmonster.howtaxing: DEBUG
 
 --- # dev 설정
@@ -84,6 +85,7 @@ spring:
 logging:
   level:
     root: INFO
+    log4jdbc.log4j2: WARN
     com.xmonster.howtaxing: INFO
 
 --- # real 설정
