@@ -1,19 +1,21 @@
 package com.xmonster.howtaxing.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 
+/**
+ * 조정대상지역정보
+ *  - 조정대상지역 정보('조정대상지역 상세정보'까지는 현재 적용하지 않음)
+ */
 @Entity
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Setter
 public class AdjustmentTargetAreaInfo extends DateEntity implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
