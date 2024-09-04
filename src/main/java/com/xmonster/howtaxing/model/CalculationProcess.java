@@ -1,9 +1,6 @@
 package com.xmonster.howtaxing.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
@@ -14,6 +11,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Setter
 public class CalculationProcess extends DateEntity implements Serializable {
     @EmbeddedId
     private CalculationProcessId calculationProcessId;

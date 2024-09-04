@@ -60,6 +60,10 @@ public enum ErrorCode {
     CALCULATION_BUY_TAX_FAILED(2, HttpStatus.OK, "CALCULATION-001", "취득세 계산 중 오류가 발생했습니다."),
     CALCULATION_SELL_TAX_FAILED(2, HttpStatus.OK, "CALCULATION-002", "양도소득세 계산 중 오류가 발생했습니다."),
 
+    /* 상담 관련 */
+    CONSULTING_SCHEDULE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-001", "상담가능일정 조회를 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_SCHEDULE_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-002", "상담가능일정 조회 중 오류가 발생했습니다."),
+
     /* 리뷰 관련 */
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),
 

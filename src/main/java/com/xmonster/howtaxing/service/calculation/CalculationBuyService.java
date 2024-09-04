@@ -1881,7 +1881,7 @@ public class CalculationBuyService {
                         eduTaxRate = 0.001;                // 지방교육세율 : 0.1%
                     }
                     // 6억 초과, 9억 이하
-                    else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                    else if(buyPrice <= NINE_HND_MIL){
                         eduTaxRate = buyTaxRate / 10;       // 지방교육세율 : 취득세율의 1/10
                     }
                     // 9억 초과
@@ -1900,7 +1900,7 @@ public class CalculationBuyService {
                             eduTaxRate = 0.001;            // 지방교육세율 : 0.1%
                         }
                         // 6억 초과, 9억 이하
-                        else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                        else if(buyPrice <= NINE_HND_MIL){
                             eduTaxRate = buyTaxRate / 10;   // 지방교육세율 : 취득세율의 1/10
                         }
                         // 9억 초과
@@ -2133,30 +2133,6 @@ public class CalculationBuyService {
                 User findUser = userUtil.findCurrentUser(); // 호출 사용자 조회
                 return houseRepository.countByUserId(findUser.getId()) + 1; // 취득주택 포함이므로 +1
             }
-        }
-
-        // 종전주택 가져오기
-        private House getLastOwnHouse(){
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-            House lastOwnHouse = null;
-            LocalDate lastBuyDate = null;
-
-            if(houseList != null && !houseList.isEmpty()){
-                for(House house : houseList){
-                    LocalDate buyDate = house.getBuyDate();
-                    if(buyDate == null){
-                        lastBuyDate = buyDate;
-                        lastOwnHouse = house;
-                    }else{
-                        if(buyDate.isAfter(lastBuyDate)){
-                            lastBuyDate = buyDate;
-                            lastOwnHouse = house;
-                        }
-                    }
-                }
-            }
-
-            return lastOwnHouse;
         }
 
         // (취득세)일반과세(일반세율) 계산
