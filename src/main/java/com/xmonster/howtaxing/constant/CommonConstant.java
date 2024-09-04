@@ -72,6 +72,13 @@ public final class CommonConstant {
     public final static String CALC_TYPE_BUY = "01";                // 취득세
     public final static String CALC_TYPE_SELL = "02";               // 양도소득세
 
+    /* 상담 유형 */
+    public final static String CONSULTING_TYPE_GEN = "00";          // 일반
+    public final static String CONSULTING_TYPE_BUY = "01";          // 취득세
+    public final static String CONSULTING_TYPE_SELL = "02";         // 양도소득세
+    public final static String CONSULTING_TYPE_INHERIT = "03";      // 상속세
+    public final static String CONSULTING_TYPE_PROPERTY = "04";     // 재산세
+
     /* 데이터 함수 */
     public final static String BEFORE = "BEFORE";                   // YYYYMMDD일 이전
     public final static String OR_BEFORE = "OR_BEFORE";             // YYYYYMMDD일 포함 이전

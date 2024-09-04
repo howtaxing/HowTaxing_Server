@@ -63,6 +63,17 @@ public enum ErrorCode {
     /* 상담 관련 */
     CONSULTING_SCHEDULE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-001", "상담가능일정 조회를 위한 입력값이 올바르지 않습니다."),
     CONSULTING_SCHEDULE_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-002", "상담가능일정 조회 중 오류가 발생했습니다."),
+    CONSULTING_APPLY_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-003", "상담 예약 신청을 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_APPLY_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-004", "상담 예약 신청 중 오류가 발생했습니다."),
+    CONSULTING_MODIFY_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-005", "상담 예약 변경을 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_MODIFY_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-006", "상담 예약 변경 중 오류가 발생했습니다."),
+    CONSULTING_CANCEL_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-007", "상담 예약 취소를 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_CANCEL_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-008", "상담 예약 취소 중 오류가 발생했습니다."),
+    CONSULTING_LIST_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-009", "상담 예약 목록 조회를 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_LIST_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-010", "상담 예약 목록 조회 중 오류가 발생했습니다."),
+    CONSULTING_DETAIL_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-011", "상담 예약 상세 조회를 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_DETAIL_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-012", "상담 예약 상세 조회 중 오류가 발생했습니다."),
+    CONSULTING_RESERVATION_DUPLICATED_ERROR(1, HttpStatus.OK, "CONSULTING-013", "선택하신 날짜와 시간에 이미 예약된 내역이 있습니다."),
 
     /* 리뷰 관련 */
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),

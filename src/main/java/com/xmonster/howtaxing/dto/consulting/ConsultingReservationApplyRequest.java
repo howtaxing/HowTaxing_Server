@@ -9,6 +9,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@ToString
 public class ConsultingReservationApplyRequest {
     private Long consultantId;                  // 상담자ID
     private String customerName;                // 고객명
