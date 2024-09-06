@@ -2,7 +2,6 @@ package com.xmonster.howtaxing.repository.consulting;
 
 import com.xmonster.howtaxing.model.ConsultingReservationInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -14,4 +13,6 @@ public interface ConsultingReservationInfoRepository extends JpaRepository<Consu
     Optional<ConsultingReservationInfo> findByConsultingReservationId(Long consultingReservationId);
 
     Long countByReservationDateAndReservationStartTime(LocalDate reservationDate, LocalTime reservationStartTime);
+
+    List<ConsultingReservationInfo> findByUserId(Long userId);
 }

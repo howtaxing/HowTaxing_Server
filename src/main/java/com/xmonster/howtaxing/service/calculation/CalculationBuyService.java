@@ -41,12 +41,12 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 public class CalculationBuyService {
     private final HouseAddressService houseAddressService;
 
-    private final CalculationBuyResultRepository calculationBuyResultRepository;
     private final CalculationProcessRepository calculationProcessRepository;
     private final TaxRateInfoRepository taxRateInfoRepository;
     private final DeductionInfoRepository deductionInfoRepository;
     private final HouseRepository houseRepository;
     private final AdjustmentTargetAreaRepository adjustmentTargetAreaRepository;
+    private final CalculationHistoryRepository calculationHistoryRepository;
 
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
@@ -69,13 +69,11 @@ public class CalculationBuyService {
             target = new CalculationBranch();
 
             Method method = calculationBranchClass.getMethod("calculationStart", CalculationBuyResultRequest.class);
-
             Object result = method.invoke(target, calculationBuyResultRequest);
 
             if(result != null) log.info("(Calculation)취득세 계산 결과 조회 응답 : " + result.toString());
 
             return ApiResponse.success(result);
-
         }catch(Exception e){
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED);
         }
@@ -1984,13 +1982,57 @@ public class CalculationBuyService {
             // 계산결과 텍스트 데이터 세팅
             String calculationResultTextData = getCalculationResultTextData(calculationBuyResultRequest, calculationBuyResultOneList, commentaryList);
 
-            return CalculationBuyResultResponse.builder()
+            CalculationBuyResultResponse calculationBuyResultResponse = CalculationBuyResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationBuyResultOneList)
                     .commentaryListCnt(commentaryListCnt)
                     .commentaryList(commentaryList)
                     .calculationResultTextData(calculationResultTextData)
                     .build();
+
+            Long calcHistoryId = saveCalculationBuyHistory(calculationBuyResultRequest, calculationBuyResultResponse);
+
+            if(calcHistoryId != null) calculationBuyResultResponse.setCalcHistoryId(calcHistoryId);
+
+            return calculationBuyResultResponse;
+        }
+
+        // 취득세 계산 결과 이력 저장(GGMANYAR)
+        private Long saveCalculationBuyHistory(CalculationBuyResultRequest calculationBuyResultRequest, CalculationBuyResultResponse calculationBuyResultResponse){
+            log.info(">>> CalculationBranch saveCalculationBuyHistory - 취득세 계산 결과 이력 저장");
+
+            User findUser = userUtil.findCurrentUser(); // 호출 사용자 조회
+
+            Long calcHistoryId = null;
+
+            try{
+                CalculationHistory calculationHistory = CalculationHistory.builder()
+                        .userId(findUser.getId())
+                        .calcType(CALC_TYPE_BUY)
+                        .build();
+
+                // 계산이력 저장 후 계산이력ID 추출
+                calcHistoryId = calculationHistoryRepository.saveAndFlush(calculationHistory).getCalcHistoryId();
+
+                if(calcHistoryId != null){
+                    // TODO. 계산추가답변요청이력 저장
+
+                    // TODO. 계산취득세응답이력 저장
+
+                    // TODO. 계산해설응답이력 저장
+
+                    // TODO. 계산보유주택이력 저장
+
+                    // TODO. 계산보유주택이력상세 저장
+
+                }else{
+                    log.info("계산이력 저장 오류 : 계산이력ID NULL");
+                }
+            }catch(Exception e){
+                log.info("계산이력 저장 오류 : " + e.getMessage());
+            }
+
+            return calcHistoryId;
         }
 
         private String getCalculationResultTextData(CalculationBuyResultRequest calculationBuyResultRequest,
