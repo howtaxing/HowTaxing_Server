@@ -2611,7 +2611,7 @@ public class CalculationSellService {
             // 세율정보
             TaxRateInfo taxRateInfo = null;
             if(taxRateCode != null && !taxRateCode.isBlank()){
-                log.info("세율정보 조회");
+                log.info("세율정보 조회 : " + taxRateCode);
                 taxRateInfo = taxRateInfoRepository.findByTaxRateCode(taxRateCode)
                         .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "세율 정보를 가져오는 중 오류가 발생했습니다."));
             }
@@ -2619,7 +2619,7 @@ public class CalculationSellService {
             // 공제정보
             DeductionInfo deductionInfo = null;
             if(dedCode != null && !dedCode.isBlank()){
-                log.info("공제정보 조회");
+                log.info("공제정보 조회 : " + dedCode);
                 deductionInfo = deductionInfoRepository.findByDedCode(dedCode)
                         .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "공제 정보를 가져오는 중 오류가 발생했습니다."));
             }
