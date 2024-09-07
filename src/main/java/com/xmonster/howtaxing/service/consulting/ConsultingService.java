@@ -2,19 +2,23 @@ package com.xmonster.howtaxing.service.consulting;
 
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
+import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
+import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse.CalculationSellOneResult;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.consulting.*;
 import com.xmonster.howtaxing.dto.consulting.ConsultingAvailableScheduleSearchResponse.ConsultingAvailableDateResponse;
 import com.xmonster.howtaxing.dto.consulting.ConsultingAvailableScheduleSearchResponse.ConsultingAvailableTimeResponse;
 import com.xmonster.howtaxing.dto.consulting.ConsultingReservationListResponse.ConsultingReservationSimpleResponse;
 import com.xmonster.howtaxing.model.*;
+import com.xmonster.howtaxing.repository.calculation.*;
 import com.xmonster.howtaxing.repository.consulting.ConsultantInfoRepository;
 import com.xmonster.howtaxing.repository.consulting.ConsultingReservationInfoRepository;
 import com.xmonster.howtaxing.repository.consulting.ConsultingScheduleManagementRepository;
 import com.xmonster.howtaxing.type.ConsultingStatus;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.type.LastModifierType;
+import com.xmonster.howtaxing.utils.HouseUtil;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,16 +47,23 @@ public class ConsultingService {
     private final ConsultingScheduleManagementRepository consultingScheduleManagementRepository;
     private final ConsultingReservationInfoRepository consultingReservationInfoRepository;
     private final ConsultantInfoRepository consultantInfoRepository;
+    private final CalculationHistoryRepository calculationHistoryRepository;
+    private final CalculationBuyResponseHistoryRepository calculationBuyResponseHistoryRepository;
+    private final CalculationSellResponseHistoryRepository calculationSellResponseHistoryRepository;
+    private final CalculationCommentaryResponseHistoryRepository calculationCommentaryResponseHistoryRepository;
 
     private final UserUtil userUtil;
+    private final HouseUtil houseUtil;
 
     // 상담가능일정 조회
-    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate){
+    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate) throws Exception{
         log.info(">> [Service]ConsultingService getConsultingAvailableSchedule - 상담가능일정 조회");
 
         validationCheckForGetConsultingAvailableSchedule(consultantId, searchType, searchDate);
 
         log.info("상담가능일정 조회 요청 : " + consultantId + ", " + searchType + ", " + searchDate);
+
+        LocalDate reservationDate = LocalDate.parse(searchDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         List<ConsultingAvailableDateResponse> consultingAvailableDateResponseList = null;
         List<ConsultingAvailableTimeResponse> consultingAvailableTimeResponseList = null;
@@ -86,12 +97,12 @@ public class ConsultingService {
             ConsultingScheduleManagement consultingScheduleManagement = consultingScheduleManagementRepository.findByConsultingScheduleId(
                     ConsultingScheduleId.builder()
                             .consultantId(checkedConsultantId)
-                            .reservationDate(LocalDate.parse(searchDate, DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                            .reservationDate(reservationDate)
                             .build());
 
             if(consultingScheduleManagement != null){
                 if(consultingScheduleManagement.getIsReservationAvailable()){
-                    consultingAvailableTimeResponseList = getReservationAvailableTimeList(consultingScheduleManagement);
+                    consultingAvailableTimeResponseList = getReservationAvailableTimeList(consultingScheduleManagement, reservationDate);
                 }
             }
         }
@@ -355,9 +366,126 @@ public class ConsultingService {
         String reservationStartTime = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
         String reservationEndTime = consultingReservationInfo.getReservationEndTime().format(timeFormatter);
 
-        // TODO. 계산 결과 세팅 로직 추가
         CalculationBuyResultResponse calculationBuyResultResponse = null;
         CalculationSellResultResponse calculationSellResultResponse = null;
+
+        // 계산이력ID
+        Long calcHistoryId = consultingReservationInfo.getCalcHistoryId();
+
+        // 계산이력ID 값이 존재하면 응답값에 계산 결과 세팅
+        if(calcHistoryId != null){
+            CalculationHistory calculationHistory = null;
+            Long userId = null;
+            String calcType = EMPTY;
+
+            calculationHistory = calculationHistoryRepository.findByCalcHistoryId(calcHistoryId);
+
+            if(calculationHistory != null){
+                userId = calculationHistory.getUserId();
+                calcType = calculationHistory.getCalcType();
+
+                int listCnt = 0;
+                int commentaryListCnt = 0;
+                List<String> commentaryList = new ArrayList<>();
+                String calculationResultTextData = EMPTY;
+
+                List<CalculationCommentaryResponseHistory> commentaryResponseHistoryList =
+                        calculationCommentaryResponseHistoryRepository.findByCalculationHistoryId(
+                                CalculationHistoryId.builder()
+                                        .calcHistoryId(calcHistoryId)
+                                        .build());
+
+                if(commentaryResponseHistoryList != null){
+                    commentaryListCnt = commentaryResponseHistoryList.size();
+
+                    for(CalculationCommentaryResponseHistory calculationCommentaryResponseHistory : commentaryResponseHistoryList){
+                        commentaryList.add(calculationCommentaryResponseHistory.getCommentaryContent());
+                    }
+                }
+
+
+                // 취득세 계산
+                if(CALC_TYPE_BUY.equals(calcType)){
+                    List<CalculationBuyOneResult> list = new ArrayList<>();
+                    List<CalculationBuyResponseHistory> calculationBuyResponseHistoryList =
+                            calculationBuyResponseHistoryRepository.findByCalculationHistoryId(
+                                    CalculationHistoryId.builder()
+                                            .calcHistoryId(calcHistoryId)
+                                            .build());
+
+                    if(calculationBuyResponseHistoryList != null){
+                        listCnt = calculationBuyResponseHistoryList.size();
+
+                        for(CalculationBuyResponseHistory calculationBuyResponseHistory : calculationBuyResponseHistoryList){
+                            list.add(
+                                    CalculationBuyOneResult.builder()
+                                            .buyPrice(calculationBuyResponseHistory.getBuyPrice())
+                                            .buyTaxRate(calculationBuyResponseHistory.getBuyTaxRate())
+                                            .buyTaxPrice(calculationBuyResponseHistory.getBuyTaxPrice())
+                                            .eduTaxRate(calculationBuyResponseHistory.getEduTaxRate())
+                                            .eduTaxPrice(calculationBuyResponseHistory.getEduTaxPrice())
+                                            .eduDiscountPrice(calculationBuyResponseHistory.getEduDiscountPrice())
+                                            .agrTaxRate(calculationBuyResponseHistory.getAgrTaxRate())
+                                            .agrTaxPrice(calculationBuyResponseHistory.getAgrTaxPrice())
+                                            .totalTaxPrice(calculationBuyResponseHistory.getTotalTaxPrice())
+                                            .build());
+                        }
+                    }
+
+                    calculationBuyResultResponse = CalculationBuyResultResponse.builder()
+                            .listCnt(listCnt)
+                            .list(list)
+                            .commentaryListCnt(commentaryListCnt)
+                            .commentaryList(commentaryList)
+                            .calcHistoryId(calcHistoryId)
+                            .build();
+                }
+                else if(CALC_TYPE_SELL.equals(calcType)){
+                    List<CalculationSellOneResult> list = new ArrayList<>();
+                    List<CalculationSellResponseHistory> calculationSellResponseHistoryList =
+                            calculationSellResponseHistoryRepository.findByCalculationHistoryId(
+                                    CalculationHistoryId.builder()
+                                            .calcHistoryId(calcHistoryId)
+                                            .build());
+
+                    if(calculationSellResponseHistoryList != null){
+                        listCnt = calculationSellResponseHistoryList.size();
+
+                        for(CalculationSellResponseHistory calculationSellResponseHistory : calculationSellResponseHistoryList){
+                            list.add(
+                                    CalculationSellOneResult.builder()
+                                            .buyPrice(calculationSellResponseHistory.getBuyPrice())
+                                            .buyDate(calculationSellResponseHistory.getBuyDate())
+                                            .sellPrice(calculationSellResponseHistory.getSellPrice())
+                                            .sellDate(calculationSellResponseHistory.getSellDate())
+                                            .necExpensePrice(calculationSellResponseHistory.getNecExpensePrice())
+                                            .sellProfitPrice(calculationSellResponseHistory.getSellProfitPrice())
+                                            .retentionPeriod(calculationSellResponseHistory.getRetentionPeriod())
+                                            .nonTaxablePrice(calculationSellResponseHistory.getNonTaxablePrice())
+                                            .taxablePrice(calculationSellResponseHistory.getTaxablePrice())
+                                            .longDeductionPrice(calculationSellResponseHistory.getLongDeductionPrice())
+                                            .sellIncomePrice(calculationSellResponseHistory.getSellIncomePrice())
+                                            .basicDeductionPrice(calculationSellResponseHistory.getBasicDeductionPrice())
+                                            .taxableStdPrice(calculationSellResponseHistory.getTaxableStdPrice())
+                                            .sellTaxRate(calculationSellResponseHistory.getSellTaxRate())
+                                            .progDeductionPrice(calculationSellResponseHistory.getProgDeductionPrice())
+                                            .sellTaxPrice(calculationSellResponseHistory.getSellTaxPrice())
+                                            .localTaxPrice(calculationSellResponseHistory.getLocalTaxPrice())
+                                            .totalTaxPrice(calculationSellResponseHistory.getTotalTaxPrice())
+                                            .build());
+                        }
+
+                        calculationSellResultResponse = CalculationSellResultResponse.builder()
+                                .listCnt(listCnt)
+                                .list(list)
+                                .commentaryListCnt(commentaryListCnt)
+                                .commentaryList(commentaryList)
+                                .calcHistoryId(calcHistoryId)
+                                .build();
+                    }
+                }
+            }
+        }
 
         return ApiResponse.success(
                 ConsultingReservationDetailResponse.builder()
@@ -454,32 +582,45 @@ public class ConsultingService {
     }
 
     // 예약 가능 시간 리스트 가져오기
-    private List<ConsultingAvailableTimeResponse> getReservationAvailableTimeList(ConsultingScheduleManagement consultingScheduleManagement){
+    private List<ConsultingAvailableTimeResponse> getReservationAvailableTimeList(ConsultingScheduleManagement consultingScheduleManagement, LocalDate reservationDate){
         LocalTime reservationAvailableStartTime = consultingScheduleManagement.getReservationAvailableStartTime();
         LocalTime reservationAvailableEndTime = consultingScheduleManagement.getReservationAvailableEndTime();
         int reservationTimeUnit = consultingScheduleManagement.getReservationTimeUnit();
         String reservationUnavailableTime = consultingScheduleManagement.getReservationUnavailableTime();
 
-        List<String> reservationUnavailableTimeList = new ArrayList<>();
-        List<ConsultingAvailableTimeResponse> timeList = new ArrayList<>();
-
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
+        List<String> reservationUnavailableTimeList = new ArrayList<>();
+        List<ConsultingReservationInfo> consultingReservationInfoList = new ArrayList<>();
+        List<ConsultingAvailableTimeResponse> timeList = new ArrayList<>();
+
         reservationUnavailableTimeList = Arrays.asList(reservationUnavailableTime.split(COMMA));
+        consultingReservationInfoList = consultingReservationInfoRepository.findByReservationDate(reservationDate);
 
         LocalTime compareTime = reservationAvailableStartTime;
 
         while(compareTime.isBefore(reservationAvailableEndTime)){
             String compareTimeStr = compareTime.format(timeFormatter);
-            String reservationStatus = ONE; // 예약대기
+            String reservationStatus = ONE;         // 예약대기
 
-            for(String unavailableTime : reservationUnavailableTimeList){
-                if(compareTimeStr.equals(unavailableTime)){
-                    reservationStatus = THREE;  // 예약불가
+            if(!reservationUnavailableTimeList.isEmpty()){
+                for(String unavailableTime : reservationUnavailableTimeList){
+                    if(compareTimeStr.equals(unavailableTime)){
+                        reservationStatus = THREE;  // 예약불가
+                        break;
+                    }
                 }
             }
 
-            // TODO : 예약완료 케이스도 추가해야함
+            if(consultingReservationInfoList != null && !consultingReservationInfoList.isEmpty()){
+                for(ConsultingReservationInfo consultingReservationInfo : consultingReservationInfoList){
+                    String reservedTimeStr = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
+                    if(compareTimeStr.equals(reservedTimeStr)){
+                        reservationStatus = TWO;    // 예약완료
+                        break;
+                    }
+                }
+            }
 
             timeList.add(
                     ConsultingAvailableTimeResponse.builder()

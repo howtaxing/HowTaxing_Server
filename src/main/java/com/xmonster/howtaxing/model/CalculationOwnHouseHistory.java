@@ -21,6 +21,6 @@ public class CalculationOwnHouseHistory implements Serializable {
     private Long ownHouseHistoryId;     // 보유주택이력ID
 
     private Long calcHistoryId;         // 계산이력ID
-    private Integer ownHouseCnt;        // 보유주택수
+    private Long ownHouseCnt;        // 보유주택수
     private Boolean hasOwnHouseDetail;  // 보유주택상세(정보)존재여부
 }

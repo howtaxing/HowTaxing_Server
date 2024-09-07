@@ -17,4 +17,8 @@ public class UserUtil {
         return userRepository.findByEmail(SecurityUtil.getCurrentMemberEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
+
+    public Long findCurrentUserId() {
+        return findCurrentUser().getId();
+    }
 }

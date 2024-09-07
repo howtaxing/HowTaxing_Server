@@ -129,22 +129,22 @@ public class HouseService {
             throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈 보유주택조회 중 오류가 발생했습니다.");
         }
 
-        List<House> houseListFromDB = houseRepository.findByUserId(findUser.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
         List<HouseSimpleInfoResponse> houseSimpleInfoResponseList = new ArrayList<>();
 
-        for(House house : houseListFromDB){
-            houseSimpleInfoResponseList.add(
-                    HouseSimpleInfoResponse.builder()
-                            .houseId(house.getHouseId())
-                            .houseType(house.getHouseType())
-                            .houseName(house.getHouseName())
-                            .roadAddr(house.getRoadAddr())
-                            .detailAdr(house.getDetailAdr())
-                            .isMoveInRight(house.getIsMoveInRight())
-                            .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
-                            .build());
+        if(houseListFromDB != null){
+            for(House house : houseListFromDB){
+                houseSimpleInfoResponseList.add(
+                        HouseSimpleInfoResponse.builder()
+                                .houseId(house.getHouseId())
+                                .houseType(house.getHouseType())
+                                .houseName(house.getHouseName())
+                                .roadAddr(house.getRoadAddr())
+                                .detailAdr(house.getDetailAdr())
+                                .isMoveInRight(house.getIsMoveInRight())
+                                .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
+                                .build());
+            }
         }
 
         return ApiResponse.success(
@@ -318,25 +318,22 @@ public class HouseService {
     public Object getHouseList(String calcType) {
         log.info(">> [Service]HouseService getHouseList - 보유주택 목록 조회(DB)");
 
-        // 호출 사용자 조회
-        User findUser = userUtil.findCurrentUser();
-
-        List<House> houseListFromDB = houseRepository.findByUserId(findUser.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
         List<HouseSimpleInfoResponse> houseSimpleInfoResponseList = new ArrayList<>();
 
-        for(House house : houseListFromDB){
-            houseSimpleInfoResponseList.add(
-                    HouseSimpleInfoResponse.builder()
-                            .houseId(house.getHouseId())
-                            .houseType(house.getHouseType())
-                            .houseName(house.getHouseName())
-                            .roadAddr(house.getRoadAddr())
-                            .detailAdr(house.getDetailAdr())
-                            .isMoveInRight(house.getIsMoveInRight())
-                            .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, calcType))
-                            .build());
+        if(houseListFromDB != null){
+            for(House house : houseListFromDB){
+                houseSimpleInfoResponseList.add(
+                        HouseSimpleInfoResponse.builder()
+                                .houseId(house.getHouseId())
+                                .houseType(house.getHouseType())
+                                .houseName(house.getHouseName())
+                                .roadAddr(house.getRoadAddr())
+                                .detailAdr(house.getDetailAdr())
+                                .isMoveInRight(house.getIsMoveInRight())
+                                .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, calcType))
+                                .build());
+            }
         }
 
         return ApiResponse.success(
@@ -1664,12 +1661,10 @@ public class HouseService {
 
     // 건축물대장 기준 매매 외 취득주택 추출
     public Object getEtcHouse() {
-        Long userId = userUtil.findCurrentUser().getId();
+        Long userId = userUtil.findCurrentUserId();
 
         // DB에서 보유주택 목록 가져오기
-        List<House> houseListFromDB = houseRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
         List<LoadHouse> etcHouseList = new ArrayList<>();
         
         // redis에서 재산세 주택 가져오기
@@ -1691,22 +1686,25 @@ public class HouseService {
             }
             etcHouse.setArea(new BigDecimal(getRedis.get("area").toString()));
             etcHouse.setDetailAdr(houseAddressDto.getDetailAddress());
-            etcHouse.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+            etcHouse.setHouseName((!houseAddressDto.formatEtcAddress().isEmpty() ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
             etcHouse.setHouseTypeByName();
             etcHouse.setSourceType(ONE);
             etcHouse.setComplete(false);
 
             // 주소비교
-            boolean isMatched = houseListFromDB.stream().anyMatch(house -> {
-                HouseAddressDto hasHouseAddressDto;
-                if (houseAddressDto.getAddressType() == 1) {
-                    hasHouseAddressDto = houseAddressService.parseAddress(house.getJibunAddr());
-                } else {
-                    hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
-                }
-                log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
-                return houseAddressDto.isSameAddress(hasHouseAddressDto);
-            });
+            boolean isMatched = false;
+            if(houseListFromDB != null){
+                isMatched = houseListFromDB.stream().anyMatch(house -> {
+                    HouseAddressDto hasHouseAddressDto;
+                    if (houseAddressDto.getAddressType() == 1) {
+                        hasHouseAddressDto = houseAddressService.parseAddress(house.getJibunAddr());
+                    } else {
+                        hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
+                    }
+                    log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
+                    return houseAddressDto.isSameAddress(hasHouseAddressDto);
+                });
+            }
 
             // 일치하지 않으면 기타주소 리스트에 추가
             if (!isMatched) {

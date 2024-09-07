@@ -21,13 +21,13 @@ public class CalculationBuyResponseHistory implements Serializable {
     @EmbeddedId
     private CalculationHistoryId calculationHistoryId;
 
-    private Long buyPrice;              // 취득가액
-    private Double buyTaxRate;          // 취득세율
-    private Long buyTaxPrice;           // 취득세액
-    private Double eduTaxRate;          // 지방교육세율
-    private Long eduTaxPrice;           // 지방교육세액
-    private Long eduDiscountPrice;      // 지방교육세감면액
-    private Double agrTaxRate;          // 농어촌특별세율
-    private Long agrTaxPrice;           // 농어촌특별세액
-    private Long totalTaxPrice;         // 총납부세액
+    private String buyPrice;            // 취득가액
+    private String buyTaxRate;          // 취득세율
+    private String buyTaxPrice;         // 취득세액
+    private String eduTaxRate;          // 지방교육세율
+    private String eduTaxPrice;         // 지방교육세액
+    private String eduDiscountPrice;    // 지방교육세감면액
+    private String agrTaxRate;          // 농어촌특별세율
+    private String agrTaxPrice;         // 농어촌특별세액
+    private String totalTaxPrice;       // 총납부세액
 }

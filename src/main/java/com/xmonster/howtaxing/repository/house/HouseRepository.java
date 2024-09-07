@@ -10,7 +10,7 @@ public interface HouseRepository extends JpaRepository<House, Long> {
 
     Optional<House> findByHouseId(Long houseId);
 
-    Optional<List<House>> findByUserId(Long userId);
+    List<House> findByUserId(Long userId);
 
     void deleteByHouseId(Long houseId);
 

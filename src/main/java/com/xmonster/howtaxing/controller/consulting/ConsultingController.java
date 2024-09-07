@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -41,5 +39,19 @@ public class ConsultingController {
     public Object cancelConsultingReservation(@RequestBody Long consultingReservationId) throws Exception {
         log.info(">> [Controller]ConsultingController applyConsultingReservation - 상담 예약 신청");
         return consultingService.cancelConsultingReservation(consultingReservationId);
+    }
+
+    // 상담 예약 목록 조회
+    @GetMapping("/consulting/reservationList")
+    public Object getConsultingReservationList() throws Exception {
+        log.info(">> [Controller]ConsultingController getConsultingReservationList - 상담 예약 목록 조회");
+        return consultingService.getConsultingReservationList();
+    }
+
+    // 상담 예약 상세 조회
+    @GetMapping("/consulting/reservationDetail")
+    public Object getConsultingReservationDetail(@RequestParam Long consultingReservationId) throws Exception {
+        log.info(">> [Controller]ConsultingController getConsultingReservationList - 상담 예약 상세 조회");
+        return consultingService.getConsultingReservationDetail(consultingReservationId);
     }
 }
