@@ -524,6 +524,8 @@ public class HouseService {
         houses.forEach(house -> {
             house.setSourceType(ONE);
             house.setIsMoveInRight(false);
+            house.setOwnerCnt(1);
+            house.setUserProportion(100);
         });
         List<House> saveHouses = houseRepository.saveAll(houses);
         // House 엔티티에서 필요한 필드만 추출하여 Map으로 변환
