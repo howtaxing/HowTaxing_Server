@@ -2946,13 +2946,18 @@ public class CalculationSellService {
             // 계산결과 텍스트 데이터 세팅
             String calculationResultTextData = getCalculationResultTextData(calculationSellResultRequest, calculationSellResultOneList, commentaryList);
 
-            return CalculationSellResultResponse.builder()
+            CalculationSellResultResponse calculationSellResultResponse = CalculationSellResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationSellResultOneList)
                     .commentaryListCnt(commentaryListCnt)
                     .commentaryList(commentaryList)
                     .calculationResultTextData(calculationResultTextData)
                     .build();
+
+            // 양도소득세 계산 결과 이력 저장
+            calculationSellResultResponse.setCalcHistoryId(saveCalculationSellHistory(calculationSellResultRequest, calculationSellResultResponse));
+
+            return calculationSellResultResponse;
         }
 
         // 양도소득세 계산 결과 이력 저장
