@@ -388,11 +388,12 @@ public class ConsultingService {
                 List<String> commentaryList = new ArrayList<>();
                 String calculationResultTextData = EMPTY;
 
-                List<CalculationCommentaryResponseHistory> commentaryResponseHistoryList =
+                /*List<CalculationCommentaryResponseHistory> commentaryResponseHistoryList =
                         calculationCommentaryResponseHistoryRepository.findByCalculationHistoryId(
                                 CalculationHistoryId.builder()
                                         .calcHistoryId(calcHistoryId)
-                                        .build());
+                                        .build());*/
+                List<CalculationCommentaryResponseHistory> commentaryResponseHistoryList = calculationCommentaryResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
 
                 if(commentaryResponseHistoryList != null){
                     commentaryListCnt = commentaryResponseHistoryList.size();
@@ -406,11 +407,12 @@ public class ConsultingService {
                 // 취득세 계산
                 if(CALC_TYPE_BUY.equals(calcType)){
                     List<CalculationBuyOneResult> list = new ArrayList<>();
-                    List<CalculationBuyResponseHistory> calculationBuyResponseHistoryList =
+                    /*List<CalculationBuyResponseHistory> calculationBuyResponseHistoryList =
                             calculationBuyResponseHistoryRepository.findByCalculationHistoryId(
                                     CalculationHistoryId.builder()
                                             .calcHistoryId(calcHistoryId)
-                                            .build());
+                                            .build());*/
+                    List<CalculationBuyResponseHistory> calculationBuyResponseHistoryList = calculationBuyResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
 
                     if(calculationBuyResponseHistoryList != null){
                         listCnt = calculationBuyResponseHistoryList.size();
@@ -441,11 +443,12 @@ public class ConsultingService {
                 }
                 else if(CALC_TYPE_SELL.equals(calcType)){
                     List<CalculationSellOneResult> list = new ArrayList<>();
-                    List<CalculationSellResponseHistory> calculationSellResponseHistoryList =
+                    /*List<CalculationSellResponseHistory> calculationSellResponseHistoryList =
                             calculationSellResponseHistoryRepository.findByCalculationHistoryId(
                                     CalculationHistoryId.builder()
                                             .calcHistoryId(calcHistoryId)
-                                            .build());
+                                            .build());*/
+                    List<CalculationSellResponseHistory> calculationSellResponseHistoryList = calculationSellResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
 
                     if(calculationSellResponseHistoryList != null){
                         listCnt = calculationSellResponseHistoryList.size();
@@ -481,6 +484,8 @@ public class ConsultingService {
                                 .commentaryList(commentaryList)
                                 .calcHistoryId(calcHistoryId)
                                 .build();
+                    }else{
+                        log.info("양도소득세 계산 응답 이력 없음");
                     }
                 }
             }

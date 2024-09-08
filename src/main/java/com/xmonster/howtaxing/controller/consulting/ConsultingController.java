@@ -30,14 +30,14 @@ public class ConsultingController {
     // 상담 예약 변경
     @PostMapping("/consulting/reservationModify")
     public Object modifyConsultingReservation(@RequestBody ConsultingReservationModifyRequest consultingReservationModifyRequest) throws Exception {
-        log.info(">> [Controller]ConsultingController applyConsultingReservation - 상담 예약 신청");
+        log.info(">> [Controller]ConsultingController modifyConsultingReservation - 상담 예약 변경");
         return consultingService.modifyConsultingReservation(consultingReservationModifyRequest);
     }
 
     // 상담 예약 취소
     @PostMapping("/consulting/reservationCancel")
     public Object cancelConsultingReservation(@RequestBody Long consultingReservationId) throws Exception {
-        log.info(">> [Controller]ConsultingController applyConsultingReservation - 상담 예약 신청");
+        log.info(">> [Controller]ConsultingController cancelConsultingReservation - 상담 예약 취소");
         return consultingService.cancelConsultingReservation(consultingReservationId);
     }
 
