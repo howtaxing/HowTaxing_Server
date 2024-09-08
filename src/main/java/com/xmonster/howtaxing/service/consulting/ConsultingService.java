@@ -309,7 +309,7 @@ public class ConsultingService {
 
         List<ConsultingReservationSimpleResponse> consultingReservationSimpleResponseList = new ArrayList<>();
 
-        List<ConsultingReservationInfo> consultingReservationInfoList = consultingReservationInfoRepository.findByUserId(findUser.getId());
+        List<ConsultingReservationInfo> consultingReservationInfoList = consultingReservationInfoRepository.findByUserIdOrderByReservationDateDescReservationStartTimeDesc(findUser.getId());
 
         if(consultingReservationInfoList != null && !consultingReservationInfoList.isEmpty()){
             for(ConsultingReservationInfo consultingReservationInfo : consultingReservationInfoList){

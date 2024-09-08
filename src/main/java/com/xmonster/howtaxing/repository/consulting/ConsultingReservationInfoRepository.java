@@ -14,7 +14,7 @@ public interface ConsultingReservationInfoRepository extends JpaRepository<Consu
 
     Long countByReservationDateAndReservationStartTime(LocalDate reservationDate, LocalTime reservationStartTime);
 
-    List<ConsultingReservationInfo> findByUserId(Long userId);
+    List<ConsultingReservationInfo> findByUserIdOrderByReservationDateDescReservationStartTimeDesc(Long userId);
 
     List<ConsultingReservationInfo> findByReservationDate(LocalDate reservationDate);
 }
