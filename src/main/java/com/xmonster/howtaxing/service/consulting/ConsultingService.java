@@ -63,8 +63,6 @@ public class ConsultingService {
 
         log.info("상담가능일정 조회 요청 : " + consultantId + ", " + searchType + ", " + searchDate);
 
-        LocalDate reservationDate = LocalDate.parse(searchDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-
         List<ConsultingAvailableDateResponse> consultingAvailableDateResponseList = null;
         List<ConsultingAvailableTimeResponse> consultingAvailableTimeResponseList = null;
 
@@ -93,6 +91,7 @@ public class ConsultingService {
         }
         // 상담가능시간 조회
         else if(TWO.equals(searchType)){
+            LocalDate reservationDate = LocalDate.parse(searchDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             consultingAvailableTimeResponseList = new ArrayList<>();
             ConsultingScheduleManagement consultingScheduleManagement = consultingScheduleManagementRepository.findByConsultingScheduleId(
                     ConsultingScheduleId.builder()
