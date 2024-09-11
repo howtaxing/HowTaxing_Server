@@ -225,18 +225,17 @@ public class ConsultingService {
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 변경할 수 없습니다.");
         }
 
+        if(StringUtils.isBlank(customerName)) consultingReservationInfo.setCustomerName(customerName);
+        if(StringUtils.isBlank(customerPhone)) consultingReservationInfo.setCustomerPhone(customerPhone);
+        if(StringUtils.isBlank(reservationDate)) consultingReservationInfo.setReservationDate(reservationDate);
+        if(StringUtils.isBlank(reservationTime)) consultingReservationInfo.setReservationTime(reservationTime);
+        if(StringUtils.isBlank(consultingType)) consultingReservationInfo.setConsultingType(consultingType);
+        if(StringUtils.isBlank(consultingRequestContent)) consultingReservationInfo.setConsultingRequestContent(consultingRequestContent);
+
+        consultingReservationInfo.setLastModifier(LastModifierType.USER);
+        
         try{
-            consultingReservationInfoRepository.saveAndFlush(
-                    ConsultingReservationInfo.builder()
-                            .consultingType(consultingType)
-                            .reservationDate(reservationDate)
-                            .reservationStartTime(reservationStartTime)
-                            .customerName(customerName)
-                            .customerPhone(customerPhone)
-                            .consultingRequestContent(consultingRequestContent)
-                            .consultingStatus(ConsultingStatus.WAITING)
-                            .lastModifier(LastModifierType.USER)
-                            .build());
+            consultingReservationInfoRepository.saveAndFlush(consultingReservationInfo);
         }catch (Exception e){
             log.error("상담 예약 update 중 오류가 발생했습니다.");
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR);
@@ -278,13 +277,12 @@ public class ConsultingService {
         String reservationStartTime = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
         String reservationEndTime = consultingReservationInfo.getReservationEndTime().format(timeFormatter);
 
+        consultingReservationInfo.setIsCanceled(true);
+        consultingReservationInfo.setConsultingStatus(ConsultingStatus.CANCEL);
+        consultingReservationInfo.setLastModifier(LastModifierType.USER);
+
         try{
-            consultingReservationInfoRepository.saveAndFlush(
-                    ConsultingReservationInfo.builder()
-                            .isCanceled(true)
-                            .consultingStatus(ConsultingStatus.CANCEL)
-                            .lastModifier(LastModifierType.USER)
-                            .build());
+            consultingReservationInfoRepository.saveAndFlush(consultingReservationInfo);
         }catch (Exception e){
             log.error("상담 예약 update 중 오류가 발생했습니다.");
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR);
