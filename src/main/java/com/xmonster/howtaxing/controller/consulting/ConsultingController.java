@@ -34,7 +34,7 @@ public class ConsultingController {
         return consultingService.modifyConsultingReservation(consultingReservationModifyRequest);
     }
 
-    // 상담 예약 취소
+    // 상담 예약 취소(API 추후 확인)
     @DeleteMapping("/consulting/reservationCancel")
     public Object cancelConsultingReservation(@RequestParam Long consultingReservationId) throws Exception {
         log.info(">> [Controller]ConsultingController cancelConsultingReservation - 상담 예약 취소");
