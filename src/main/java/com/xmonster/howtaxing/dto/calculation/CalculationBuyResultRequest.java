@@ -39,7 +39,7 @@ public class CalculationBuyResultRequest {
     private Boolean isMoveInRight;              // [필수] 입주권여부
 
     private Boolean isOwnHouseCntRegist;        // [필수] 보유주택수직접입력여부
-    private Integer ownHouseCnt;                // [선택] 보유주택수
+    private Long ownHouseCnt;                   // [선택] 보유주택수
 
     // 추가질의답변리스트
     private List<CalculationAdditionalAnswerRequest> additionalAnswerList;

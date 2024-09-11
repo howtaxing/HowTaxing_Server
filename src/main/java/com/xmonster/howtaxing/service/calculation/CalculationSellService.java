@@ -1,10 +1,7 @@
 package com.xmonster.howtaxing.service.calculation;
 
 import com.xmonster.howtaxing.CustomException;
-import com.xmonster.howtaxing.dto.calculation.CalculationAdditionalAnswerRequest;
-import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultRequest;
-import com.xmonster.howtaxing.dto.calculation.CalculationSellResultRequest;
-import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
+import com.xmonster.howtaxing.dto.calculation.*;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse.CalculationSellOneResult;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.house.HouseAddressDto;
@@ -39,12 +36,18 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 public class CalculationSellService {
     private final HouseAddressService houseAddressService;
 
-    private final CalculationSellResultRepository calculationSellResultRepository;
     private final CalculationProcessRepository calculationProcessRepository;
     private final TaxRateInfoRepository taxRateInfoRepository;
     private final DeductionInfoRepository deductionInfoRepository;
     private final HouseRepository houseRepository;
     private final AdjustmentTargetAreaRepository adjustmentTargetAreaRepository;
+    private final CalculationHistoryRepository calculationHistoryRepository;
+    private final CalculationSellRequestHistoryRepository calculationSellRequestHistoryRepository;
+    private final CalculationAdditionalAnswerRequestHistoryRepository calculationAdditionalAnswerRequestHistoryRepository;
+    private final CalculationSellResponseHistoryRepository calculationSellResponseHistoryRepository;
+    private final CalculationCommentaryResponseHistoryRepository calculationCommentaryResponseHistoryRepository;
+    private final CalculationOwnHouseHistoryRepository calculationOwnHouseHistoryRepository;
+    private final CalculationOwnHouseHistoryDetailRepository calculationOwnHouseHistoryDetailRepository;
 
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
@@ -371,19 +374,16 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "007")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            // 보유주택 수
-            long ownHouseCount = getOwnHouseCount();
-
             // 1주택
-            if(ownHouseCount == 1){
+            if(houseUtil.countOwnHouse() == 1){
                 selectNo = 1;
             }
             // 2주택
-            else if(ownHouseCount == 2){
+            else if(houseUtil.countOwnHouse() == 2){
                 selectNo = 2;
             }
             // 3주택 이상
-            else if(ownHouseCount >= 3){
+            else if(houseUtil.countOwnHouse() >= 3){
                 selectNo = 3;
             }
 
@@ -1094,11 +1094,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "019")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
+
+            List<House> houseList = houseUtil.findOwnHouseList();
 
             House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
             House newHouse = getOldOrNewHouse(houseList, true);     // 신규주택
@@ -1162,13 +1162,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "020")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
+            House oldHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), false);    // 종전주택
 
             // 양도주택이 종전주택인 경우
             if(calculationSellResultRequest.getHouseId().equals(oldHouse.getHouseId())){
@@ -1228,13 +1226,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "021")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House newHouse = getOldOrNewHouse(houseList, true);     // 신규주택
+            House newHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), true);     // 신규주택
 
             if(FIVE.equals(newHouse.getHouseType()) || THREE.equals(newHouse.getHouseType()) || newHouse.getIsMoveInRight()){
                 selectNo = 2;   // 준공 분양권(선택번호:2)
@@ -1288,14 +1284,12 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "022")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
-            House newHouse = getOldOrNewHouse(houseList, true);     // 신규주택
+            House oldHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), false);    // 종전주택
+            House newHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), true);     // 신규주택
 
             String oldHouseBuyDateStr = (oldHouse.getBuyDate() != null) ? oldHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -1354,13 +1348,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "023")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
+            House oldHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), false);    // 종전주택
 
             String oldHouseBuyDateStr = (oldHouse.getBuyDate() != null) ? oldHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String oldHouseSellDateStr = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -1419,13 +1411,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "024")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House newHouse = getOldOrNewHouse(houseList, true);    // 신규주택
+            House newHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), true);    // 신규주택
 
             String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String oldHouseSellDateStr = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -1484,14 +1474,12 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "025")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
-            House newHouse = getOldOrNewHouse(houseList, true);     // 신규주택
+            House oldHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), false);    // 종전주택
+            House newHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), true);     // 신규주택
 
             String oldHouseBuyDateStr = (oldHouse.getBuyDate() != null) ? oldHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -1550,13 +1538,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "026")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
+            House oldHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), false);    // 종전주택
 
             String oldHouseBuyDateStr = (oldHouse.getBuyDate() != null) ? oldHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String oldHouseSellDateStr = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -1615,13 +1601,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "027")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House newHouse = getOldOrNewHouse(houseList, true);    // 신규주택
+            House newHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), true);    // 신규주택
 
             String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
 
@@ -1678,13 +1662,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "028")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House oldHouse = getOldOrNewHouse(houseList, false);    // 종전주택
+            House oldHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), false);    // 종전주택
 
             String oldHouseBuyDateStr = (oldHouse.getBuyDate() != null) ? oldHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String oldHouseSellDateStr = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -1743,13 +1725,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "029")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House newHouse = getOldOrNewHouse(houseList, true);    // 신규주택
+            House newHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), true);    // 신규주택
 
             String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String oldHouseSellDateStr = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -2388,13 +2368,11 @@ public class CalculationSellService {
             List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "048")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-
-            if(getOwnHouseCount() != 2 || houseList == null || houseList.size() != 2){
+            if(houseUtil.countOwnHouse() != 2){
                 throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "계산오류가 발생했습니다.(2주택 오류)");
             }
 
-            House newHouse = getOldOrNewHouse(houseList, true);    // 신규주택
+            House newHouse = getOldOrNewHouse(houseUtil.findOwnHouseList(), true);    // 신규주택
 
             String newHouseBuyDateStr = (newHouse.getBuyDate() != null) ? newHouse.getBuyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
             String oldHouseSellDateStr = (calculationSellResultRequest.getSellDate() != null) ? calculationSellResultRequest.getSellDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : EMPTY;
@@ -2633,7 +2611,7 @@ public class CalculationSellService {
             // 세율정보
             TaxRateInfo taxRateInfo = null;
             if(taxRateCode != null && !taxRateCode.isBlank()){
-                log.info("세율정보 조회");
+                log.info("세율정보 조회 : " + taxRateCode);
                 taxRateInfo = taxRateInfoRepository.findByTaxRateCode(taxRateCode)
                         .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "세율 정보를 가져오는 중 오류가 발생했습니다."));
             }
@@ -2641,7 +2619,7 @@ public class CalculationSellService {
             // 공제정보
             DeductionInfo deductionInfo = null;
             if(dedCode != null && !dedCode.isBlank()){
-                log.info("공제정보 조회");
+                log.info("공제정보 조회 : " + dedCode);
                 deductionInfo = deductionInfoRepository.findByDedCode(dedCode)
                         .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "공제 정보를 가져오는 중 오류가 발생했습니다."));
             }
@@ -2649,12 +2627,11 @@ public class CalculationSellService {
             // 비과세 여부
             boolean isNonTaxRate = false;
 
-            long ownHouseCount = getOwnHouseCount();                            // 보유주택 수
             int ownerCount = house.getOwnerCnt();                               // (양도주택)소유자 수
             double userProportion = (double)house.getUserProportion() / 100;    // (양도주택)보유주택비율(소유자1)
             double restProPortion = 1 - userProportion;                         // (양도주택)보유주택비율(소유자2)
 
-            log.info("- 보유주택 수 : " + ownHouseCount);
+            log.info("- 보유주택 수 : " + houseUtil.countOwnHouse());
 
             for(int i=0; i<ownerCount; i++) {
                 double proportion = 1;
@@ -2969,13 +2946,175 @@ public class CalculationSellService {
             // 계산결과 텍스트 데이터 세팅
             String calculationResultTextData = getCalculationResultTextData(calculationSellResultRequest, calculationSellResultOneList, commentaryList);
 
-            return CalculationSellResultResponse.builder()
+            CalculationSellResultResponse calculationSellResultResponse = CalculationSellResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationSellResultOneList)
                     .commentaryListCnt(commentaryListCnt)
                     .commentaryList(commentaryList)
                     .calculationResultTextData(calculationResultTextData)
                     .build();
+
+            // 양도소득세 계산 결과 이력 저장
+            calculationSellResultResponse.setCalcHistoryId(saveCalculationSellHistory(calculationSellResultRequest, calculationSellResultResponse));
+
+            return calculationSellResultResponse;
+        }
+
+        // 양도소득세 계산 결과 이력 저장
+        private Long saveCalculationSellHistory(CalculationSellResultRequest calculationSellResultRequest, CalculationSellResultResponse calculationSellResultResponse){
+            log.info(">>> CalculationBranch saveCalculationSellHistory - 양도소득세 계산 결과 이력 저장");
+
+            // 계산이력ID
+            Long calcHistoryId = null;
+
+            try{
+                // 계산이력 저장 후 계산이력ID 추출
+                calcHistoryId = calculationHistoryRepository.saveAndFlush(
+                        CalculationHistory.builder()
+                                .userId(userUtil.findCurrentUserId())
+                                .calcType(CALC_TYPE_SELL)
+                                .build()).getCalcHistoryId();
+
+                if(calcHistoryId != null){
+                    log.info("계산이력 저장 성공 > 계산이력ID : " + calcHistoryId);
+
+                    // 계산양도소득세요청이력 저장
+                    calculationSellRequestHistoryRepository.saveAndFlush(
+                            CalculationSellRequestHistory.builder()
+                                    .calculationHistoryId(
+                                            CalculationHistoryId.builder()
+                                                    .calcHistoryId(calcHistoryId)
+                                                    .detailHistorySeq(1)
+                                                    .build())
+                                    .sellHouseId(calculationSellResultRequest.getHouseId())
+                                    .sellContractDate(calculationSellResultRequest.getSellContractDate())
+                                    .sellDate(calculationSellResultRequest.getSellDate())
+                                    .sellPrice(calculationSellResultRequest.getSellPrice())
+                                    .necExpensePrice(calculationSellResultRequest.getNecExpensePrice())
+                                    .build());
+
+                    // 계산추가답변요청이력 저장
+                    List<CalculationAdditionalAnswerRequest> calculationAdditionalAnswerRequestList = calculationSellResultRequest.getAdditionalAnswerList();
+                    int calculationAdditionalAnswerRequestHistorySeq = 1;
+                    for(CalculationAdditionalAnswerRequest calculationAdditionalAnswerRequest : calculationAdditionalAnswerRequestList){
+                        calculationAdditionalAnswerRequestHistoryRepository.saveAndFlush(
+                                CalculationAdditionalAnswerRequestHistory.builder()
+                                        .calculationHistoryId(
+                                                CalculationHistoryId.builder()
+                                                        .calcHistoryId(calcHistoryId)
+                                                        .detailHistorySeq(calculationAdditionalAnswerRequestHistorySeq)
+                                                        .build())
+                                        .questionId(calculationAdditionalAnswerRequest.getQuestionId())
+                                        .answerValue(calculationAdditionalAnswerRequest.getAnswerValue())
+                                        .build());
+                        calculationAdditionalAnswerRequestHistorySeq++;
+                    }
+
+                    // 계산양도소득세응답이력 저장
+                    List<CalculationSellOneResult> calculationSellOneResultList = calculationSellResultResponse.getList();
+                    int calculationSellResponseHistorySeq = 1;
+                    for(CalculationSellOneResult calculationSellOneResult : calculationSellOneResultList){
+                        calculationSellResponseHistoryRepository.saveAndFlush(
+                                CalculationSellResponseHistory.builder()
+                                        .calculationHistoryId(
+                                                CalculationHistoryId.builder()
+                                                        .calcHistoryId(calcHistoryId)
+                                                        .detailHistorySeq(calculationSellResponseHistorySeq)
+                                                        .build())
+                                        .buyPrice(calculationSellOneResult.getBuyPrice())
+                                        .buyDate(calculationSellOneResult.getBuyDate())
+                                        .sellPrice(calculationSellOneResult.getSellPrice())
+                                        .sellDate(calculationSellOneResult.getSellDate())
+                                        .necExpensePrice(calculationSellOneResult.getNecExpensePrice())
+                                        .sellProfitPrice(calculationSellOneResult.getSellProfitPrice())
+                                        .retentionPeriod(calculationSellOneResult.getRetentionPeriod())
+                                        .taxablePrice(calculationSellOneResult.getTaxablePrice())
+                                        .nonTaxablePrice(calculationSellOneResult.getNonTaxablePrice())
+                                        .longDeductionPrice(calculationSellOneResult.getLongDeductionPrice())
+                                        .sellIncomePrice(calculationSellOneResult.getSellIncomePrice())
+                                        .basicDeductionPrice(calculationSellOneResult.getBasicDeductionPrice())
+                                        .taxableStdPrice(calculationSellOneResult.getTaxableStdPrice())
+                                        .sellTaxPrice(calculationSellOneResult.getSellTaxPrice())
+                                        .progDeductionPrice(calculationSellOneResult.getProgDeductionPrice())
+                                        .sellTaxPrice(calculationSellOneResult.getSellTaxPrice())
+                                        .localTaxPrice(calculationSellOneResult.getLocalTaxPrice())
+                                        .totalTaxPrice(calculationSellOneResult.getTotalTaxPrice())
+                                        .build());
+                        calculationSellResponseHistorySeq++;
+                    }
+
+                    // 계산해설응답이력 저장
+                    List<String> commentaryList = calculationSellResultResponse.getCommentaryList();
+                    int calculationCommentaryResponseHistorySeq = 1;
+                    for(String commentary : commentaryList){
+                        calculationCommentaryResponseHistoryRepository.saveAndFlush(
+                                CalculationCommentaryResponseHistory.builder()
+                                        .calculationHistoryId(
+                                                CalculationHistoryId.builder()
+                                                        .calcHistoryId(calcHistoryId)
+                                                        .detailHistorySeq(calculationCommentaryResponseHistorySeq)
+                                                        .build())
+                                        .commentaryContent(commentary)
+                                        .build()
+                        );
+                        calculationCommentaryResponseHistorySeq++;
+                    }
+
+                    // 계산보유주택이력 저장
+                    Long ownHouseHistoryId = calculationOwnHouseHistoryRepository.saveAndFlush(
+                            CalculationOwnHouseHistory.builder()
+                                    .calcHistoryId(calcHistoryId)
+                                    .ownHouseCnt(houseUtil.countOwnHouse())
+                                    .hasOwnHouseDetail(houseUtil.countOwnHouse() > 0)
+                                    .build()
+                    ).getOwnHouseHistoryId();
+
+                    // 계산보유주택이력상세 저장
+                    List<House> houseList = houseUtil.findOwnHouseList();
+                    int calculationOwnHouseHistoryDetail = 1;
+                    for(House house : houseList){
+                        calculationOwnHouseHistoryDetailRepository.saveAndFlush(
+                                CalculationOwnHouseHistoryDetail.builder()
+                                        .calculationOwnHouseHistoryId(
+                                                CalculationOwnHouseHistoryId.builder()
+                                                        .ownHouseHistoryId(ownHouseHistoryId)
+                                                        .detailHistorySeq(calculationOwnHouseHistoryDetail)
+                                                        .build())
+                                        .houseType(house.getHouseType())
+                                        .houseName(house.getHouseName())
+                                        .detailAdr(house.getDetailAdr())
+                                        .contractDate(house.getContractDate())
+                                        .balanceDate(house.getBalanceDate())
+                                        .buyDate(house.getBuyDate())
+                                        .buyPrice(house.getBuyPrice())
+                                        .pubLandPrice(house.getPubLandPrice())
+                                        .area(house.getArea())
+                                        .kbMktPrice(house.getKbMktPrice())
+                                        .jibunAddr(house.getJibunAddr())
+                                        .roadAddr(house.getRoadAddr())
+                                        .roadAddrRef(house.getRoadAddrRef())
+                                        .bdMgtSn(house.getBdMgtSn())
+                                        .admCd(house.getAdmCd())
+                                        .rnMgtSn(house.getRnMgtSn())
+                                        .isDestruction(house.getIsDestruction())
+                                        .ownerCnt(house.getOwnerCnt())
+                                        .userProportion(house.getUserProportion())
+                                        .isMoveInRight(house.getIsMoveInRight())
+                                        .sourceType(house.getSourceType())
+                                        .build()
+                        );
+                        calculationOwnHouseHistoryDetail++;
+                    }
+
+                }else{
+                    log.info("계산이력 저장 오류 > 계산이력ID : NULL");
+                }
+
+            }catch(Exception e){
+                log.info("계산이력 저장 오류 > " + e.getMessage());
+            }
+
+            return calcHistoryId;
         }
 
         // 양도소득세 계산결과 텍스트 데이터 가져오기
@@ -3062,7 +3201,7 @@ public class CalculationSellService {
             House sellHouse = houseUtil.findSelectedHouse(calculationSellResultRequest.getHouseId());
 
             // 보유주택 수
-            long ownHouseCount = getOwnHouseCount();
+            long ownHouseCount = houseUtil.countOwnHouse();
 
             List<CalculationProcess> calculationProcessList = null;
             String variableData = EMPTY;
@@ -3084,7 +3223,7 @@ public class CalculationSellService {
             variableData = StringUtils.defaultString(calculationProcessList.get(0).getVariableData(), ZERO);
             variablePrice = Long.parseLong(variableData);   // 12억
 
-            if(ownHouseCount == 1 && calculationSellResultRequest.getSellPrice() > variablePrice){
+            if(houseUtil.countOwnHouse() == 1 && calculationSellResultRequest.getSellPrice() > variablePrice){
                 log.info("(Commentary Add) 2.양도시점 1주택자 양도가액 12억 초과 시");
                 commentaryList.add("1세대 1주택 비과세 대상 중 12억원 초과 고가주택을 거래하는 경우에는 초과분에 대한 비율만큼 양도세가 부과돼요.");
             }
@@ -3185,8 +3324,8 @@ public class CalculationSellService {
             }
 
             // 19.양도하려는 주택외에 주택수에 포함되는 분양권(2021.01.01 이후 취득)이 있는 경우
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-            if(houseList != null && getOwnHouseCount() > 1 && houseList.size() > 1){
+            List<House> houseList = houseUtil.findOwnHouseList();
+            if(houseList != null && houseUtil.countOwnHouse() > 1 && houseList.size() > 1){
                 for(House house : houseList){
                     if(!house.getHouseId().equals(sellHouse.getHouseId())){
                         LocalDate specificDate = LocalDate.parse("20210101", DateTimeFormatter.ofPattern("yyyyMMdd"));
@@ -3234,14 +3373,6 @@ public class CalculationSellService {
                     .list(calculationSellResultOneList)
                     .build();
 
-        }
-
-        // 보유주택 수 가져오기
-        private long getOwnHouseCount(){
-            log.info(">>> CalculationBranch getOwnHouseCount - 보유주택 수 가져오기");
-
-            User findUser = userUtil.findCurrentUser(); // 호출 사용자 조회
-            return houseRepository.countByUserId(findUser.getId());
         }
 
         // (양도소득세)일반세율 계산

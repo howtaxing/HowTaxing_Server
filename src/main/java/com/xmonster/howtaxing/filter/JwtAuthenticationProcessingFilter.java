@@ -112,8 +112,8 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
      */
     public void checkAccessTokenAndAuthentication(HttpServletRequest request, HttpServletResponse response,
                                                   FilterChain filterChain) throws ServletException, IOException {
-        log.info("checkAccessTokenAndAuthentication() 호출");
-        log.info("request.getRequestURI() : " + request.getRequestURI());
+        // log.debug("checkAccessTokenAndAuthentication() 호출");
+        // log.debug("request.getRequestURI() : " + request.getRequestURI());
         jwtService.extractAccessToken(request)
                 .filter(jwtService::isTokenValid)
                 .ifPresent(accessToken -> jwtService.extractEmail(accessToken)

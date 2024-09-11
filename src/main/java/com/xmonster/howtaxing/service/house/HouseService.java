@@ -76,7 +76,7 @@ public class HouseService {
         HyphenUserHouseListResponse hyphenUserHouseListResponse;
         if (isLocal) {
             // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
-            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse(houseListSearchRequest.getUserNm());
         } else {
             // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
             hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
@@ -129,22 +129,22 @@ public class HouseService {
             throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈 보유주택조회 중 오류가 발생했습니다.");
         }
 
-        List<House> houseListFromDB = houseRepository.findByUserId(findUser.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
         List<HouseSimpleInfoResponse> houseSimpleInfoResponseList = new ArrayList<>();
 
-        for(House house : houseListFromDB){
-            houseSimpleInfoResponseList.add(
-                    HouseSimpleInfoResponse.builder()
-                            .houseId(house.getHouseId())
-                            .houseType(house.getHouseType())
-                            .houseName(house.getHouseName())
-                            .roadAddr(house.getRoadAddr())
-                            .detailAdr(house.getDetailAdr())
-                            .isMoveInRight(house.getIsMoveInRight())
-                            .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
-                            .build());
+        if(houseListFromDB != null){
+            for(House house : houseListFromDB){
+                houseSimpleInfoResponseList.add(
+                        HouseSimpleInfoResponse.builder()
+                                .houseId(house.getHouseId())
+                                .houseType(house.getHouseType())
+                                .houseName(house.getHouseName())
+                                .roadAddr(house.getRoadAddr())
+                                .detailAdr(house.getDetailAdr())
+                                .isMoveInRight(house.getIsMoveInRight())
+                                .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, houseListSearchRequest.getCalcType()))
+                                .build());
+            }
         }
 
         return ApiResponse.success(
@@ -163,7 +163,7 @@ public class HouseService {
         HyphenUserHouseListResponse hyphenUserHouseListResponse;
         if (isLocal || isDev) {
             // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
-            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse();
+            hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse(houseListSearchRequest.getUserNm());
         } else {
             // 그 외 개발/운영 등 : 하이픈 주택소유정보 조회 호출
             hyphenUserHouseListResponse = hyphenService.getUserHouseInfo(houseListSearchRequest)
@@ -318,25 +318,22 @@ public class HouseService {
     public Object getHouseList(String calcType) {
         log.info(">> [Service]HouseService getHouseList - 보유주택 목록 조회(DB)");
 
-        // 호출 사용자 조회
-        User findUser = userUtil.findCurrentUser();
-
-        List<House> houseListFromDB = houseRepository.findByUserId(findUser.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
         List<HouseSimpleInfoResponse> houseSimpleInfoResponseList = new ArrayList<>();
 
-        for(House house : houseListFromDB){
-            houseSimpleInfoResponseList.add(
-                    HouseSimpleInfoResponse.builder()
-                            .houseId(house.getHouseId())
-                            .houseType(house.getHouseType())
-                            .houseName(house.getHouseName())
-                            .roadAddr(house.getRoadAddr())
-                            .detailAdr(house.getDetailAdr())
-                            .isMoveInRight(house.getIsMoveInRight())
-                            .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, calcType))
-                            .build());
+        if(houseListFromDB != null){
+            for(House house : houseListFromDB){
+                houseSimpleInfoResponseList.add(
+                        HouseSimpleInfoResponse.builder()
+                                .houseId(house.getHouseId())
+                                .houseType(house.getHouseType())
+                                .houseName(house.getHouseName())
+                                .roadAddr(house.getRoadAddr())
+                                .detailAdr(house.getDetailAdr())
+                                .isMoveInRight(house.getIsMoveInRight())
+                                .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house, calcType))
+                                .build());
+            }
         }
 
         return ApiResponse.success(
@@ -527,6 +524,8 @@ public class HouseService {
         houses.forEach(house -> {
             house.setSourceType(ONE);
             house.setIsMoveInRight(false);
+            house.setOwnerCnt(1);
+            house.setUserProportion(100);
         });
         List<House> saveHouses = houseRepository.saveAll(houses);
         // House 엔티티에서 필요한 필드만 추출하여 Map으로 변환
@@ -1664,12 +1663,10 @@ public class HouseService {
 
     // 건축물대장 기준 매매 외 취득주택 추출
     public Object getEtcHouse() {
-        Long userId = userUtil.findCurrentUser().getId();
+        Long userId = userUtil.findCurrentUserId();
 
         // DB에서 보유주택 목록 가져오기
-        List<House> houseListFromDB = houseRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
-
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
         List<LoadHouse> etcHouseList = new ArrayList<>();
         
         // redis에서 재산세 주택 가져오기
@@ -1691,22 +1688,25 @@ public class HouseService {
             }
             etcHouse.setArea(new BigDecimal(getRedis.get("area").toString()));
             etcHouse.setDetailAdr(houseAddressDto.getDetailAddress());
-            etcHouse.setHouseName((houseAddressDto.formatEtcAddress().length() != 0 ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+            etcHouse.setHouseName((!houseAddressDto.formatEtcAddress().isEmpty() ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
             etcHouse.setHouseTypeByName();
             etcHouse.setSourceType(ONE);
             etcHouse.setComplete(false);
 
             // 주소비교
-            boolean isMatched = houseListFromDB.stream().anyMatch(house -> {
-                HouseAddressDto hasHouseAddressDto;
-                if (houseAddressDto.getAddressType() == 1) {
-                    hasHouseAddressDto = houseAddressService.parseAddress(house.getJibunAddr());
-                } else {
-                    hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
-                }
-                log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
-                return houseAddressDto.isSameAddress(hasHouseAddressDto);
-            });
+            boolean isMatched = false;
+            if(houseListFromDB != null){
+                isMatched = houseListFromDB.stream().anyMatch(house -> {
+                    HouseAddressDto hasHouseAddressDto;
+                    if (houseAddressDto.getAddressType() == 1) {
+                        hasHouseAddressDto = houseAddressService.parseAddress(house.getJibunAddr());
+                    } else {
+                        hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
+                    }
+                    log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
+                    return houseAddressDto.isSameAddress(hasHouseAddressDto);
+                });
+            }
 
             // 일치하지 않으면 기타주소 리스트에 추가
             if (!isMatched) {
@@ -1718,9 +1718,24 @@ public class HouseService {
         return ApiResponse.success(etcHouseList);
     }
 
-    private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse() {
+    private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse(String userNm) {
         // 하이픈 응답값 세팅
-        String json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408050000023444\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 서원대로 290 (명륜동)\",\"area\":\"84.9836\",\"approvalDate\":\"20211129\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20220317\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"245000\",\"baseDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주시 흥덕구 송화로214번길 29 (송절동)\",\"area\":\"84.9365\",\"approvalDate\":\"20180726\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20181026\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"261000\",\"baseDate\":\"20240805\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 산31 원주 더샵 센트럴파크 2단지 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9836\",\"tradingPrice\":\"334000000\",\"balancePaymentDate\":\"20220131\",\"contractDate\":\"20191214\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"84.4516\",\"tradingPrice\":\"680000000\",\"balancePaymentDate\":\"20200207\",\"contractDate\":\"20191117\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"555000000\",\"balancePaymentDate\":\"20200103\",\"contractDate\":\"20191018\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 두산위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매수(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"426000000\",\"balancePaymentDate\":\"20170331\",\"contractDate\":\"20170329\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매수(기존주택)\",\"area\":\"84.4516\",\"tradingPrice\":\"437000000\",\"balancePaymentDate\":\"20160610\",\"contractDate\":\"20160409\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 BL-A-5 청주 테크노폴리스 우미린 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9365\",\"tradingPrice\":\"296800000\",\"balancePaymentDate\":\"20180801\",\"contractDate\":\"20170731\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 856 더샵 원주센트럴파크 2단지                          0207동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20220226\",\"baseDate\":\"20240327\"},{\"name\":\"이**\",\"address\":\"경상남도 김해시 율하동 1297 율상마을 푸르지오3단지                             0305동 00401호\",\"area\":\"84.96\",\"acquisitionDate\":\"20210112\",\"baseDate\":\"20240327\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 850 테크노폴리스 우미린                                0104동 00801호\",\"area\":\"84.93\",\"acquisitionDate\":\"20180810\",\"baseDate\":\"20240327\"},{\"name\":\"김**\",\"address\":\"경기도 의왕시 내손동 845 인덕원 센트럴 자이                                 0206동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20181102\",\"baseDate\":\"20240327\"}]}}";
+        String json;
+        log.debug("userNm: {}", userNm);
+        if ("일번".equals(userNm)) {
+            // 1주택 : 모든 주소 정상 : 매핑성공
+            json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202407290000042367\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"이***\",\"address\":\"서울특별시 강서구 화곡로 186-22 (화곡동)\",\"area\":\"26.84\",\"approvalDate\":\"20170704\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20230425\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"139000\",\"baseDate\":\"20240729\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"이***\",\"address\":\"서울특별시 강서구 화곡동 143-11 성재센트리움아파트-****호\",\"sellBuyClassification\":\"매수(일반)\",\"area\":\"26.84\",\"tradingPrice\":\"235000000\",\"balancePaymentDate\":\"20230426\",\"contractDate\":\"20230420\",\"startDate\":\"20060101\",\"endDate\":\"20240729\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"이***\",\"address\":\"서울특별시 강서구 화곡동 143-11 성재센트리움아파트                                 0000동 00902호\",\"area\":\"26.84\",\"acquisitionDate\":\"20230425\",\"baseDate\":\"20240327\"}]}}";
+        } else if("이번".equals(userNm)) {
+            // 1주택 : 거래내역 주소 비정상 + 그 외 주소 정상 : 사용자 주소입력
+            json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408050000026237\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"정**\",\"address\":\"강원특별자치도 속초시 동해대로 3961 (조양동)\",\"area\":\"77.07\",\"approvalDate\":\"20210730\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20240124\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"204000\",\"baseDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주시 흥덕구 송화로214번길 29 (송절동)\",\"area\":\"84.9365\",\"approvalDate\":\"20180726\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20181026\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"261000\",\"baseDate\":\"20240805\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 BL-A-5 청주 테크노폴리스 우미린 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9365\",\"tradingPrice\":\"296800000\",\"balancePaymentDate\":\"20180801\",\"contractDate\":\"20170731\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 850 테크노폴리스 우미린                                0104동 00801호\",\"area\":\"84.93\",\"acquisitionDate\":\"20180810\",\"baseDate\":\"20240327\"}]}}";
+        } else if("삼번".equals(userNm)) {
+            // 1주택 : 거래내역 주소 비정상 + 건물명 없음 + 재산세 내역 없음
+            json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408010000023421\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"이**\",\"address\":\"울산광역시 동구 서부로 51 (서부동)\",\"area\":\"84.9839\",\"approvalDate\":\"20230526\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20231005\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"-\",\"baseDate\":\"20240801\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"이**\",\"address\":\"울산광역시 동구 서부동 248-37 울산 지웰시티 자이 2단지 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(전매))\",\"area\":\"84.9839\",\"tradingPrice\":\"555343400\",\"balancePaymentDate\":\"20220615\",\"contractDate\":\"20220607\",\"startDate\":\"20060101\",\"endDate\":\"20240801\"}],\"listMsg3\":\"\",\"list3\":[]}}";
+        } else {
+            // 2주택 : 거래내역 주소 정상 + 거래내역 주소 비정상 + 거래내역 없는 재산세 1건 : 1건 매핑성공, 1건 주소입력 + 매매 외 주택 확인
+            json = "{\"common\":{\"userTrNo\":\"\",\"hyphenTrNo\":\"10202408050000023444\",\"errYn\":\"N\",\"errMsg\":\"\"},\"data\":{\"listMsg1\":\"\",\"list1\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 서원대로 290 (명륜동)\",\"area\":\"84.9836\",\"approvalDate\":\"20211129\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20220317\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"245000\",\"baseDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주시 흥덕구 송화로214번길 29 (송절동)\",\"area\":\"84.9365\",\"approvalDate\":\"20180726\",\"reasonChangeOwnership\":\"소유권이전\",\"ownershipChangeDate\":\"20181026\",\"publicationBaseDate\":\"20230101\",\"publishedPrice\":\"261000\",\"baseDate\":\"20240805\"}],\"listMsg2\":\"\",\"list2\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 산31 원주 더샵 센트럴파크 2단지 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9836\",\"tradingPrice\":\"334000000\",\"balancePaymentDate\":\"20220131\",\"contractDate\":\"20191214\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"84.4516\",\"tradingPrice\":\"680000000\",\"balancePaymentDate\":\"20200207\",\"contractDate\":\"20191117\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매도(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"555000000\",\"balancePaymentDate\":\"20200103\",\"contractDate\":\"20191018\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"경기도 의왕시 포일동 643 두산위브호수마을2단지 ****동-****호\",\"sellBuyClassification\":\"매수(일반)\",\"area\":\"80.174\",\"tradingPrice\":\"426000000\",\"balancePaymentDate\":\"20170331\",\"contractDate\":\"20170329\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"고**\",\"address\":\"서울특별시 도봉구 창동 825 북한산아이파크 ****동-****호\",\"sellBuyClassification\":\"매수(기존주택)\",\"area\":\"84.4516\",\"tradingPrice\":\"437000000\",\"balancePaymentDate\":\"20160610\",\"contractDate\":\"20160409\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 BL-A-5 청주 테크노폴리스 우미린 ****동-****호\",\"sellBuyClassification\":\"매수(분양권(공급계약))\",\"area\":\"84.9365\",\"tradingPrice\":\"296800000\",\"balancePaymentDate\":\"20180801\",\"contractDate\":\"20170731\",\"startDate\":\"20060101\",\"endDate\":\"20240805\"}],\"listMsg3\":\"\",\"list3\":[{\"name\":\"고**\",\"address\":\"강원특별자치도 원주시 명륜동 856 더샵 원주센트럴파크 2단지                          0207동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20220226\",\"baseDate\":\"20240327\"},{\"name\":\"이**\",\"address\":\"경상남도 김해시 율하동 1297 율상마을 푸르지오3단지                             0305동 00401호\",\"area\":\"84.96\",\"acquisitionDate\":\"20210112\",\"baseDate\":\"20240327\"},{\"name\":\"정**\",\"address\":\"충청북도 청주흥덕구 송절동 850 테크노폴리스 우미린                                0104동 00801호\",\"area\":\"84.93\",\"acquisitionDate\":\"20180810\",\"baseDate\":\"20240327\"},{\"name\":\"김**\",\"address\":\"경기도 의왕시 내손동 845 인덕원 센트럴 자이                                 0206동 00401호\",\"area\":\"84.98\",\"acquisitionDate\":\"20181102\",\"baseDate\":\"20240327\"}]}}";
+        }
+
         try {
             return objectMapper.readValue(json, HyphenUserHouseListResponse.class);
         } catch (Exception e) {
@@ -1744,7 +1759,7 @@ public class HouseService {
     public Object addressParser(String address) {
         HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
 
-        System.out.println(houseAddressDto.toString());
+        log.debug(houseAddressDto.toString());
 
         Map<String, String> addressMap = new LinkedHashMap<>();
         addressMap.put("주소", houseAddressDto.formatAddress());

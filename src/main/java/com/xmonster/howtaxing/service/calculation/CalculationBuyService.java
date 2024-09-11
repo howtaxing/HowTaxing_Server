@@ -5,14 +5,12 @@ import com.xmonster.howtaxing.dto.calculation.CalculationAdditionalAnswerRequest
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultRequest;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
-import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 
 import com.xmonster.howtaxing.dto.house.HouseAddressDto;
 import com.xmonster.howtaxing.model.*;
 import com.xmonster.howtaxing.repository.adjustment_target_area.AdjustmentTargetAreaRepository;
 import com.xmonster.howtaxing.repository.calculation.*;
-import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.service.house.HouseAddressService;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.utils.HouseUtil;
@@ -41,12 +39,17 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 public class CalculationBuyService {
     private final HouseAddressService houseAddressService;
 
-    private final CalculationBuyResultRepository calculationBuyResultRepository;
     private final CalculationProcessRepository calculationProcessRepository;
     private final TaxRateInfoRepository taxRateInfoRepository;
     private final DeductionInfoRepository deductionInfoRepository;
-    private final HouseRepository houseRepository;
     private final AdjustmentTargetAreaRepository adjustmentTargetAreaRepository;
+    private final CalculationHistoryRepository calculationHistoryRepository;
+    private final CalculationBuyRequestHistoryRepository calculationBuyRequestHistoryRepository;
+    private final CalculationAdditionalAnswerRequestHistoryRepository calculationAdditionalAnswerRequestHistoryRepository;
+    private final CalculationBuyResponseHistoryRepository calculationBuyResponseHistoryRepository;
+    private final CalculationCommentaryResponseHistoryRepository calculationCommentaryResponseHistoryRepository;
+    private final CalculationOwnHouseHistoryRepository calculationOwnHouseHistoryRepository;
+    private final CalculationOwnHouseHistoryDetailRepository calculationOwnHouseHistoryDetailRepository;
 
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
@@ -69,13 +72,11 @@ public class CalculationBuyService {
             target = new CalculationBranch();
 
             Method method = calculationBranchClass.getMethod("calculationStart", CalculationBuyResultRequest.class);
-
             Object result = method.invoke(target, calculationBuyResultRequest);
 
             if(result != null) log.info("(Calculation)취득세 계산 결과 조회 응답 : " + result.toString());
 
             return ApiResponse.success(result);
-
         }catch(Exception e){
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED);
         }
@@ -1881,7 +1882,7 @@ public class CalculationBuyService {
                         eduTaxRate = 0.001;                // 지방교육세율 : 0.1%
                     }
                     // 6억 초과, 9억 이하
-                    else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                    else if(buyPrice <= NINE_HND_MIL){
                         eduTaxRate = buyTaxRate / 10;       // 지방교육세율 : 취득세율의 1/10
                     }
                     // 9억 초과
@@ -1900,7 +1901,7 @@ public class CalculationBuyService {
                             eduTaxRate = 0.001;            // 지방교육세율 : 0.1%
                         }
                         // 6억 초과, 9억 이하
-                        else if(buyPrice > SIX_HND_MIL && buyPrice <= NINE_HND_MIL){
+                        else if(buyPrice <= NINE_HND_MIL){
                             eduTaxRate = buyTaxRate / 10;   // 지방교육세율 : 취득세율의 1/10
                         }
                         // 9억 초과
@@ -1984,13 +1985,179 @@ public class CalculationBuyService {
             // 계산결과 텍스트 데이터 세팅
             String calculationResultTextData = getCalculationResultTextData(calculationBuyResultRequest, calculationBuyResultOneList, commentaryList);
 
-            return CalculationBuyResultResponse.builder()
+            CalculationBuyResultResponse calculationBuyResultResponse = CalculationBuyResultResponse.builder()
                     .listCnt(ownerCount)
                     .list(calculationBuyResultOneList)
                     .commentaryListCnt(commentaryListCnt)
                     .commentaryList(commentaryList)
                     .calculationResultTextData(calculationResultTextData)
                     .build();
+
+            // 취득세 계산 결과 이력 저장
+            calculationBuyResultResponse.setCalcHistoryId(saveCalculationBuyHistory(calculationBuyResultRequest, calculationBuyResultResponse));
+
+            return calculationBuyResultResponse;
+        }
+
+        // 취득세 계산 결과 이력 저장
+        private Long saveCalculationBuyHistory(CalculationBuyResultRequest calculationBuyResultRequest, CalculationBuyResultResponse calculationBuyResultResponse){
+            log.info(">>> CalculationBranch saveCalculationBuyHistory - 취득세 계산 결과 이력 저장");
+
+            // 계산이력ID
+            Long calcHistoryId = null;
+
+            try{
+                // 계산이력 저장 후 계산이력ID 추출
+                calcHistoryId = calculationHistoryRepository.saveAndFlush(
+                        CalculationHistory.builder()
+                                .userId(userUtil.findCurrentUserId())
+                                .calcType(CALC_TYPE_BUY)
+                                .build()).getCalcHistoryId();
+
+                if(calcHistoryId != null){
+                    log.info("계산이력 저장 성공 > 계산이력ID : " + calcHistoryId);
+
+                    // 계산취득세요청이력 저장
+                    calculationBuyRequestHistoryRepository.saveAndFlush(
+                            CalculationBuyRequestHistory.builder()
+                                    .calculationHistoryId(
+                                            CalculationHistoryId.builder()
+                                                    .calcHistoryId(calcHistoryId)
+                                                    .detailHistorySeq(1)
+                                                    .build())
+                                    .houseType(calculationBuyResultRequest.getHouseType())
+                                    .houseName(calculationBuyResultRequest.getHouseName())
+                                    .detailAdr(calculationBuyResultRequest.getDetailAdr())
+                                    .contractDate(calculationBuyResultRequest.getContractDate())
+                                    .balanceDate(calculationBuyResultRequest.getBalanceDate())
+                                    .buyDate(calculationBuyResultRequest.getBuyDate())
+                                    .buyPrice(calculationBuyResultRequest.getBuyPrice())
+                                    .pubLandPrice(calculationBuyResultRequest.getPubLandPrice())
+                                    .isPubLandPriceOver100Mil(calculationBuyResultRequest.getIsPubLandPriceOver100Mil())
+                                    .area(calculationBuyResultRequest.getArea())
+                                    .isAreaOver85(calculationBuyResultRequest.getIsAreaOver85())
+                                    .jibunAddr(calculationBuyResultRequest.getJibunAddr())
+                                    .roadAddr(calculationBuyResultRequest.getRoadAddr())
+                                    .bdMgtSn(calculationBuyResultRequest.getBdMgtSn())
+                                    .admCd(calculationBuyResultRequest.getAdmCd())
+                                    .rnMgtSn(calculationBuyResultRequest.getRnMgtSn())
+                                    .isDestruction(calculationBuyResultRequest.getIsDestruction())
+                                    .ownerCnt(calculationBuyResultRequest.getOwnerCnt())
+                                    .userProportion(calculationBuyResultRequest.getUserProportion())
+                                    .isMoveInRight(calculationBuyResultRequest.getIsMoveInRight())
+                                    .build());
+
+                    // 계산추가답변요청이력 저장
+                    List<CalculationAdditionalAnswerRequest> calculationAdditionalAnswerRequestList = calculationBuyResultRequest.getAdditionalAnswerList();
+                    int calculationAdditionalAnswerRequestHistorySeq = 1;
+                    for(CalculationAdditionalAnswerRequest calculationAdditionalAnswerRequest : calculationAdditionalAnswerRequestList){
+                        calculationAdditionalAnswerRequestHistoryRepository.saveAndFlush(
+                                CalculationAdditionalAnswerRequestHistory.builder()
+                                        .calculationHistoryId(
+                                                CalculationHistoryId.builder()
+                                                        .calcHistoryId(calcHistoryId)
+                                                        .detailHistorySeq(calculationAdditionalAnswerRequestHistorySeq)
+                                                        .build())
+                                        .questionId(calculationAdditionalAnswerRequest.getQuestionId())
+                                        .answerValue(calculationAdditionalAnswerRequest.getAnswerValue())
+                                        .build());
+                        calculationAdditionalAnswerRequestHistorySeq++;
+                    }
+
+                    // 계산취득세응답이력 저장
+                    List<CalculationBuyOneResult> calculationBuyOneResultList = calculationBuyResultResponse.getList();
+                    int calculationBuyResponseHistorySeq = 1;
+                    for(CalculationBuyOneResult calculationBuyOneResult : calculationBuyOneResultList){
+                        calculationBuyResponseHistoryRepository.saveAndFlush(
+                                CalculationBuyResponseHistory.builder()
+                                        .calculationHistoryId(
+                                                CalculationHistoryId.builder()
+                                                        .calcHistoryId(calcHistoryId)
+                                                        .detailHistorySeq(calculationBuyResponseHistorySeq)
+                                                        .build())
+                                        .buyPrice(calculationBuyOneResult.getBuyPrice())
+                                        .buyTaxRate(calculationBuyOneResult.getBuyTaxRate())
+                                        .buyTaxPrice(calculationBuyOneResult.getBuyTaxPrice())
+                                        .eduTaxRate(calculationBuyOneResult.getEduTaxRate())
+                                        .eduTaxPrice(calculationBuyOneResult.getEduTaxPrice())
+                                        .eduDiscountPrice(calculationBuyOneResult.getEduDiscountPrice())
+                                        .agrTaxRate(calculationBuyOneResult.getAgrTaxRate())
+                                        .agrTaxPrice(calculationBuyOneResult.getAgrTaxPrice())
+                                        .totalTaxPrice(calculationBuyOneResult.getTotalTaxPrice())
+                                        .build());
+                        calculationBuyResponseHistorySeq++;
+                    }
+
+                    // 계산해설응답이력 저장
+                    List<String> commentaryList = calculationBuyResultResponse.getCommentaryList();
+                    int calculationCommentaryResponseHistorySeq = 1;
+                    for(String commentary : commentaryList){
+                        calculationCommentaryResponseHistoryRepository.saveAndFlush(
+                                CalculationCommentaryResponseHistory.builder()
+                                        .calculationHistoryId(
+                                                CalculationHistoryId.builder()
+                                                        .calcHistoryId(calcHistoryId)
+                                                        .detailHistorySeq(calculationCommentaryResponseHistorySeq)
+                                                        .build())
+                                        .commentaryContent(commentary)
+                                        .build()
+                        );
+                        calculationCommentaryResponseHistorySeq++;
+                    }
+
+                    // 계산보유주택이력 저장
+                    Long ownHouseHistoryId = calculationOwnHouseHistoryRepository.saveAndFlush(
+                            CalculationOwnHouseHistory.builder()
+                                    .calcHistoryId(calcHistoryId)
+                                    .ownHouseCnt(houseUtil.countOwnHouse())
+                                    .hasOwnHouseDetail(!calculationBuyResultRequest.getIsOwnHouseCntRegist())
+                                    .build()
+                    ).getOwnHouseHistoryId();
+
+                    // 계산보유주택이력상세 저장
+                    List<House> houseList = houseUtil.findOwnHouseList();
+                    int calculationOwnHouseHistoryDetail = 1;
+                    for(House house : houseList){
+                        calculationOwnHouseHistoryDetailRepository.saveAndFlush(
+                                CalculationOwnHouseHistoryDetail.builder()
+                                        .calculationOwnHouseHistoryId(
+                                                CalculationOwnHouseHistoryId.builder()
+                                                        .ownHouseHistoryId(ownHouseHistoryId)
+                                                        .detailHistorySeq(calculationOwnHouseHistoryDetail)
+                                                        .build())
+                                        .houseType(house.getHouseType())
+                                        .houseName(house.getHouseName())
+                                        .detailAdr(house.getDetailAdr())
+                                        .contractDate(house.getContractDate())
+                                        .balanceDate(house.getBalanceDate())
+                                        .buyDate(house.getBuyDate())
+                                        .buyPrice(house.getBuyPrice())
+                                        .pubLandPrice(house.getPubLandPrice())
+                                        .area(house.getArea())
+                                        .kbMktPrice(house.getKbMktPrice())
+                                        .jibunAddr(house.getJibunAddr())
+                                        .roadAddr(house.getRoadAddr())
+                                        .roadAddrRef(house.getRoadAddrRef())
+                                        .bdMgtSn(house.getBdMgtSn())
+                                        .admCd(house.getAdmCd())
+                                        .rnMgtSn(house.getRnMgtSn())
+                                        .isDestruction(house.getIsDestruction())
+                                        .ownerCnt(house.getOwnerCnt())
+                                        .userProportion(house.getUserProportion())
+                                        .isMoveInRight(house.getIsMoveInRight())
+                                        .sourceType(house.getSourceType())
+                                        .build()
+                        );
+                        calculationOwnHouseHistoryDetail++;
+                    }
+                }else{
+                    log.info("계산이력 저장 오류 > 계산이력ID : NULL");
+                }
+            }catch(Exception e){
+                log.info("계산이력 저장 오류 > " + e.getMessage());
+            }
+
+            return calcHistoryId;
         }
 
         private String getCalculationResultTextData(CalculationBuyResultRequest calculationBuyResultRequest,
@@ -2130,33 +2297,8 @@ public class CalculationBuyService {
                 return calculationBuyResultRequest.getOwnHouseCnt() + 1;    // 취득주택 포함이므로 +1
             }else{
                 log.info("보유주택 수 조회(청약홈)를 통한 보유주택 수 가져오기");
-                User findUser = userUtil.findCurrentUser(); // 호출 사용자 조회
-                return houseRepository.countByUserId(findUser.getId()) + 1; // 취득주택 포함이므로 +1
+                return houseUtil.countOwnHouse() + 1; // 취득주택 포함이므로 + 1
             }
-        }
-
-        // 종전주택 가져오기
-        private House getLastOwnHouse(){
-            List<House> houseList = houseRepository.findByUserId(userUtil.findCurrentUser().getId()).orElse(null);
-            House lastOwnHouse = null;
-            LocalDate lastBuyDate = null;
-
-            if(houseList != null && !houseList.isEmpty()){
-                for(House house : houseList){
-                    LocalDate buyDate = house.getBuyDate();
-                    if(buyDate == null){
-                        lastBuyDate = buyDate;
-                        lastOwnHouse = house;
-                    }else{
-                        if(buyDate.isAfter(lastBuyDate)){
-                            lastBuyDate = buyDate;
-                            lastOwnHouse = house;
-                        }
-                    }
-                }
-            }
-
-            return lastOwnHouse;
         }
 
         // (취득세)일반과세(일반세율) 계산

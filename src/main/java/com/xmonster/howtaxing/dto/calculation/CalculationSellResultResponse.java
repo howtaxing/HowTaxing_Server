@@ -17,6 +17,7 @@ public class CalculationSellResultResponse {
     private int commentaryListCnt;                  // (계산결과)해설 리스트 수
     private List<String> commentaryList;            // (계산결과)해설 리스트
     private String calculationResultTextData;       // 계산결과 텍스트 데이터
+    private Long calcHistoryId;                     // 계산결과ID
 
     @Getter
     @Setter

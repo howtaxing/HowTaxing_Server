@@ -52,11 +52,8 @@ public class QuestionService {
     public Object getAdditionalQuestion(AdditionalQuestionRequest additionalQuestionRequest) {
         log.info(">> [Service]QuestionService getAdditionalQuestion - 추가질의항목 조회");
 
-        // 호출 사용자 조회
-        User findUser = userUtil.findCurrentUser();
-
-        List<House> userHouseList = houseRepository.findByUserId(findUser.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
+        // 보유주택목록
+        List<House> userHouseList = houseUtil.findOwnHouseList();
 
         validationCheckForGetAdditionalQuestion(additionalQuestionRequest);
 
@@ -86,7 +83,7 @@ public class QuestionService {
         List<AnswerSelectListResponse> answerSelectList = null;
 
         if(ownHouseCnt == null){
-            ownHouseCnt = getOwnHouseCount(findUser);
+            ownHouseCnt = houseUtil.countOwnHouse();
         }
 
         List<CalculationProcess> calculationProcessList = null;
@@ -630,12 +627,6 @@ public class QuestionService {
                 throw new CustomException(ErrorCode.QUESTION_INPUT_ERROR, "양도소득세 추가질의항목 조회를 위한 양도주택 양도가액이 입력되지 않았습니다.");
             }
         }
-    }
-
-    // 보유주택 수 조회
-    private long getOwnHouseCount(User findUser){
-        log.info(">>> QuestionService getOwnHouseCount - 보유주택 수 가져오기");
-        return houseRepository.countByUserId(findUser.getId());
     }
 
     // 종전 또는 신규주택 조회

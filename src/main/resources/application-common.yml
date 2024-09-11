@@ -7,7 +7,7 @@ spring:
       ddl-auto: none
     properties:
       hibernate:
-        show_sql: true
+        show_sql: false
         format_sql: true
         physical_naming_strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         enable_lazy_load_no_trans: true
@@ -25,11 +25,7 @@ social:
     admin-key: 10e662095af367398e3a520930d32cfd
 logging:
   level:
-    org:
-      hibernate:
-        type:
-          descriptor:
-            sql: trace
+    org.hibernate.type.descriptor.sql: WARN
 feign:
   client:
     config:
