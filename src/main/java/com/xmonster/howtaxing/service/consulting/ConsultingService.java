@@ -225,12 +225,12 @@ public class ConsultingService {
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 변경할 수 없습니다.");
         }
 
-        if(StringUtils.isBlank(customerName)) consultingReservationInfo.setCustomerName(customerName);
-        if(StringUtils.isBlank(customerPhone)) consultingReservationInfo.setCustomerPhone(customerPhone);
-        if(StringUtils.isBlank(reservationDate)) consultingReservationInfo.setReservationDate(reservationDate);
-        if(StringUtils.isBlank(reservationTime)) consultingReservationInfo.setReservationTime(reservationTime);
-        if(StringUtils.isBlank(consultingType)) consultingReservationInfo.setConsultingType(consultingType);
-        if(StringUtils.isBlank(consultingRequestContent)) consultingReservationInfo.setConsultingRequestContent(consultingRequestContent);
+        if(!StringUtils.isBlank(customerName)) consultingReservationInfo.setCustomerName(customerName);
+        if(!StringUtils.isBlank(customerPhone)) consultingReservationInfo.setCustomerPhone(customerPhone);
+        if(reservationDate != null) consultingReservationInfo.setReservationDate(reservationDate);
+        if(!StringUtils.isBlank(reservationTime)) consultingReservationInfo.setReservationTime(reservationTime);
+        if(!StringUtils.isBlank(consultingType)) consultingReservationInfo.setConsultingType(consultingType);
+        if(!StringUtils.isBlank(consultingRequestContent)) consultingReservationInfo.setConsultingRequestContent(consultingRequestContent);
 
         consultingReservationInfo.setLastModifier(LastModifierType.USER);
         
