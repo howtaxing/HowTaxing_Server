@@ -35,8 +35,8 @@ public class ConsultingController {
     }
 
     // 상담 예약 취소
-    @PostMapping("/consulting/reservationCancel")
-    public Object cancelConsultingReservation(@RequestBody Long consultingReservationId) throws Exception {
+    @DeleteMapping("/consulting/reservationCancel")
+    public Object cancelConsultingReservation(@RequestParam Long consultingReservationId) throws Exception {
         log.info(">> [Controller]ConsultingController cancelConsultingReservation - 상담 예약 취소");
         return consultingService.cancelConsultingReservation(consultingReservationId);
     }
