@@ -228,7 +228,10 @@ public class ConsultingService {
         if(!StringUtils.isBlank(customerName)) consultingReservationInfo.setCustomerName(customerName);
         if(!StringUtils.isBlank(customerPhone)) consultingReservationInfo.setCustomerPhone(customerPhone);
         if(reservationDate != null) consultingReservationInfo.setReservationDate(reservationDate);
-        if(!StringUtils.isBlank(reservationTime)) consultingReservationInfo.setReservationTime(reservationStartTime);
+        if(!StringUtils.isBlank(reservationTime)){
+            consultingReservationInfo.setReservationStartTime(reservationStartTime);
+            consultingReservationInfo.setReservationEndTime(reservationEndTime);
+        }
         if(!StringUtils.isBlank(consultingType)) consultingReservationInfo.setConsultingType(consultingType);
         if(!StringUtils.isBlank(consultingRequestContent)) consultingReservationInfo.setConsultingRequestContent(consultingRequestContent);
 
