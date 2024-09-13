@@ -34,6 +34,7 @@ public class CalculationSellResponseHistory implements Serializable {
     private String basicDeductionPrice; // 기본공제금액
     private String taxableStdPrice;     // 과세표준금액
     private String sellTaxRate;         // 양도소득세율
+    private String localTaxRate;        // 지방소득세율
     private String progDeductionPrice;  // 누진공제금액
     private String sellTaxPrice;        // 양도소득세액
     private String localTaxPrice;       // 지방소득세액
