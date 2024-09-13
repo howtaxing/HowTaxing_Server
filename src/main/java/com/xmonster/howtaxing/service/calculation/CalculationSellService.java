@@ -2657,6 +2657,7 @@ public class CalculationSellService {
                 long retentionPeriodYear = 0;   // 보유기간(년)
 
                 double sellTaxRate = 0;         // 양도소득세율
+                double localTaxRate = 0;        // 지방소득세율
                 double taxRate1 = 0;            // 세율1
                 double taxRate2 = 0;            // 세율2
                 double addTaxRate1 = 0;         // 추가세율1
@@ -2871,8 +2872,11 @@ public class CalculationSellService {
                         }
                     }
 
-                    // 지방소득세액(양도소득세의 10%)
-                    localTaxPrice = (long)(sellTaxPrice * LOCAL_TAX_RATE);
+                    // 지방소득세율(양도소득세율의 10%)
+                    localTaxRate = sellTaxRate * 0.1;
+
+                    // 지방소득세액(양도소득세액의 10%)
+                    localTaxPrice = (long)(sellTaxPrice * 0.1);
 
                     // 총납부세액(양도소득세 + 지방소득세)
                     totalTaxPrice = sellTaxPrice + localTaxPrice;
@@ -2888,6 +2892,7 @@ public class CalculationSellService {
                 log.info("- 기본공제금액 : " + basicDeductionPrice);
                 log.info("- 과세표준금액 : " + taxableStdPrice);
                 log.info("- 양도소득세율 : " + sellTaxRate);
+                log.info("- 지방소득세율 : " + localTaxRate);
                 log.info("- 누진공제금액 : " + progDeductionPrice);
                 log.info("- 양도소득세액 : " + sellTaxPrice);
                 log.info("- 지방소득세액 : " + localTaxPrice);
@@ -2909,7 +2914,8 @@ public class CalculationSellService {
                 String basicDeductionPriceStr = Long.toString(basicDeductionPrice);
 
                 String taxableStdPriceStr = Long.toString(taxableStdPrice);
-                String sellTaxRateStr = String.format("%.2f", sellTaxRate*100);
+                String sellTaxRateStr = String.format("%.0f", sellTaxRate*100);
+                String localTaxRateStr = String.format("%.1f", localTaxRate*100);
                 String progDeductionPriceStr = Long.toString(progDeductionPrice);
                 String sellTaxPriceStr = Long.toString(sellTaxPrice);
                 String localTaxPriceStr = Long.toString(localTaxPrice);
@@ -2932,6 +2938,7 @@ public class CalculationSellService {
                                 .basicDeductionPrice(basicDeductionPriceStr)
                                 .taxableStdPrice(taxableStdPriceStr)
                                 .sellTaxRate(sellTaxRateStr)
+                                .localTaxRate(localTaxRateStr)
                                 .progDeductionPrice(progDeductionPriceStr)
                                 .sellTaxPrice(sellTaxPriceStr)
                                 .localTaxPrice(localTaxPriceStr)
@@ -3034,7 +3041,8 @@ public class CalculationSellService {
                                         .sellIncomePrice(calculationSellOneResult.getSellIncomePrice())
                                         .basicDeductionPrice(calculationSellOneResult.getBasicDeductionPrice())
                                         .taxableStdPrice(calculationSellOneResult.getTaxableStdPrice())
-                                        .sellTaxPrice(calculationSellOneResult.getSellTaxPrice())
+                                        .sellTaxRate(calculationSellOneResult.getSellTaxRate())
+                                        .localTaxRate(calculationSellOneResult.getLocalTaxRate())
                                         .progDeductionPrice(calculationSellOneResult.getProgDeductionPrice())
                                         .sellTaxPrice(calculationSellOneResult.getSellTaxPrice())
                                         .localTaxPrice(calculationSellOneResult.getLocalTaxPrice())
@@ -3174,7 +3182,8 @@ public class CalculationSellService {
                     textData.append("  - 양도소득금액 : ").append(df.format(Long.parseLong(calculationSellOneResult.getSellIncomePrice()))).append("원").append(NEW_LINE);
                     textData.append("  - 기본공제 : ").append(df.format(Long.parseLong(calculationSellOneResult.getBasicDeductionPrice()))).append("원").append(NEW_LINE);
                     textData.append("  - 과세표준 : ").append(df.format(Long.parseLong(calculationSellOneResult.getTaxableStdPrice()))).append("원").append(NEW_LINE);
-                    textData.append("  - 세율 : ").append(calculationSellOneResult.getSellTaxRate()).append("%").append(NEW_LINE);
+                    textData.append("  - 양도소득세율 : ").append(calculationSellOneResult.getSellTaxRate()).append("%").append(NEW_LINE);
+                    textData.append("  - 지방소득세율 : ").append(calculationSellOneResult.getLocalTaxRate()).append("%").append(NEW_LINE);
                     textData.append("  - 누진공제 : ").append(df.format(Long.parseLong(calculationSellOneResult.getProgDeductionPrice()))).append("원").append(NEW_LINE);
                 }
                 textData.append(NEW_LINE);
@@ -3311,7 +3320,8 @@ public class CalculationSellService {
                 for(CalculationSellOneResult calculationSellOneResult : calculationSellResultOneList){
                     if(calculationSellOneResult.getSellTaxRate() != null && !calculationSellOneResult.getSellTaxRate().isBlank()){
                         log.info("(Commentary Add) 14.항상");
-                        commentaryList.add("양도하실 주택의 최종 세율은 " + calculationSellOneResult.getSellTaxRate() + "% 에요.");
+                        //commentaryList.add("양도하실 주택의 최종 세율은 " + calculationSellOneResult.getSellTaxRate() + "% 에요.");
+                        commentaryList.add("양도하실 주택의 최종 세율은 양도소득세 " + calculationSellOneResult.getSellTaxRate() + "%, 지방소득세 " + calculationSellOneResult.getLocalTaxRate() + "% 에요.");
                         break;
                     }
                 }
@@ -3362,6 +3372,7 @@ public class CalculationSellService {
                             .basicDeductionPrice("2500000")
                             .taxableStdPrice("22084615")
                             .sellTaxRate("15%")
+                            .localTaxRate("1.5%")
                             .progDeductionPrice("1260000")
                             .sellTaxPrice("2052692")
                             .localTaxPrice("205269")
