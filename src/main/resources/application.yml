@@ -15,7 +15,7 @@ spring:
       "local" : "local, jwt, oauth, common"
       "dev" : "dev, jwt, oauth, common"
       "real" : "real, jwt, oauth, common"
-    active: dev   #활성 프로필 설정(local, dev, real)
+    active: real   #활성 프로필 설정(local, dev, real)
 
 --- # local 설정
 spring:
@@ -109,7 +109,7 @@ spring:
     activate:
       on-profile: "real"
   datasource:
-    url: jdbc:log4jdbc:mysql://3.39.27.126:3306/howtaxing?useSSL=false&autoReconnect=true&autoReconnection=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Seoul
+    url: jdbc:log4jdbc:mysql://172.31.36.52:3306/howtaxing?useSSL=false&autoReconnect=true&autoReconnection=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Seoul
     username: root
     password: Xmonster11@@
     driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
