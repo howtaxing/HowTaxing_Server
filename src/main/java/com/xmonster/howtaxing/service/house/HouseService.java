@@ -1450,6 +1450,7 @@ public class HouseService {
             HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
             String address = houseAddressDto.formatAddress();
             String tradeType = getTradeTypeFromSellBuyClassification(dataDetail2.getSellBuyClassification());
+            LocalDate balancePaymentDate = LocalDate.parse(dataDetail2.getBalancePaymentDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
 
             if (TWO.equals(tradeType)) {
                 // 매도 거래 주소를 세트에 추가
@@ -1457,7 +1458,12 @@ public class HouseService {
             } else if (ONE.equals(tradeType)) {
                 // 매수 거래인 경우 매도 거래 주소 목록에 포함되지 않은 경우에 매수 거래 리스트에 추가
                 if (!sellAddresses.contains(address)) {
-                    buyTransactions.add(dataDetail2);
+                    // 잔금일자가 오늘보다 미래인 경우 매수주택에 포함하지 않음
+                    if (balancePaymentDate.isBefore(LocalDate.now())) {
+                        buyTransactions.add(dataDetail2);
+                    } else {
+                        log.debug("잔금일자가 도래하지 않은 매수거래내역 (매수일자: {})", balancePaymentDate);
+                    }
                 }
             }
         }
