@@ -576,15 +576,18 @@ public class ConsultingService {
         if(consultingReservationModifyRequest == null) throw new CustomException(ErrorCode.CONSULTING_MODIFY_INPUT_ERROR);
 
         Long consultingReservationId = consultingReservationModifyRequest.getConsultingReservationId();
-        String consultingType = consultingReservationModifyRequest.getConsultingType();
+        String consultingTypeStr = consultingReservationModifyRequest.getConsultingType();
 
         if(consultingReservationId == null){
             throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 변경을 위한 상담예약ID가 입력되지 않았습니다.");
         }
 
-        if(!StringUtils.isBlank(consultingType)){
-            if(!ONE.equals(consultingType) && !TWO.equals(consultingType) && !THREE.equals(consultingType) && !FOUR.equals(consultingType)){
-                throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 변경을 위한 상담유형 값이 올바르지 않습니다. (01:취득세, 02:양도소득세, 03:상속세, 04:재산세)");
+        if(!StringUtils.isBlank(consultingTypeStr)){
+            String[] consultingTypeArr = consultingTypeStr.split(COMMA);
+            for (String consultingType : consultingTypeArr) {
+                if (!CONSULTING_TYPE_BUY.equals(consultingType) && !CONSULTING_TYPE_SELL.equals(consultingType) && !CONSULTING_TYPE_INHERIT.equals(consultingType) && !CONSULTING_TYPE_PROPERTY.equals(consultingType)) {
+                    throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 변경을 위한 상담유형 값이 올바르지 않습니다. (01:취득세, 02:양도소득세, 03:상속세, 04:재산세)");
+                }
             }
         }
     }
