@@ -253,9 +253,9 @@ public class ConsultingService {
                 ConsultingReservationModifyResponse.builder()
                         .isModifyComplete(true)
                         .consultantName(consultantName)
-                        .reservationDate(reservationDate)
-                        .reservationStartTime(reservationStartTime.format(timeFormatter))
-                        .reservationEndTime(reservationEndTime.format(timeFormatter))
+                        .reservationDate(consultingReservationInfo.getReservationDate())
+                        .reservationStartTime(consultingReservationInfo.getReservationStartTime().format(timeFormatter))
+                        .reservationEndTime(consultingReservationInfo.getReservationEndTime().format(timeFormatter))
                         .build());
     }
 
