@@ -204,9 +204,20 @@ public class ConsultingService {
         String consultingRequestContent = consultingReservationModifyRequest.getConsultingRequestContent();
 
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-        LocalTime reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
-        // TODO. 단위를 가져와서 작업 필요
-        LocalTime reservationEndTime = reservationStartTime.plusMinutes(30);
+        LocalTime reservationStartTime = null;
+        LocalTime reservationEndTime = null;
+
+        if(!StringUtils.isBlank(reservationTime)) {
+            reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
+            // TODO. 단위를 가져와서 작업 필요
+            reservationEndTime = reservationStartTime.plusMinutes(30);
+
+            // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
+            long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(reservationDate, reservationStartTime);
+            if(duplicateCheck > 0){
+                throw new CustomException(ErrorCode.CONSULTING_RESERVATION_DUPLICATED_ERROR);
+            }
+        }
 
         ConsultingReservationInfo consultingReservationInfo = consultingReservationInfoRepository.findByConsultingReservationId(consultingReservationId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_MODIFY_INPUT_ERROR, "존재하지 않는 상담예약ID 입니다."));
@@ -214,12 +225,6 @@ public class ConsultingService {
         ConsultantInfo consultantInfo = consultantInfoRepository.findByConsultantId(consultingReservationInfo.getConsultantId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_MODIFY_INPUT_ERROR, "존재하지 않는 상담자ID 입니다."));
         String consultantName = consultantInfo.getConsultantName();
-
-        // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
-        long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(reservationDate, reservationStartTime);
-        if(duplicateCheck > 0){
-            throw new CustomException(ErrorCode.CONSULTING_RESERVATION_DUPLICATED_ERROR);
-        }
 
         if(!findUser.getId().equals(consultingReservationInfo.getUserId())){
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 변경할 수 없습니다.");
@@ -248,9 +253,9 @@ public class ConsultingService {
                 ConsultingReservationModifyResponse.builder()
                         .isModifyComplete(true)
                         .consultantName(consultantName)
-                        .reservationDate(reservationDate)
-                        .reservationStartTime(reservationStartTime.format(timeFormatter))
-                        .reservationEndTime(reservationEndTime.format(timeFormatter))
+                        .reservationDate(consultingReservationInfo.getReservationDate())
+                        .reservationStartTime(consultingReservationInfo.getReservationStartTime().format(timeFormatter))
+                        .reservationEndTime(consultingReservationInfo.getReservationEndTime().format(timeFormatter))
                         .build());
     }
 
