@@ -5,6 +5,11 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+application.yml
+application-oauth.yml
+application-jwt.yml
+application-common.yml
+
 ### STS ###
 .apt_generated
 .classpath
