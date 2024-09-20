@@ -394,11 +394,6 @@ public class ConsultingService {
                 List<String> commentaryList = new ArrayList<>();
                 String calculationResultTextData = EMPTY;
 
-                /*List<CalculationCommentaryResponseHistory> commentaryResponseHistoryList =
-                        calculationCommentaryResponseHistoryRepository.findByCalculationHistoryId(
-                                CalculationHistoryId.builder()
-                                        .calcHistoryId(calcHistoryId)
-                                        .build());*/
                 List<CalculationCommentaryResponseHistory> commentaryResponseHistoryList = calculationCommentaryResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
 
                 if(commentaryResponseHistoryList != null){
@@ -413,11 +408,6 @@ public class ConsultingService {
                 // 취득세 계산
                 if(CALC_TYPE_BUY.equals(calcType)){
                     List<CalculationBuyOneResult> list = new ArrayList<>();
-                    /*List<CalculationBuyResponseHistory> calculationBuyResponseHistoryList =
-                            calculationBuyResponseHistoryRepository.findByCalculationHistoryId(
-                                    CalculationHistoryId.builder()
-                                            .calcHistoryId(calcHistoryId)
-                                            .build());*/
                     List<CalculationBuyResponseHistory> calculationBuyResponseHistoryList = calculationBuyResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
 
                     if(calculationBuyResponseHistoryList != null){
@@ -449,11 +439,6 @@ public class ConsultingService {
                 }
                 else if(CALC_TYPE_SELL.equals(calcType)){
                     List<CalculationSellOneResult> list = new ArrayList<>();
-                    /*List<CalculationSellResponseHistory> calculationSellResponseHistoryList =
-                            calculationSellResponseHistoryRepository.findByCalculationHistoryId(
-                                    CalculationHistoryId.builder()
-                                            .calcHistoryId(calcHistoryId)
-                                            .build());*/
                     List<CalculationSellResponseHistory> calculationSellResponseHistoryList = calculationSellResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
 
                     if(calculationSellResponseHistoryList != null){
@@ -507,6 +492,7 @@ public class ConsultingService {
                         .reservationEndTime(reservationEndTime)
                         .consultingStatus(consultingReservationInfo.getConsultingStatus())
                         .consultingInflowPath(consultingReservationInfo.getConsultingInflowPath())
+                        .consultingRequestContent(consultingReservationInfo.getConsultingRequestContent())
                         .calculationBuyResultResponse(calculationBuyResultResponse)
                         .calculationSellResultResponse(calculationSellResultResponse)
                         .build());
