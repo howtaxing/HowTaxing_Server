@@ -145,6 +145,12 @@ public class ConsultingService {
         // TODO. 단위를 가져와서 작업 필요
         LocalTime reservationEndTime = reservationStartTime.plusMinutes(30);
 
+        // 본인이 당일 기존 예약 신청한 건이 존재하는지 검증
+        long alreadyReservationCheck = consultingReservationInfoRepository.countByUserIdAndReservationDate(findUser.getId(), reservationDate);
+        if(alreadyReservationCheck > 0){
+            throw new CustomException(ErrorCode.CONSULTING_RESERVATION_ALREADY_ERROR);
+        }
+
         // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
         long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(reservationDate, reservationStartTime);
         if(duplicateCheck > 0){
