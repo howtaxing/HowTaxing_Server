@@ -34,7 +34,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -56,7 +55,7 @@ public class ConsultingService {
     private final HouseUtil houseUtil;
 
     // 상담가능일정 조회
-    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate) throws Exception{
+    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate) throws Exception {
         log.info(">> [Service]ConsultingService getConsultingAvailableSchedule - 상담가능일정 조회");
 
         validationCheckForGetConsultingAvailableSchedule(consultantId, searchType, searchDate);
