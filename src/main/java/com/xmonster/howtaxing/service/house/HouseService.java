@@ -295,6 +295,7 @@ public class HouseService {
                         DataDetail3 dataDetail3 = (DataDetail3) response.getData();
                         if (dataDetail3 != null) {
                             HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
+                            house.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));   //재산세 취득일자가 건축물대장보다 우선
                             house.setDetailAdr(houseAddressDto3.getDetailAddress());
                             // house.setComplete(true);
                             propertyComplete = true;
@@ -521,25 +522,30 @@ public class HouseService {
             throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "등록할 주택이 입력되지 않았습니다.");
         }
 
+        // 입력받은 주택 일괄저장
         houses.forEach(house -> {
             house.setSourceType(ONE);
             house.setIsMoveInRight(false);
             house.setOwnerCnt(1);
             house.setUserProportion(100);
         });
-        List<House> saveHouses = houseRepository.saveAll(houses);
-        // House 엔티티에서 필요한 필드만 추출하여 Map으로 변환
-        List<Map<String, Object>> response = saveHouses.stream()
-                .map(house -> {
-                    Map<String, Object> houseMap = new HashMap<>();
-                    houseMap.put("houseId", house.getHouseId());
-                    houseMap.put("houseType", house.getHouseType());
-                    houseMap.put("houseName", house.getHouseName());
-                    houseMap.put("detailAdr", house.getDetailAdr());
-                    houseMap.put("isMoveInRight", house.getIsMoveInRight());
-                    return houseMap;
-                })
-                .collect(Collectors.toList());
+        houseRepository.saveAll(houses);
+
+        // DB에 보유한 주택목록을 가져와서 응답값으로 세팅
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
+        List<HouseSimpleInfoResponse> response = new ArrayList<>();
+        if(houseListFromDB != null){
+            for(House house : houseListFromDB){
+                response.add(
+                        HouseSimpleInfoResponse.builder()
+                                .houseId(house.getHouseId())
+                                .houseType(house.getHouseType())
+                                .houseName(house.getHouseName())
+                                .detailAdr(house.getDetailAdr())
+                                .isMoveInRight(house.getIsMoveInRight())
+                                .build());
+            }
+        }
 
         return ApiResponse.success(response);
     }

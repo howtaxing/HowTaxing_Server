@@ -74,6 +74,7 @@ public enum ErrorCode {
     CONSULTING_DETAIL_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-011", "상담 예약 상세 조회를 위한 입력값이 올바르지 않습니다."),
     CONSULTING_DETAIL_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-012", "상담 예약 상세 조회 중 오류가 발생했습니다."),
     CONSULTING_RESERVATION_DUPLICATED_ERROR(1, HttpStatus.OK, "CONSULTING-013", "선택하신 날짜와 시간에 이미 예약된 내역이 있습니다."),
+    CONSULTING_RESERVATION_ALREADY_ERROR(1, HttpStatus.OK, "CONSULTING-014", "선택하신 날짜에 이미 예약된 내역이 있으면 추가로 예약할 수 없습니다."),
 
     /* 리뷰 관련 */
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),

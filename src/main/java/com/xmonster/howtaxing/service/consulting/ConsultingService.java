@@ -34,7 +34,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -56,7 +55,7 @@ public class ConsultingService {
     private final HouseUtil houseUtil;
 
     // 상담가능일정 조회
-    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate) throws Exception{
+    public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate) throws Exception {
         log.info(">> [Service]ConsultingService getConsultingAvailableSchedule - 상담가능일정 조회");
 
         validationCheckForGetConsultingAvailableSchedule(consultantId, searchType, searchDate);
@@ -144,6 +143,12 @@ public class ConsultingService {
         LocalTime reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
         // TODO. 단위를 가져와서 작업 필요
         LocalTime reservationEndTime = reservationStartTime.plusMinutes(30);
+
+        // 본인이 당일 기존 예약 신청한 건이 존재하는지 검증
+        long alreadyReservationCheck = consultingReservationInfoRepository.countByUserIdAndReservationDate(findUser.getId(), reservationDate);
+        if(alreadyReservationCheck > 0){
+            throw new CustomException(ErrorCode.CONSULTING_RESERVATION_ALREADY_ERROR);
+        }
 
         // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
         long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(reservationDate, reservationStartTime);
