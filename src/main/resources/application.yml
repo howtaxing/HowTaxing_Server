@@ -15,7 +15,7 @@ spring:
       "local" : "local, jwt, oauth, common"
       "dev" : "dev, jwt, oauth, common"
       "real" : "real, jwt, oauth, common"
-    # active: local   #활성 프로필 설정(local, dev, real)
+    active: real   #활성 프로필 설정(local, dev, real)
 
 --- # local 설정
 spring:
