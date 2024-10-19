@@ -35,6 +35,9 @@ public class HyphenService {
     private final HyphenUserOwnHouseApi hyphenUserOwnHouseApi;
     private final HyphenUserResidentRegistrationApi hyphenUserResidentRegistrationApi;
 
+    private final static String LOGIN_109 = "[LOGIN-109]";  // 청약통장이 없거나 주민등록번호가 틀린 경우 오류 코드
+    private final static String LOGIN_999 = "[LOGIN-999]";  // 아이디/패스워드가 틀렸거나 해당 간편인증 수단의 회원이 아닌 경우 오류코드
+
     @Value("${hyphen.user_id}")
     private String userId;
     @Value("${hyphen.hkey}")
@@ -42,10 +45,10 @@ public class HyphenService {
 
     public Optional<HyphenAuthResponse> getAccessToken(){
         ResponseEntity<?> response = hyphenAuthApi.getAccessToken(
-            HyphenRequestAccessTokenDto.builder()
-                .user_id(userId)
-                .hkey(hKey)
-                .build()
+                HyphenRequestAccessTokenDto.builder()
+                        .user_id(userId)
+                        .hkey(hKey)
+                        .build()
         );
 
         log.info("hyphen auth info");
@@ -259,6 +262,8 @@ public class HyphenService {
         } catch (Exception e) {
             log.error(e.getMessage());
             if(type == 1){
+                errMsgDtl = changeErrDtlContents(errMsgDtl);
+
                 throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, errMsgDtl);
             }else if(type == 2){
                 throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR, errMsgDtl);
@@ -267,4 +272,20 @@ public class HyphenService {
             }
         }
     }
+
+    private String changeErrDtlContents(String errMsgDtl){
+        String resultErrDtl = StringUtils.defaultString(errMsgDtl);
+
+        // 청약통장이 없거나 주민등록번호가 틀린 경우
+        if(resultErrDtl.contains(LOGIN_109)){
+            resultErrDtl = "청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다.";
+        }
+        // 아이디/패스워드가 틀렸거나 해당 간편인증 수단의 회원이 아닌 경우
+        else if(resultErrDtl.contains(LOGIN_999)){
+            resultErrDtl = "선택하신 간편인증 서비스의 회원이 아니거나 입력하신 아이디 또는 패스워드가 맞지 않아 청약홈 인증에 실패했습니다.";
+        }
+
+        return resultErrDtl;
+    }
 }
+
