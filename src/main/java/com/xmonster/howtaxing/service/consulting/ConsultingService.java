@@ -23,6 +23,7 @@ import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -54,6 +55,71 @@ public class ConsultingService {
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
 
+    // 상담자 정보 목록 조회
+    public Object getConsultantInfoList() throws Exception {
+        log.info(">> [Service]ConsultingService getConsultantInfoList - 상담자 정보 목록 조회");
+
+        List<ConsultantInfo> consultantInfoList = consultantInfoRepository.findAll(Sort.by(Sort.Direction.ASC, "consultant_id"));
+        List<ConsultantListResponse> consultantListResponseList = null;
+
+        if(!consultantInfoList.isEmpty()){
+            consultantListResponseList = new ArrayList<>();
+
+            for(ConsultantInfo consultantInfo : consultantInfoList){
+                consultantListResponseList.add(
+                        ConsultantListResponse.builder()
+                                .consultantId(consultantInfo.getConsultantId())
+                                .consultantName(consultantInfo.getConsultantName())
+                                .jobTitle(consultantInfo.getJobTitle())
+                                .company(consultantInfo.getCompany())
+                                .location(consultantInfo.getLocation())
+                                .consultantIntroduction(consultantInfo.getConsultantIntroduction())
+                                .thumbImageUrl(consultantInfo.getThumbImageUrl())
+                                .build());
+            }
+        }
+
+        return ApiResponse.success(consultantListResponseList);
+    }
+
+    // 상담자 정보 상세 조회
+    public Object getConsultantInfoDetail(Long consultantId) throws Exception {
+        log.info(">> [Service]ConsultingService getConsultantInfoList - 상담자 정보 상세 조회");
+
+        if(consultantId == null){
+            throw new CustomException(ErrorCode.CONSULTING_CONSULTANT_INPUT_ERROR, "상담자 정보 상세 조회를 위한 상담자ID 정보가 입력되지 않았습니다");
+        }
+
+        ConsultantInfo consultantInfo = consultantInfoRepository.findByConsultantId(consultantId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "존재하지 않는 상담자ID 입니다."));
+
+        List<String> specialtyResponseList = null;
+        List<String> majorExperienceResponseList = null;
+
+        if(StringUtils.isNotBlank(consultantInfo.getSpecialtyContents())){
+            specialtyResponseList = Arrays.asList(consultantInfo.getSpecialtyContents().split(COMMA));
+        }
+
+        if(StringUtils.isNotBlank(consultantInfo.getMajorExperienceContents())){
+            majorExperienceResponseList = Arrays.asList(consultantInfo.getMajorExperienceContents().split(COMMA));
+        }
+
+        return ApiResponse.success(
+                ConsultantDetailResponse.builder()
+                        .consultantId(consultantInfo.getConsultantId())
+                        .consultantName(consultantInfo.getConsultantName())
+                        .jobTitle(consultantInfo.getJobTitle())
+                        .company(consultantInfo.getCompany())
+                        .qualification(consultantInfo.getQualification())
+                        .location(consultantInfo.getLocation())
+                        .consultingType(consultantInfo.getConsultingType())
+                        .consultantIntroduction(consultantInfo.getConsultantIntroduction())
+                        .specialtyList(specialtyResponseList)
+                        .majorExperienceList(majorExperienceResponseList)
+                        .profileImageUrl(consultantInfo.getProfileImageUrl())
+                        .build());
+    }
+
     // 상담가능일정 조회
     public Object getConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate) throws Exception {
         log.info(">> [Service]ConsultingService getConsultingAvailableSchedule - 상담가능일정 조회");
@@ -65,6 +131,7 @@ public class ConsultingService {
         List<ConsultingAvailableDateResponse> consultingAvailableDateResponseList = null;
         List<ConsultingAvailableTimeResponse> consultingAvailableTimeResponseList = null;
 
+        // TODO. 상담자가 늘어나면 선택한 값을 세팅하도록 변경
         long checkedConsultantId = 1;   // 상담자가 늘어나기 전까지는 1로 고정(이민정음 세무사 1명)
 
         // 상담가능일자 조회
@@ -100,7 +167,7 @@ public class ConsultingService {
 
             if(consultingScheduleManagement != null){
                 if(consultingScheduleManagement.getIsReservationAvailable()){
-                    consultingAvailableTimeResponseList = getReservationAvailableTimeList(consultingScheduleManagement, reservationDate);
+                    consultingAvailableTimeResponseList = getReservationAvailableTimeList(checkedConsultantId, consultingScheduleManagement, reservationDate);
                 }
             }
         }
@@ -151,7 +218,7 @@ public class ConsultingService {
         }
 
         // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
-        long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(reservationDate, reservationStartTime);
+        long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(consultantId, reservationDate, reservationStartTime);
         if(duplicateCheck > 0){
             throw new CustomException(ErrorCode.CONSULTING_RESERVATION_DUPLICATED_ERROR);
         }
@@ -212,18 +279,6 @@ public class ConsultingService {
         LocalTime reservationStartTime = null;
         LocalTime reservationEndTime = null;
 
-        if(!StringUtils.isBlank(reservationTime)) {
-            reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
-            // TODO. 단위를 가져와서 작업 필요
-            reservationEndTime = reservationStartTime.plusMinutes(30);
-
-            // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
-            long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(reservationDate, reservationStartTime);
-            if(duplicateCheck > 0){
-                throw new CustomException(ErrorCode.CONSULTING_RESERVATION_DUPLICATED_ERROR);
-            }
-        }
-
         ConsultingReservationInfo consultingReservationInfo = consultingReservationInfoRepository.findByConsultingReservationId(consultingReservationId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_MODIFY_INPUT_ERROR, "존재하지 않는 상담예약ID 입니다."));
 
@@ -233,6 +288,18 @@ public class ConsultingService {
 
         if(!findUser.getId().equals(consultingReservationInfo.getUserId())){
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 변경할 수 없습니다.");
+        }
+
+        if(!StringUtils.isBlank(reservationTime)) {
+            reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
+            // TODO. 단위를 가져와서 작업 필요
+            reservationEndTime = reservationStartTime.plusMinutes(30);
+
+            // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
+            long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(consultingReservationInfo.getConsultantId(), reservationDate, reservationStartTime);
+            if(duplicateCheck > 0){
+                throw new CustomException(ErrorCode.CONSULTING_RESERVATION_DUPLICATED_ERROR);
+            }
         }
 
         if(!StringUtils.isBlank(customerName)) consultingReservationInfo.setCustomerName(customerName);
@@ -589,7 +656,7 @@ public class ConsultingService {
     }
 
     // 예약 가능 시간 리스트 가져오기
-    private List<ConsultingAvailableTimeResponse> getReservationAvailableTimeList(ConsultingScheduleManagement consultingScheduleManagement, LocalDate reservationDate){
+    private List<ConsultingAvailableTimeResponse> getReservationAvailableTimeList(Long consultantId, ConsultingScheduleManagement consultingScheduleManagement, LocalDate reservationDate){
         LocalTime reservationAvailableStartTime = consultingScheduleManagement.getReservationAvailableStartTime();
         LocalTime reservationAvailableEndTime = consultingScheduleManagement.getReservationAvailableEndTime();
         int reservationTimeUnit = consultingScheduleManagement.getReservationTimeUnit();
@@ -602,7 +669,7 @@ public class ConsultingService {
         List<ConsultingAvailableTimeResponse> timeList = new ArrayList<>();
 
         reservationUnavailableTimeList = Arrays.asList(reservationUnavailableTime.split(COMMA));
-        consultingReservationInfoList = consultingReservationInfoRepository.findByReservationDate(reservationDate);
+        consultingReservationInfoList = consultingReservationInfoRepository.findByReservationDate(consultantId, reservationDate);
 
         LocalTime compareTime = reservationAvailableStartTime;
 

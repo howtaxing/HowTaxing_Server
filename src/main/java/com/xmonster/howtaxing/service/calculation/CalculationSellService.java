@@ -3223,9 +3223,10 @@ public class CalculationSellService {
             if(!sellHouse.getUserProportion().equals(100)){
                 log.info("(Commentary Add) 1.공동명의 선택 시");
                 commentaryList.add("입력하신 필요경비에는 지분율이 적용되지 않으니 지분율이 적용된 경비나 실제 해당 납세자가 지출한 경비를 기재해주세요.");
+                commentaryList.add("같은 세대의 공동명의 취득이 아닌, 각각 다른 세대의 공동명의 취득인 경우나 각각 공동명의자의 취득일이 다른 경우에는 결과값이 다를 수 있습니다.");
             }
 
-            // 2.양도시점 1주택자 양도가액 12억 초과 시
+            // 3.양도시점 1주택자 양도가액 12억 초과 시
             calculationProcessList = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "015")
                     .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
 
@@ -3237,7 +3238,7 @@ public class CalculationSellService {
                 commentaryList.add("1세대 1주택 비과세 대상 중 12억원 초과 고가주택을 거래하는 경우에는 초과분에 대한 비율만큼 양도세가 부과돼요.");
             }
 
-            // 3.양도하려는 물건의 종류가 분양권/입주권인 경우
+            // 4.양도하려는 물건의 종류가 분양권/입주권인 경우
             // 9.양도하려는 물건의 종류가 분양권인 경우
             if(THREE.equals(sellHouse.getHouseType()) || FIVE.equals(sellHouse.getHouseType())){
                 log.info("(Commentary Add) 3.양도하려는 물건의 종류가 분양권/입주권인 경우");
@@ -3249,7 +3250,7 @@ public class CalculationSellService {
                 }
             }
 
-            // 4.항상
+            // 5.항상
             log.info("(Commentary Add) 4.항상");
             commentaryList.add("연 1회 인별 기본공제 250만원이 적용돼요.");
 
