@@ -59,7 +59,7 @@ public class ConsultingService {
     public Object getConsultantInfoList() throws Exception {
         log.info(">> [Service]ConsultingService getConsultantInfoList - 상담자 정보 목록 조회");
 
-        List<ConsultantInfo> consultantInfoList = consultantInfoRepository.findAll(Sort.by(Sort.Direction.ASC, "consultant_id"));
+        List<ConsultantInfo> consultantInfoList = consultantInfoRepository.findAll(Sort.by(Sort.Direction.ASC, "consultantId"));
         List<ConsultantListResponse> consultantListResponseList = null;
 
         if(!consultantInfoList.isEmpty()){
