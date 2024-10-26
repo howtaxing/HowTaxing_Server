@@ -13,6 +13,20 @@ import org.springframework.web.bind.annotation.*;
 public class ConsultingController {
     private final ConsultingService consultingService;
 
+    // 상담자 정보 목록 조회
+    @GetMapping("/consulting/consultantList")
+    public Object getConsultantInfoList() throws Exception {
+        log.info(">> [Controller]ConsultingController getConsultantInfoList - 상담자 정보 목록 조회");
+        return consultingService.getConsultantInfoList();
+    }
+
+    // 상담자 정보 상세 조회
+    @GetMapping("/consulting/consultantDetail")
+    public Object getConsultantInfoDetail(@RequestParam Long consultantId) throws Exception {
+        log.info(">> [Controller]ConsultingController getConsultantInfoDetail - 상담자 정보 상세 조회");
+        return consultingService.getConsultantInfoDetail(consultantId);
+    }
+
     // 상담 가능 일정 조회
     @GetMapping("/consulting/availableSchedule")
     public Object getConsultingAvailableSchedule(@RequestParam Long consultantId, @RequestParam String searchType, @RequestParam(defaultValue = "") String searchDate) throws Exception {
