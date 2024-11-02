@@ -1,7 +1,7 @@
 package com.xmonster.howtaxing.type;
 
 public enum SocialType {
-    EMAIL,
+    IDPASS,
     KAKAO,
     NAVER,
     GOOGLE,

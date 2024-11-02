@@ -48,6 +48,10 @@ public enum ErrorCode {
     HOUSE_GET_INFO_ERROR(1, HttpStatus.OK, "HOUSE-018", "보유주택 정보 조회를 위한 필수 입력값이 올바르지 않습니다."),
     HOUSE_GET_INFO_NOT_FOUND(1, HttpStatus.OK, "HOUSE-019", "보유주택 정보 조회에 실패하였습니다."),
 
+    /* 주택(보유주택 조회) 관련 */
+    HOUSE_HYPHEN_RLNO_ERROR(1, HttpStatus.OK, "HOUSE-020", "청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다."),
+    HOUSE_HYPHEN_ACCOUNT_ERROR(1, HttpStatus.OK, "HOUSE-021", "해당 간편인증 회원이 아니거나 아이디 또는 패스워드가 틀려 청약홈 인증에 실패했습니다."),
+
     /* 주소 관련 오류 */
     ADDRESS_SEPARATE_ERROR(1, HttpStatus.OK, "ADDRESS-001", "주소 데이터 프로세스 중 오류가 발생했습니다."),
     
