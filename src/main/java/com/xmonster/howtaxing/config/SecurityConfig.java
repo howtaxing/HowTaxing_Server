@@ -26,6 +26,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
@@ -72,7 +73,8 @@ public class SecurityConfig {
                 // 아이콘, css, js 관련
                 // 기본 페이지, css, image, js 하위 폴더에 있는 자료들은 모두 접근 가능, h2-console에 접근 가능
                 .antMatchers("/","/css/**","/images/**","/js/**","/favicon.ico","/h2-console/**").permitAll()
-                .antMatchers("/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google", "/oauth2/loginSuccess", "/oauth2/loginFail").permitAll() // 소셜로그인 접근 가능
+                //.antMatchers("/user/signUp", "/user/login","/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google", "/oauth2/loginSuccess", "/oauth2/loginFail").permitAll() // 소셜로그인 접근 가능
+                .antMatchers("/user/signUp", "/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google", "/oauth2/loginSuccess", "/oauth2/loginFail").permitAll() // 소셜로그인 접근 가능
                 .antMatchers("/", "/user/availability/**").permitAll()
                 .anyRequest().authenticated() // 위의 경로 이외에는 모두 인증된 사용자만 접근 가능
                 .and()
@@ -93,7 +95,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        //return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        return NoOpPasswordEncoder.getInstance();
     }
 
     /**

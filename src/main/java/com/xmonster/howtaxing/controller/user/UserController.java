@@ -2,6 +2,7 @@ package com.xmonster.howtaxing.controller.user;
 
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
+import com.xmonster.howtaxing.dto.user.UserLoginDto;
 import com.xmonster.howtaxing.dto.user.UserSignUpDto;
 import com.xmonster.howtaxing.service.user.UserService;
 import com.xmonster.howtaxing.type.ErrorCode;
@@ -37,6 +38,13 @@ public class UserController {
     public Object withdraw() throws Exception {
         log.info(">> [Controller]UserController withdraw - 회원탈퇴");
         return userService.withdraw();
+    }
+
+    // 로그인(아이디/비밀번호)
+    @PostMapping("/user/login")
+    public Object login(@RequestBody UserLoginDto userLoginDto) throws Exception {
+        log.info(">> [Controller]UserController login - 로그인");
+        return userService.login(userLoginDto);
     }
 
     // 로그아웃

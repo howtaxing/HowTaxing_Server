@@ -17,6 +17,11 @@ public enum ErrorCode {
     LOGIN_HAS_EMAIL_ERROR(1, HttpStatus.OK, "LOGIN-002", "이미 동일한 이메일 계정으로 가입되어 있습니다."),
     INVALID_PASSWORD(1, HttpStatus.OK, "LOGIN-003", "비밀번호가 일치하지 않습니다."),
 
+    /* 회원가입 관련 */
+    JOIN_USER_INPUT_ERROR(1, HttpStatus.OK, "JOIN-001", "회원가입을 위한 입력값이 올바르지 않습니다."),
+    JOIN_USER_OUTPUT_ERROR(1, HttpStatus.OK, "JOIN-002", "회원가입 중 오류가 발생했습니다."),
+    JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-003", "이미 존재하는 아이디 입니다."),
+
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),
     HOUSE_JUSOGOV_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-002", "공공기관에서 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),

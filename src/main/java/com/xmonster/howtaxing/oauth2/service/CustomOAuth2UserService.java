@@ -29,6 +29,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     private static final String NAVER = "naver";
     private static final String KAKAO = "kakao";
 
+    // (GGMANYAR) - TOBE
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         log.info("CustomOAuth2UserService.loadUser() 실행 - OAuth2 로그인 요청 진입");
@@ -65,7 +66,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 Collections.singleton(new SimpleGrantedAuthority(createdUser.getRole().getKey())),
                 attributes,
                 extractAttributes.getNameAttributeKey(),
-                createdUser.getEmail(),
+                //createdUser.getEmail(),
+                createdUser.getSocialId(),
                 createdUser.getRole()
         );
     }
@@ -80,7 +82,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         return SocialType.GOOGLE;
     }
 
-    /**
+    /** (GGMANYAR) - TOBE
      * SocialType과 attributes에 들어있는 소셜 로그인의 식별값 id를 통해 회원을 찾아 반환하는 메소드
      * 만약 찾은 회원이 있다면, 그대로 반환하고 없다면 saveUser()를 호출하여 회원을 저장한다.
      */
@@ -89,9 +91,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 attributes.getOauth2UserInfo().getId()).orElse(null);
 
         if(findUser == null) {
-            String email = attributes.getOauth2UserInfo().getEmail();
-            if(socialType != null && email != null){
-                userRepository.findByEmail(email)
+            //String email = attributes.getOauth2UserInfo().getEmail();
+            String socialId = attributes.getOauth2UserInfo().getId();
+            if(socialType != null && socialId != null){
+                userRepository.findBySocialId(socialId)
                         .ifPresent(user -> {
                             if(user.getSocialType() != socialType){
                                 throw new AuthenticationCredentialsNotFoundException(user.getSocialType().toString());

@@ -5,6 +5,7 @@ import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.user.SocialLogoutAndUnlinkRequest;
 import com.xmonster.howtaxing.dto.user.SocialLogoutAndUnlinkResponse;
+import com.xmonster.howtaxing.dto.user.UserLoginDto;
 import com.xmonster.howtaxing.dto.user.UserSignUpDto;
 import com.xmonster.howtaxing.feign.kakao.KakaoUserApi;
 import com.xmonster.howtaxing.feign.naver.NaverAuthApi;
@@ -13,6 +14,7 @@ import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.repository.user.UserRepository;
 import com.xmonster.howtaxing.service.redis.RedisService;
 import com.xmonster.howtaxing.type.ErrorCode;
+import com.xmonster.howtaxing.type.Role;
 import com.xmonster.howtaxing.type.SocialType;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -39,7 +42,7 @@ public class UserService {
     private final KakaoUserApi kakaoUserApi;
     private final NaverAuthApi naverAuthApi;
     private final RedisService redisService;
-    //private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${spring.security.oauth2.client.registration.naver.client-id}")
     private String naverAppKey;
@@ -51,19 +54,57 @@ public class UserService {
         log.info(">> [Service]UserService signUp - 회원가입");
 
         Map<String, Object> resultMap = new HashMap<>();
+        String joinType = EMPTY;
+        String id = EMPTY;
+        String password = EMPTY;
+        String email = EMPTY;
+        boolean isMktAgr = false;
+        User findUser = null;
 
-        try{
-            User findUser = userUtil.findCurrentUser();
-            
-            findUser.authorizeUser(); // 유저 권한 세팅(GUEST -> USER)
-            findUser.setMktAgr(userSignUpDto.isMktAgr()); // 마케팅동의여부 세팅
-
-            resultMap.put("role", findUser.getRole());
-
-
-        }catch(Exception e){
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        if(userSignUpDto != null){
+            joinType = StringUtils.defaultString(userSignUpDto.getJoinType());
+            id = StringUtils.defaultString(userSignUpDto.getId());
+            password = StringUtils.defaultString(userSignUpDto.getPassword());
+            //password = passwordEncoder.encode(password);
+            email = StringUtils.defaultString(userSignUpDto.getEmail());
+            isMktAgr = (userSignUpDto.getMktAgr() != null) ? userSignUpDto.getMktAgr() : false;
         }
+
+        // 아이디/비밀번호 회원가입
+        if(SocialType.IDPASS.toString().equals(joinType)){
+            if(EMPTY.equals(id)){
+                throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
+            }
+
+            if(EMPTY.equals(password)){
+                throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "비밀번호가 입력되지 않았습니다.");
+            }
+
+            User user = userRepository.findBySocialId(id).orElse(null);
+            if(user != null){
+                throw new CustomException(ErrorCode.JOIN_USER_ID_EXIST);
+            }
+
+            User createdUser = User.builder()
+                    .socialId(id)
+                    .socialType(SocialType.IDPASS)
+                    .password(password)
+                    .email(email)
+                    .isMktAgr(isMktAgr)
+                    .role(Role.USER)
+                    .build();
+
+            findUser = userRepository.save(createdUser);
+        }
+        // 소셜 회원가입
+        else{
+            findUser = userUtil.findCurrentUser();
+
+            findUser.authorizeUser(); // 유저 권한 세팅(GUEST -> USER)
+            findUser.setMktAgr(isMktAgr); // 마케팅동의여부 세팅
+        }
+
+        resultMap.put("role", findUser.getRole());
 
         return ApiResponse.success(resultMap);
     }
@@ -84,6 +125,15 @@ public class UserService {
         }
 
         return ApiResponse.success(Map.of("result", "회원탈퇴가 완료되었습니다."));
+    }
+
+    // 로그인
+    public Object login(UserLoginDto userLoginDto) throws Exception {
+        log.info(">> [Service]UserService login - 로그인");
+        if(userLoginDto != null){
+            log.info("userLoginDto : " + userLoginDto.toString());
+        }
+        return ApiResponse.success(Map.of("result", "로그인이 완료되었습니다."));
     }
 
     // 로그아웃

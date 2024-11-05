@@ -1,16 +1,21 @@
 package com.xmonster.howtaxing.dto.user;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@NoArgsConstructor
+// (GGMANYAR) - TOBE
 @Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class UserSignUpDto {
-
-    //private String email;
+    private String joinType;
+    private String id;
+    private String password;
+    private String email;
     //private String password;
     //private String nickname;
     //private int age;
     //private String city;
-    private boolean mktAgr;
+    private Boolean mktAgr;
 }
