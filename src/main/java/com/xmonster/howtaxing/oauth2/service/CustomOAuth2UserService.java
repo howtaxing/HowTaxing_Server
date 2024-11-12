@@ -92,7 +92,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         if(findUser == null) {
             //String email = attributes.getOauth2UserInfo().getEmail();
-            String socialId = attributes.getOauth2UserInfo().getId();
+            /* 이메일 중복 체크 삭제 이후로 아래 코드가 필요 없어짐(GGMANYAR) */
+            /*String socialId = attributes.getOauth2UserInfo().getId();
             if(socialType != null && socialId != null){
                 userRepository.findBySocialId(socialId)
                         .ifPresent(user -> {
@@ -100,7 +101,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                                 throw new AuthenticationCredentialsNotFoundException(user.getSocialType().toString());
                             }
                         });
-            }
+            }*/
             return saveUser(attributes, socialType, socialAccessToken);
         }else{
             findUser.setSocialAccessToken(socialAccessToken);

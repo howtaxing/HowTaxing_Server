@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -65,7 +66,9 @@ public class UserService {
             joinType = StringUtils.defaultString(userSignUpDto.getJoinType());
             id = StringUtils.defaultString(userSignUpDto.getId());
             password = StringUtils.defaultString(userSignUpDto.getPassword());
+            log.info("password(before) : " + password);
             //password = passwordEncoder.encode(password);
+            log.info("password(after) : " + password);
             email = StringUtils.defaultString(userSignUpDto.getEmail());
             isMktAgr = (userSignUpDto.getMktAgr() != null) ? userSignUpDto.getMktAgr() : false;
         }
@@ -92,7 +95,11 @@ public class UserService {
                     .email(email)
                     .isMktAgr(isMktAgr)
                     .role(Role.USER)
+                    .isLocked(false)
+                    .attemptFailedCount(0)
                     .build();
+
+            createdUser.passwordEncode(passwordEncoder);
 
             findUser = userRepository.save(createdUser);
         }

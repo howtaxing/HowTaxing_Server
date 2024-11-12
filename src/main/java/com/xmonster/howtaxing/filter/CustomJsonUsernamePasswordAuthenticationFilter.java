@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.util.StreamUtils;
@@ -36,10 +37,13 @@ public class CustomJsonUsernamePasswordAuthenticationFilter extends AbstractAuth
             new AntPathRequestMatcher(DEFAULT_LOGIN_REQUEST_URL, HTTP_METHOD); // "/login" + POST로 온 요청에 매칭된다.
 
     private final ObjectMapper objectMapper;
+    //private final PasswordEncoder passwordEncoder;
 
+    //public CustomJsonUsernamePasswordAuthenticationFilter(ObjectMapper objectMapper, PasswordEncoder passwordEncoder) {
     public CustomJsonUsernamePasswordAuthenticationFilter(ObjectMapper objectMapper) {
         super(DEFAULT_LOGIN_PATH_REQUEST_MATCHER); // 위에서 설정한 "login" + POST로 온 요청을 처리하기 위해 설정
         this.objectMapper = objectMapper;
+        //this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -73,12 +77,14 @@ public class CustomJsonUsernamePasswordAuthenticationFilter extends AbstractAuth
         //String email = usernamePasswordMap.get(USERNAME_KEY);
         String id = usernamePasswordMap.get(USERNAME_KEY);
         String password = usernamePasswordMap.get(PASSWORD_KEY);
+        log.info("[Login-Before] password : " + password);
         //password = passwordEncoder.encode(password);
+        //log.info("[Login-After] password : " + password);
 
-        System.out.println("id : " + id);
-        System.out.println("password : " + password);
+        request.setAttribute("id", id);
+        request.setAttribute("password", password);
 
-        UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(id, password);  //principal 과 credentials 전달
+        UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(id, password);  // principal 과 credentials 전달
 
         return this.getAuthenticationManager().authenticate(authRequest);
     }

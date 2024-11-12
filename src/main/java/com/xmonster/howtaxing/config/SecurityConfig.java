@@ -25,6 +25,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -74,7 +75,10 @@ public class SecurityConfig {
                 // 기본 페이지, css, image, js 하위 폴더에 있는 자료들은 모두 접근 가능, h2-console에 접근 가능
                 .antMatchers("/","/css/**","/images/**","/js/**","/favicon.ico","/h2-console/**").permitAll()
                 //.antMatchers("/user/signUp", "/user/login","/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google", "/oauth2/loginSuccess", "/oauth2/loginFail").permitAll() // 소셜로그인 접근 가능
-                .antMatchers("/user/signUp", "/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google", "/oauth2/loginSuccess", "/oauth2/loginFail").permitAll() // 소셜로그인 접근 가능
+                .antMatchers("/user/signUp").permitAll() // 회원가입 접근 가능
+                .antMatchers("/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google").permitAll() // 소셜로그인
+                .antMatchers("/oauth2/loginSuccess", "/oauth2/loginFail").permitAll()   // 소셜로그인 완료
+                .antMatchers("/login/loginSuccess", "/login/loginFail").permitAll()       // 일반로그인 완료
                 .antMatchers("/", "/user/availability/**").permitAll()
                 .anyRequest().authenticated() // 위의 경로 이외에는 모두 인증된 사용자만 접근 가능
                 .and()
@@ -95,8 +99,9 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        //return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-        return NoOpPasswordEncoder.getInstance();
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        //return NoOpPasswordEncoder.getInstance();
+        //return new BCryptPasswordEncoder();
     }
 
     /**
@@ -128,7 +133,7 @@ public class SecurityConfig {
      */
     @Bean
     public LoginFailureHandler loginFailureHandler() {
-        return new LoginFailureHandler();
+        return new LoginFailureHandler(userRepository);
     }
 
     /**
@@ -141,6 +146,7 @@ public class SecurityConfig {
     public CustomJsonUsernamePasswordAuthenticationFilter customJsonUsernamePasswordAuthenticationFilter() {
         CustomJsonUsernamePasswordAuthenticationFilter customJsonUsernamePasswordLoginFilter
                 = new CustomJsonUsernamePasswordAuthenticationFilter(objectMapper);
+                //= new CustomJsonUsernamePasswordAuthenticationFilter(objectMapper, passwordEncoder());
         customJsonUsernamePasswordLoginFilter.setAuthenticationManager(authenticationManager());
         customJsonUsernamePasswordLoginFilter.setAuthenticationSuccessHandler(loginSuccessHandler());
         customJsonUsernamePasswordLoginFilter.setAuthenticationFailureHandler(loginFailureHandler());
