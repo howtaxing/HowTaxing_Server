@@ -66,9 +66,6 @@ public class UserService {
             joinType = StringUtils.defaultString(userSignUpDto.getJoinType());
             id = StringUtils.defaultString(userSignUpDto.getId());
             password = StringUtils.defaultString(userSignUpDto.getPassword());
-            log.info("password(before) : " + password);
-            //password = passwordEncoder.encode(password);
-            log.info("password(after) : " + password);
             email = StringUtils.defaultString(userSignUpDto.getEmail());
             isMktAgr = (userSignUpDto.getMktAgr() != null) ? userSignUpDto.getMktAgr() : false;
         }
@@ -114,6 +111,23 @@ public class UserService {
         resultMap.put("role", findUser.getRole());
 
         return ApiResponse.success(resultMap);
+    }
+
+    // 아이디 중복체크
+    public Object idDuplicateCheck(String id) throws Exception {
+        log.info(">> [Service]UserService idDuplicateCheck - 아이디 중복체크");
+
+        if(StringUtils.isBlank(id)){
+            throw new CustomException(ErrorCode.ID_CHECK_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
+        }
+
+        User user = userRepository.findBySocialId(id).orElse(null);
+
+        if(user != null){
+            throw new CustomException(ErrorCode.ID_CHECK_ALREADY_EXIST);
+        }
+
+        return ApiResponse.success(Map.of("result", "사용할 수 있는 아이디 입니다."));
     }
 
     // 회원탈퇴

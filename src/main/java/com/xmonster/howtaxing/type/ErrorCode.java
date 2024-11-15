@@ -22,7 +22,11 @@ public enum ErrorCode {
     JOIN_USER_INPUT_ERROR(1, HttpStatus.OK, "JOIN-001", "회원가입을 위한 입력값이 올바르지 않습니다."),
     JOIN_USER_OUTPUT_ERROR(1, HttpStatus.OK, "JOIN-002", "회원가입 중 오류가 발생했습니다."),
     JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-003", "이미 존재하는 아이디 입니다."),
-    JOIN_PHONENUMBER_DUPLICATE(1, HttpStatus.OK, "JOIN-003", "이미 사용 중인 휴대폰 번호에요."),
+    JOIN_PHONENUMBER_DUPLICATE(1, HttpStatus.OK, "JOIN-004", "이미 사용 중인 휴대폰 번호에요."),
+
+    /* 아이디 중복체크 관련 */
+    ID_CHECK_INPUT_ERROR(1, HttpStatus.OK, "IDCHECK-001", "아이디 중복체크를 위한 입력값이 올바르지 않습니다."),
+    ID_CHECK_ALREADY_EXIST(1, HttpStatus.OK, "IDCHECK-002", "이미 존재하는 아이디 입니다."),
 
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),

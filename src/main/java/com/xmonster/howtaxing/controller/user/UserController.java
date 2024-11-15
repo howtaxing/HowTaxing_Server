@@ -34,6 +34,13 @@ public class UserController {
         return userService.signUp(userSignUpDto);
     }
 
+    // 아이디 중복체크
+    @GetMapping("/user/idCheck")
+    public Object idDuplicateCheck(@RequestParam String id) throws Exception {
+        log.info(">> [Controller]UserController idDuplicateCheck - 아이디 중복체크");
+        return userService.idDuplicateCheck(id);
+    }
+
     // 회원탈퇴
     @DeleteMapping("/user/withdraw")
     public Object withdraw() throws Exception {

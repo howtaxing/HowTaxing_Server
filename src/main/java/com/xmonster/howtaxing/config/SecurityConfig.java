@@ -74,11 +74,10 @@ public class SecurityConfig {
                 // 아이콘, css, js 관련
                 // 기본 페이지, css, image, js 하위 폴더에 있는 자료들은 모두 접근 가능, h2-console에 접근 가능
                 .antMatchers("/","/css/**","/images/**","/js/**","/favicon.ico","/h2-console/**").permitAll()
-                //.antMatchers("/user/signUp", "/user/login","/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google", "/oauth2/loginSuccess", "/oauth2/loginFail").permitAll() // 소셜로그인 접근 가능
-                .antMatchers("/user/signUp").permitAll() // 회원가입 접근 가능
-                .antMatchers("/login/oauth2/code/kakao", "/login/oauth2/code/naver", "/login/oauth2/code/google").permitAll() // 소셜로그인
-                .antMatchers("/oauth2/loginSuccess", "/oauth2/loginFail").permitAll()   // 소셜로그인 완료
-                .antMatchers("/login/loginSuccess", "/login/loginFail").permitAll()       // 일반로그인 완료
+                .antMatchers("/user/signUp", "/user/idCheck").permitAll()                           // '회원가입', '아이디 중복체크' 접근 허용
+                .antMatchers("/login/oauth2/code/kakao", "/login/oauth2/code/naver").permitAll()    // '소셜로그인(카카오, 네이버)' 접근 허용
+                .antMatchers("/oauth2/loginSuccess", "/oauth2/loginFail").permitAll()               // '소셜로그인 완료' 접근 허용
+                .antMatchers("/login/loginSuccess", "/login/loginFail").permitAll()                 // '일반로그인 완료' 접근 허용
                 .antMatchers("/", "/user/availability/**").permitAll()
                 .anyRequest().authenticated() // 위의 경로 이외에는 모두 인증된 사용자만 접근 가능
                 .and()
