@@ -192,7 +192,10 @@ public class UserService {
 
             // 로그아웃
             if(ONE.equals(requestType)){
-                if(SocialType.KAKAO.equals(socialType)){
+                if(SocialType.IDPASS.equals(socialType)){
+                    log.info("일반로그인 계정 로그아웃");
+                }else if(SocialType.KAKAO.equals(socialType)){
+                    log.info("소셜로그인(카카오) 계정 로그아웃");
                     response = kakaoUserApi.logoutUserInfo(
                             headerMap,
                             SocialLogoutAndUnlinkRequest.builder()
@@ -200,8 +203,10 @@ public class UserService {
                                     .targetId(Long.parseLong(socialId))
                                     .build());
                 }else if(SocialType.NAVER.equals(socialType)){
+                    log.info("소셜로그인(네이버) 계정 로그아웃");
                     log.info("네이버는 로그아웃 기능이 없습니다.");
                 }else{
+                    // TODO : Apple 로그아웃 구현
                     // google, apple..
                     throw new CustomException(ErrorCode.USER_LOGOUT_ERROR, "Google과 Apple의 로그아웃 기능은 준비 중입니다.");
                 }
@@ -246,7 +251,9 @@ public class UserService {
             socialLogoutAndUnlinkResponse = (SocialLogoutAndUnlinkResponse) convertJsonToData(jsonString);
         }
 
-        if(SocialType.KAKAO.equals(socialType)){
+        if(SocialType.IDPASS.equals(socialType)){
+            resultFlag = true;
+        }else if(SocialType.KAKAO.equals(socialType)){
             if(socialLogoutAndUnlinkResponse != null){
                 if(socialLogoutAndUnlinkResponse.getId().equals(Long.parseLong(socialId))){
                     resultFlag = true;
