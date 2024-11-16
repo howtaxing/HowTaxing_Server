@@ -213,7 +213,10 @@ public class UserService {
             }
             // 회원탈퇴
             else if(TWO.equals(requestType)){
-                if(SocialType.KAKAO.equals(socialType)){
+                if(SocialType.IDPASS.equals(socialType)){
+                    log.info("일반로그인 계정 회원탈퇴");
+                }else if(SocialType.KAKAO.equals(socialType)){
+                    log.info("소셜로그인(카카오) 계정 회원탈퇴");
                     response = kakaoUserApi.unlinkUserInfo(
                             headerMap,
                             SocialLogoutAndUnlinkRequest.builder()
@@ -221,6 +224,7 @@ public class UserService {
                                     .targetId(Long.parseLong(socialId))
                                     .build());
                 }else if(SocialType.NAVER.equals(socialType)){
+                    log.info("소셜로그인(네이버) 계정 회원탈퇴");
                     // 네이버 회원탈퇴는 getAccessToken과 동일(grantType만 delete로 세팅)
                     response = naverAuthApi.getAccessToken("delete", naverAppKey, naverAppSecret, null, null, socialAccessToken);
                 }else{
