@@ -28,16 +28,17 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Value("${jwt.access.expiration}")
     private String accessTokenExpiration;
 
+    // (GGMANYAR) - TOBE
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         log.info("OAuth2 Login 성공!");
         try {
             CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
-            log.info("[GGMANYAR]getRole : " + oAuth2User.getRole());
+            log.info("getRole : " + oAuth2User.getRole());
 
-            User findUser = userRepository.findByEmail(oAuth2User.getEmail())
-                    .orElseThrow(() -> new IllegalArgumentException("이메일에 해당하는 유저가 없습니다."));
+            User findUser = userRepository.findBySocialId(oAuth2User.getSocialId())
+                    .orElseThrow(() -> new IllegalArgumentException("아이디에 해당하는 유저가 없습니다."));
             //findUser.authorizeUser();
 
             //loginSuccess(response, oAuth2User); // 로그인에 성공한 경우 access, refresh 토큰 생성
@@ -64,7 +65,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private void loginSuccess(HttpServletResponse response, User user) throws IOException {
 
-        String accessToken = jwtService.createAccessToken(user.getEmail());
+        //String accessToken = jwtService.createAccessToken(user.getEmail());
+        String accessToken = jwtService.createAccessToken(user.getSocialId());
         String refreshToken = jwtService.createRefreshToken();
         String role = user.getRole().toString();
 
@@ -72,11 +74,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.addHeader(jwtService.getRefreshHeader(), "Bearer " + refreshToken);
 
         jwtService.sendAccessAndRefreshToken(response, accessToken, refreshToken);
+        jwtService.updateRefreshToken(user.getSocialId(), refreshToken);
 
         user.updateRefreshToken(refreshToken);
         userRepository.saveAndFlush(user);
 
-        log.info("로그인에 성공하였습니다. 이메일 : {}", user.getEmail());
+        log.info("로그인에 성공하였습니다. 아이디 : {}", user.getSocialId());
         log.info("로그인에 성공하였습니다. AccessToken : {}", accessToken);
         log.info("발급된 AccessToken 만료 기간 : {}", accessTokenExpiration);
 

@@ -13,8 +13,9 @@ public class UserUtil {
 
     private final UserRepository userRepository;
 
+    // (GGMANYAR) - TOBE
     public User findCurrentUser() {
-        return userRepository.findByEmail(SecurityUtil.getCurrentMemberEmail())
+        return userRepository.findBySocialId(SecurityUtil.getCurrentMemberSocialId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 

@@ -4,6 +4,7 @@ import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.user.UserRepository;
 import com.xmonster.howtaxing.service.jwt.JwtService;
 //import login.oauthtest4.global.oauth2.util.PasswordUtil;
+import com.xmonster.howtaxing.utils.PasswordUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,7 +39,8 @@ import java.io.IOException;
 public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
 
     //private static final String NO_CHECK_URL = "/login"; // "/login"으로 들어오는 요청은 Filter 작동 X
-    private static final String NO_CHECK_URL = "/user/socialLogin";
+    //private static final String NO_CHECK_URL = "/user/socialLogin";
+    private static final String NO_CHECK_URL = "/user/login";
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -48,7 +50,7 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         if (request.getRequestURI().equals(NO_CHECK_URL)) {
-            filterChain.doFilter(request, response); // "/user/socialLogin" 요청이 들어오면, 다음 필터 호출
+            filterChain.doFilter(request, response); // "/user/login" 요청이 들어오면, 다음 필터 호출
             return; // return으로 이후 현재 필터 진행 막기 (안해주면 아래로 내려가서 계속 필터 진행시킴)
         }
 
@@ -74,7 +76,7 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
         checkAccessTokenAndAuthentication(request, response, filterChain);
     }
 
-    /**
+    /** (GGMANYAR) - TOBE
      *  [리프레시 토큰으로 유저 정보 찾기 & 액세스 토큰/리프레시 토큰 재발급 메소드]
      *  파라미터로 들어온 헤더에서 추출한 리프레시 토큰으로 DB에서 유저를 찾고, 해당 유저가 있다면
      *  JwtService.createAccessToken()으로 AccessToken 생성,
@@ -85,7 +87,7 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
         userRepository.findByRefreshToken(refreshToken)
                 .ifPresent(user -> {
                     String reIssuedRefreshToken = reIssueRefreshToken(user);
-                    jwtService.sendAccessAndRefreshToken(response, jwtService.createAccessToken(user.getEmail()),
+                    jwtService.sendAccessAndRefreshToken(response, jwtService.createAccessToken(user.getSocialId()),
                             reIssuedRefreshToken);
                 });
     }
@@ -102,10 +104,10 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
         return reIssuedRefreshToken;
     }
 
-    /**
+    /** (GGMANYAR) - TOBE
      * [액세스 토큰 체크 & 인증 처리 메소드]
      * request에서 extractAccessToken()으로 액세스 토큰 추출 후, isTokenValid()로 유효한 토큰인지 검증
-     * 유효한 토큰이면, 액세스 토큰에서 extractEmail로 Email을 추출한 후 findByEmail()로 해당 이메일을 사용하는 유저 객체 반환
+     * 유효한 토큰이면, 액세스 토큰에서 extractSocialId로 socialId를 추출한 후 findBySocialId()로 해당 아이디를 사용하는 유저 객체 반환
      * 그 유저 객체를 saveAuthentication()으로 인증 처리하여
      * 인증 허가 처리된 객체를 SecurityContextHolder에 담기
      * 그 후 다음 인증 필터로 진행
@@ -116,14 +118,15 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
         // log.debug("request.getRequestURI() : " + request.getRequestURI());
         jwtService.extractAccessToken(request)
                 .filter(jwtService::isTokenValid)
-                .ifPresent(accessToken -> jwtService.extractEmail(accessToken)
-                        .ifPresent(email -> userRepository.findByEmail(email)
+                .ifPresent(accessToken -> jwtService.extractSocialId(accessToken)
+                        //.ifPresent(email -> userRepository.findByEmail(email)
+                        .ifPresent(socialId -> userRepository.findBySocialId(socialId)
                                 .ifPresent(this::saveAuthentication)));
 
         filterChain.doFilter(request, response);
     }
 
-    /**
+    /** (GGMANYAR) - TOBE
      * [인증 허가 메소드]
      * 파라미터의 유저 : 우리가 만든 회원 객체 / 빌더의 유저 : UserDetails의 User 객체
      *
@@ -139,16 +142,14 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
      * setAuthentication()을 이용하여 위에서 만든 Authentication 객체에 대한 인증 허가 처리
      */
     public void saveAuthentication(User myUser) {
-        /* 패스워드 사용하지 않지만 일단 빈 값 세팅
         String password = myUser.getPassword();
-        if (password == null) { // 소셜 로그인 유저의 비밀번호 임의로 설정 하여 소셜 로그인 유저도 인증 되도록 설정
+        if (password == null) { // 소셜 로그인 유저의 비밀번호 임의로 설정하여 소셜 로그인 유저도 인증 되도록 설정
             password = PasswordUtil.generateRandomPassword();
         }
-        */
-        String password = "";
 
         UserDetails userDetailsUser = org.springframework.security.core.userdetails.User.builder()
-                .username(myUser.getEmail())
+                //.username(myUser.getEmail())
+                .username(myUser.getSocialId())
                 .password(password)
                 .roles(myUser.getRole().name())
                 .build();

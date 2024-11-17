@@ -14,8 +14,19 @@ public enum ErrorCode {
 
     /* 로그인 관련 */
     LOGIN_COMMON_ERROR(1, HttpStatus.OK, "LOGIN-001", "로그인 중 오류가 발생했습니다."),
-    LOGIN_HAS_EMAIL_ERROR(1, HttpStatus.OK, "LOGIN-002", "이미 동일한 이메일 계정으로 가입되어 있습니다."),
-    INVALID_PASSWORD(1, HttpStatus.OK, "LOGIN-003", "비밀번호가 일치하지 않습니다."),
+    LOGIN_INVALID_PASSWORD(1, HttpStatus.OK, "LOGIN-002", "아이디 또는 비밀번호가 일치하지 않아요."),
+    LOGIN_ID_NOT_EXIST(1, HttpStatus.OK, "LOGIN-003", "입력하신 아이디가 존재하지 않아요."),
+    LOGIN_ACCOUNT_LOCKED(1, HttpStatus.OK, "LOGIN-004", "비밀번호가 5회 불일치로 계정이 잠겼어요."),
+
+    /* 회원가입 관련 */
+    JOIN_USER_INPUT_ERROR(1, HttpStatus.OK, "JOIN-001", "회원가입을 위한 입력값이 올바르지 않습니다."),
+    JOIN_USER_OUTPUT_ERROR(1, HttpStatus.OK, "JOIN-002", "회원가입 중 오류가 발생했습니다."),
+    JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-003", "이미 존재하는 아이디 입니다."),
+    JOIN_PHONENUMBER_DUPLICATE(1, HttpStatus.OK, "JOIN-004", "이미 사용 중인 휴대폰 번호에요."),
+
+    /* 아이디 중복체크 관련 */
+    ID_CHECK_INPUT_ERROR(1, HttpStatus.OK, "IDCHECK-001", "아이디 중복체크를 위한 입력값이 올바르지 않습니다."),
+    ID_CHECK_ALREADY_EXIST(1, HttpStatus.OK, "IDCHECK-002", "이미 존재하는 아이디 입니다."),
 
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),
@@ -47,6 +58,10 @@ public enum ErrorCode {
     /* 주택(청약홈 로드 데이터) 관련 */
     HOUSE_GET_INFO_ERROR(1, HttpStatus.OK, "HOUSE-018", "보유주택 정보 조회를 위한 필수 입력값이 올바르지 않습니다."),
     HOUSE_GET_INFO_NOT_FOUND(1, HttpStatus.OK, "HOUSE-019", "보유주택 정보 조회에 실패하였습니다."),
+
+    /* 주택(보유주택 조회) 관련 */
+    HOUSE_HYPHEN_RLNO_ERROR(1, HttpStatus.OK, "HOUSE-020", "청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다."),
+    HOUSE_HYPHEN_ACCOUNT_ERROR(1, HttpStatus.OK, "HOUSE-021", "해당 간편인증 회원이 아니거나 아이디 또는 패스워드가 틀려 청약홈 인증에 실패했습니다."),
 
     /* 주소 관련 오류 */
     ADDRESS_SEPARATE_ERROR(1, HttpStatus.OK, "ADDRESS-001", "주소 데이터 프로세스 중 오류가 발생했습니다."),

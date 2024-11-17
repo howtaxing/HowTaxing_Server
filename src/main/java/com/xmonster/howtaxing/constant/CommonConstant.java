@@ -19,6 +19,10 @@ public final class CommonConstant {
     public final static String SUCCESS = "success";
     public final static String FAIL = "fail";
 
+    public final static String ID_PASS_WRONG = "idPassWrong";
+    public final static String LOCKED = "locked";
+    public final static String NOT_FOUND = "notFound";
+
     public final static String ZERO = "0";
     public final static String ONE = "1";
     public final static String TWO = "2";

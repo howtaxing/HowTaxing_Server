@@ -5,6 +5,7 @@ import com.xmonster.howtaxing.type.SocialType;
 import lombok.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,30 +17,38 @@ public class User extends DateEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Long id;                    // 사용자ID
+    private Long id;                        // 사용자ID
 
-    private String password;            // 비밀번호
-
-    @Enumerated(EnumType.STRING)
-    private SocialType socialType;      // SNS유형(0:EMAIL, 1:KAKAO, 2:NAVER, 3:GOOGLE, 4:APPLE, 5:ETC)
-
-    private String socialId;            // SNS아이디(로그인 한 소셜 타입의 식별자 값 (일반 로그인인 경우 null))
-    private String email;               // 이메일
-    private String name;                // 이름
-    private String nickname;            // 별명
-    private Integer age;                // 나이
-    private String city;                // 지역
-    private String imageUrl;            // 이미지주소
-    private String phoneNumber;         // 휴대폰번호
+    private String password;                // 비밀번호
 
     @Enumerated(EnumType.STRING)
-    private Role role;                  // 역할(0:GUEST, 1:USER)
+    private SocialType socialType;          // SNS유형(0:EMAIL, 1:KAKAO, 2:NAVER, 3:GOOGLE, 4:APPLE, 5:ETC)
 
-    private String refreshToken;        // 리프레시 토큰(JWT)
-    private boolean isMktAgr;           // 마케팅동의여부(true:여, false:부)
-    private boolean isWithdraw;         // 탈퇴여부(true:여, false:부)
+    private String socialId;                // SNS아이디(로그인 한 소셜 타입의 식별자 값 (일반 로그인인 경우 IDPASS))
+    private String email;                   // 이메일
+    private String name;                    // 이름
+    private String nickname;                // 별명
+    private Integer age;                    // 나이
+    private String city;                    // 지역
+    private String imageUrl;                // 이미지주소
+    private String phoneNumber;             // 휴대폰번호
 
-    private String socialAccessToken;   // 소셜엑세스토큰
+    @Enumerated(EnumType.STRING)
+    private Role role;                      // 역할(0:GUEST, 1:USER)
+
+    private String refreshToken;            // 리프레시 토큰(JWT)
+    private boolean isMktAgr;               // 마케팅동의여부(true:여, false:부)
+    private boolean isWithdraw;             // 탈퇴여부(true:여, false:부)
+
+    private String socialAccessToken;       // 소셜엑세스토큰
+
+    @Column(name = "attempt_failed_count", columnDefinition = "INT DEFAULT 0")
+    private Integer attemptFailedCount;     // 비밀번호불일치횟수
+
+    @Column(columnDefinition = "BOOLEAN DEFAULT false")
+    private Boolean isLocked;               // (계정)잠김여부
+
+    private LocalDateTime lockedDatetime;   // (계정)잠금일시
 
     // 유저 권한 설정
     public void authorizeUser() {
@@ -74,4 +83,9 @@ public class User extends DateEntity {
     public void updateRefreshToken(String updateRefreshToken) {
         this.refreshToken = updateRefreshToken;
     }
+
+    // 로그인 시도 실패 횟수 증가
+    /*public void incrementAttemptFailedCount() {
+        this.attemptFailedCount++;
+    }*/
 }

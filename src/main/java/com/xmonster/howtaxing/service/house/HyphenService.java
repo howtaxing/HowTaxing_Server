@@ -262,9 +262,20 @@ public class HyphenService {
         } catch (Exception e) {
             log.error(e.getMessage());
             if(type == 1){
-                errMsgDtl = changeErrDtlContents(errMsgDtl);
-
-                throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, errMsgDtl);
+                //errMsgDtl = changeErrDtlContents(errMsgDtl);
+                if(StringUtils.isNotBlank(errMsgDtl)){
+                    if(errMsgDtl.contains(LOGIN_109)){
+                        // 청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다.
+                        throw new CustomException(ErrorCode.HOUSE_HYPHEN_RLNO_ERROR);
+                    }else if(errMsgDtl.contains(LOGIN_999)){
+                        // 해당 간편인증 회원이 아니거나 아이디 또는 패스워드가 틀려 청약홈 인증에 실패했습니다.
+                        throw new CustomException(ErrorCode.HOUSE_HYPHEN_ACCOUNT_ERROR);
+                    }else{
+                        throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, errMsgDtl);
+                    }
+                }else{
+                    throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, errMsgDtl);
+                }
             }else if(type == 2){
                 throw new CustomException(ErrorCode.HYPHEN_STAY_PERIOD_OUTPUT_ERROR, errMsgDtl);
             }else{
@@ -273,7 +284,7 @@ public class HyphenService {
         }
     }
 
-    private String changeErrDtlContents(String errMsgDtl){
+    /*private String changeErrDtlContents(String errMsgDtl){
         String resultErrDtl = StringUtils.defaultString(errMsgDtl);
 
         // 청약통장이 없거나 주민등록번호가 틀린 경우
@@ -286,6 +297,6 @@ public class HyphenService {
         }
 
         return resultErrDtl;
-    }
+    }*/
 }
 

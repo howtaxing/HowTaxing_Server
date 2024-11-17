@@ -2,11 +2,13 @@ package com.xmonster.howtaxing.controller.user;
 
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
+import com.xmonster.howtaxing.dto.user.UserLoginDto;
 import com.xmonster.howtaxing.dto.user.UserSignUpDto;
 import com.xmonster.howtaxing.service.user.UserService;
 import com.xmonster.howtaxing.type.ErrorCode;
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
+import com.xmonster.howtaxing.type.SocialType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,11 +34,25 @@ public class UserController {
         return userService.signUp(userSignUpDto);
     }
 
+    // 아이디 중복체크
+    @GetMapping("/user/idCheck")
+    public Object idDuplicateCheck(@RequestParam String id) throws Exception {
+        log.info(">> [Controller]UserController idDuplicateCheck - 아이디 중복체크");
+        return userService.idDuplicateCheck(id);
+    }
+
     // 회원탈퇴
     @DeleteMapping("/user/withdraw")
     public Object withdraw() throws Exception {
         log.info(">> [Controller]UserController withdraw - 회원탈퇴");
         return userService.withdraw();
+    }
+
+    // 로그인(아이디/비밀번호)
+    @PostMapping("/user/login")
+    public Object login(@RequestBody UserLoginDto userLoginDto) throws Exception {
+        log.info(">> [Controller]UserController login - 로그인");
+        return userService.login(userLoginDto);
     }
 
     // 로그아웃
@@ -46,8 +62,7 @@ public class UserController {
         return userService.logout();
     }
 
-    // (자동)로그인 성공
-    @GetMapping("/oauth2/loginSuccess2")
+    /*@GetMapping("/oauth2/loginSuccess2")
     public Object loginSuccess2(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
         log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
 
@@ -62,10 +77,53 @@ public class UserController {
         tokenMap.put("role", role);
 
         return ApiResponse.success(tokenMap);
+    }*/
+
+    // 소셜 로그인 성공
+    @GetMapping("/oauth2/loginSuccess")
+    public ResponseEntity<String> socialLoginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
+        log.info(">> [Controller]UserController socialLoginSuccess - 소셜 로그인 성공");
+
+        if(accessToken == null || refreshToken == null){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
+        }
+
+        String html = "<html><body><pre id='returnValue'>" +
+                "{\"errYn\" : \"N\", \"data\" : " + "{\"accessToken\" : \"" + accessToken + "\", \"refreshToken\" : \"" + refreshToken + "\", \"role\" : \"" + role + "\"}}" +
+                "</pre><script>window.onload = function() {" +
+                "document.getElementById('returnValue').style.display = 'none';" +
+                "};</script></body></html>";
+
+        log.info("html : " + html);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_HTML);
+
+        return new ResponseEntity<>(html, headers, HttpStatus.OK);
     }
 
-    @GetMapping("/oauth2/loginSuccess")
-    public ResponseEntity<String> loginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
+    // 소셜 로그인 실패
+    @GetMapping("/oauth2/loginFail")
+    public ResponseEntity<String> socialLoginFail(){
+        log.info(">> [Controller]UserController socialLoginFail - 소셜 로그인 실패");
+
+        String html = "<html><body><pre id='returnValue'>" +
+                "{\"errYn\": \"Y\", \"type\": 1, \"status\": 200, \"name\": \"LOGIN_COMMON_ERROR\", \"errCode\": \"LOGIN-001\", \"errMsg\": \"로그인 중 오류가 발생했습니다.\", \"errMsgDtl\": \"\"}" +
+                "</pre><script>window.onload = function() {" +
+                "document.getElementById('returnValue').style.display = 'none';" +
+                "};</script></body></html>";
+
+        log.info("html : " + html);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_HTML);
+
+        return new ResponseEntity<>(html, headers, HttpStatus.OK);
+    }
+
+    // 일반 로그인 성공
+    /*@GetMapping("/login/loginSuccess")
+    public ResponseEntity<String> generalLoginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
         log.info(">> [Controller]UserController loginSuccess - 로그인 성공");
 
         if(accessToken == null || refreshToken == null){
@@ -81,21 +139,50 @@ public class UserController {
                 "document.getElementById('returnValue').style.display = 'none';" +
                 "};</script></body></html>";
 
-        log.info("[GGMANYAR]html : " + html);
+        log.info("html : " + html);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_HTML);
 
         return new ResponseEntity<>(html, headers, HttpStatus.OK);
+    }*/
+
+    // 일반 로그인 성공
+    @GetMapping("/login/loginSuccess")
+    public Object generalLoginSuccess(@RequestParam String accessToken, @RequestParam String refreshToken, @RequestParam String role){
+        log.info(">> [Controller]UserController generalLoginSuccess - 일반 로그인 성공");
+
+        Map<String, Object> tokenMap = new HashMap<>();
+
+        if(accessToken == null || refreshToken == null){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
+        }
+
+        tokenMap.put("accessToken", accessToken);
+        tokenMap.put("refreshToken", refreshToken);
+        tokenMap.put("role", role);
+
+        return ApiResponse.success(tokenMap);
     }
 
-    // (자동)로그인 실패
-    @GetMapping("/oauth2/loginFail")
-    public Object loginFail(@RequestParam String socialType){
-        log.info(">> [Controller]UserController loginFail - 로그인 실패");
+    // 일반 로그인 실패
+    @GetMapping("/login/loginFail")
+    public Object generalLoginFail(@RequestParam String error, @RequestParam String attemptFailedCount){
+        log.info(">> [Controller]UserController generalLoginFail - 일반 로그인 실패");
 
-        if(socialType != null && !EMPTY.equals(socialType)){
-            throw new CustomException(ErrorCode.LOGIN_HAS_EMAIL_ERROR, socialType + "를 통해 동일한 이메일이 가입되어 있습니다.");
+        log.info("error : " + error);
+        log.info("attemptFailedCount : " + attemptFailedCount);
+
+        if(error != null && !EMPTY.equals(error)) {
+            if(ID_PASS_WRONG.equals(error)){
+                throw new CustomException(ErrorCode.LOGIN_INVALID_PASSWORD, attemptFailedCount + "/5 회 오류");
+            }else if (NOT_FOUND.equals(error)){
+                throw new CustomException(ErrorCode.LOGIN_ID_NOT_EXIST);
+            }else if(LOCKED.equals(error)) {
+                throw new CustomException(ErrorCode.LOGIN_ACCOUNT_LOCKED, "5분 후에 다시 시도하세요.");
+            }else{
+                throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
+            }
         }else{
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }

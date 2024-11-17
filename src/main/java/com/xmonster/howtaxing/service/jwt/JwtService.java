@@ -42,29 +42,31 @@ public class JwtService {
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
     private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
     private static final String EMAIL_CLAIM = "email";
+    private static final String SOCIAL_ID_CLAIM = "socialId";
     private static final String BEARER = "Bearer ";
 
     private final UserRepository userRepository;
 
-    /**
+    /** (GGMANYAR) - TOBE
      * AccessToken 생성 메소드
      */
-    public String createAccessToken(String email) {
+    public String createAccessToken(String socialId) {
         Date now = new Date();
         return JWT.create() // JWT 토큰을 생성하는 빌더 반환
                 .withSubject(ACCESS_TOKEN_SUBJECT) // JWT의 Subject 지정 -> AccessToken이므로 AccessToken
                 .withExpiresAt(new Date(now.getTime() + accessTokenExpirationPeriod)) // 토큰 만료 시간 설정
 
-                //클레임으로는 저희는 email 하나만 사용합니다.
-                //추가적으로 식별자나, 이름 등의 정보를 더 추가하셔도 됩니다.
-                //추가하실 경우 .withClaim(클래임 이름, 클래임 값) 으로 설정해주시면 됩니다
-                .withClaim(EMAIL_CLAIM, email)
+                // 클레임으로는 socialId 하나만 사용
+                // 추가적으로 식별자나, 이름 등의 정보를 더 추가해도 상관없음
+                // 추가할 경우 .withClaim(클래임 이름, 클래임 값) 으로 설정
+                //.withClaim(EMAIL_CLAIM, email)
+                .withClaim(SOCIAL_ID_CLAIM, socialId)
                 .sign(Algorithm.HMAC512(secretKey)); // HMAC512 알고리즘 사용, application-jwt.yml에서 지정한 secret 키로 암호화
     }
 
     /**
      * RefreshToken 생성
-     * RefreshToken은 Claim에 email도 넣지 않으므로 withClaim() X
+     * RefreshToken은 Claim에 socialId도 넣지 않으므로 withClaim() X
      */
     public String createRefreshToken() {
         Date now = new Date();
@@ -117,7 +119,7 @@ public class JwtService {
                 .map(refreshToken -> refreshToken.replace(BEARER, ""));
     }
 
-    /**
+    /** (GGMANYAR) - ASIS
      * AccessToken에서 Email 추출
      * 추출 전에 JWT.require()로 검증기 생성
      * verify로 AceessToken 검증 후
@@ -131,6 +133,27 @@ public class JwtService {
                     .build() // 반환된 빌더로 JWT verifier 생성
                     .verify(accessToken) // accessToken을 검증하고 유효하지 않다면 예외 발생
                     .getClaim(EMAIL_CLAIM) // claim(Email) 가져오기
+                    .asString());
+        } catch (Exception e) {
+            log.error("액세스 토큰이 유효하지 않습니다.");
+            return Optional.empty();
+        }
+    }
+
+    /** (GGMANYAR) - TOBE
+     * AccessToken에서 SocialId 추출
+     * 추출 전에 JWT.require()로 검증기 생성
+     * verify로 AceessToken 검증 후
+     * 유효하다면 getClaim()으로 이메일 추출
+     * 유효하지 않다면 빈 Optional 객체 반환
+     */
+    public Optional<String> extractSocialId(String accessToken) {
+        try {
+            // 토큰 유효성 검사하는 데에 사용할 알고리즘이 있는 JWT verifier builder 반환
+            return Optional.ofNullable(JWT.require(Algorithm.HMAC512(secretKey))
+                    .build() // 반환된 빌더로 JWT verifier 생성
+                    .verify(accessToken) // accessToken을 검증하고 유효하지 않다면 예외 발생
+                    .getClaim(SOCIAL_ID_CLAIM) // claim(socialId) 가져오기
                     .asString());
         } catch (Exception e) {
             log.error("액세스 토큰이 유효하지 않습니다.");
@@ -152,11 +175,11 @@ public class JwtService {
         response.setHeader(refreshHeader, refreshToken);
     }
 
-    /**
+    /** (GGMANYAR) - TOBE
      * RefreshToken DB 저장(업데이트)
      */
-    public void updateRefreshToken(String email, String refreshToken) {
-        userRepository.findByEmail(email)
+    public void updateRefreshToken(String socialId, String refreshToken) {
+        userRepository.findBySocialId(socialId)
                 .ifPresentOrElse(
                         user -> user.updateRefreshToken(refreshToken),
                         () -> new Exception("일치하는 회원이 없습니다.")
