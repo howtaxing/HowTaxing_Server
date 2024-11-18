@@ -5,6 +5,7 @@ import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.house.*;
 import com.xmonster.howtaxing.dto.house.HouseListSearchResponse.HouseSimpleInfoResponse;
+import com.xmonster.howtaxing.dto.house.HouseSaveAllRequest.HouseSaveRequest;
 import com.xmonster.howtaxing.dto.hyphen.HyphenAuthResponse;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseResultInfo;
@@ -517,7 +518,72 @@ public class HouseService {
     }
 
     // 보유주택 일괄등록
-    public Object saveAllHouse(List<House> houses) throws Exception {
+    public Object saveAllHouse(HouseSaveAllRequest houseSaveAllRequest) throws Exception {
+        log.info(">> HouseService saveAllHouse - 보유주택 일괄등록");
+
+        Long userId = userUtil.findCurrentUser().getId();   // 호출 사용자
+
+        if(houseSaveAllRequest == null){
+            throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "보유주택 일괄등록 정보가 입력되지 않았습니다.");
+        }
+
+        String calcType = StringUtils.defaultString(houseSaveAllRequest.getCalcType());
+        List<HouseSaveRequest> houseSaveRequestList = houseSaveAllRequest.getHouseSaveRequestList();
+
+        if(calcType == null){
+            throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "보유주택 일괄등록을 위한 계산 유형 값이 입력되지 않았습니다.");
+        }
+
+        if(houseSaveRequestList == null || houseSaveRequestList.isEmpty()){
+            throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "보유주택 일괄등록을 위한 등록할 주택이 입력되지 않았습니다.");
+        }
+
+        for(HouseSaveRequest houseSaveRequest : houseSaveRequestList){
+            houseRepository.saveAndFlush(
+                    House.builder()
+                            .userId(userId)
+                            .houseType(houseSaveRequest.getHouseType())
+                            .houseName(houseSaveRequest.getHouseName())
+                            .detailAdr(houseSaveRequest.getDetailAdr())
+                            .jibunAddr(houseSaveRequest.getJibunAddr())
+                            .roadAddr(houseSaveRequest.getRoadAddr())
+                            .roadAddrRef(houseSaveRequest.getRoadAddrRef())
+                            .bdMgtSn(houseSaveRequest.getBdMgtSn())
+                            .admCd(houseSaveRequest.getAdmCd())
+                            .rnMgtSn(houseSaveRequest.getRnMgtSn())
+                            .ownerCnt(1)
+                            .userProportion(100)
+                            .isMoveInRight(houseSaveRequest.getIsMoveInRight())
+                            .isDestruction(false)
+                            .sourceType(TWO)
+                            .build());
+        }
+
+        // DB에 보유한 주택목록을 가져와서 응답값으로 세팅
+        List<House> houseListFromDB = houseUtil.findOwnHouseList();
+        List<HouseSimpleInfoResponse> houseSimpleInfoResponseList = new ArrayList<>();
+        if(houseListFromDB != null){
+            for(House house : houseListFromDB){
+                houseSimpleInfoResponseList.add(
+                        HouseSimpleInfoResponse.builder()
+                                .houseId(house.getHouseId())
+                                .houseType(house.getHouseType())
+                                .houseName(house.getHouseName())
+                                .detailAdr(house.getDetailAdr())
+                                .isMoveInRight(house.getIsMoveInRight())
+                                .isRequiredDataMissing(checkOwnHouseRequiredDataMissing(house,calcType))
+                                .build());
+            }
+        }
+
+        return ApiResponse.success(
+                HouseListSearchResponse.builder()
+                        .listCnt(houseSimpleInfoResponseList.size())
+                        .list(houseSimpleInfoResponseList)
+                        .build());
+    }
+
+    /*public Object saveAllHouse(List<House> houses) throws Exception {
         if (houses == null || houses.isEmpty()) {
             throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "등록할 주택이 입력되지 않았습니다.");
         }
@@ -548,7 +614,7 @@ public class HouseService {
         }
 
         return ApiResponse.success(response);
-    }
+    }*/
 
     // (양도주택)거주기간 조회
     public Object getHouseStayPeriod(HouseStayPeriodRequest houseStayPeriodRequest) throws Exception {

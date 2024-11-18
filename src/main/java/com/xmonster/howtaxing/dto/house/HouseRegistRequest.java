@@ -12,7 +12,7 @@ public class HouseRegistRequest {
     private String houseName;           // 주택명
     private String detailAdr;           // 상세주소
     private String jibunAddr;           // 지번주소
-    private String roadAddr;            // 도로명주소
+    private String roadAddr;            // 도로명주소ㄴ
     private String roadAddrRef;         // 도로명주소참고항목
     private String bdMgtSn;             // 건물관리번호
     private String admCd;               // 행정구역코드

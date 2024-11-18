@@ -132,12 +132,17 @@ public class HouseController {
 
     // 로드한 정보의 입력값을 모두 채운 후 주택 목록 전체를 보유주택으로 저장
     @PostMapping("/house/saveAllHouse")
-    public Object saveAllHouse(@RequestBody List<House> houses) throws Exception {
+    public Object saveAllHouse(@RequestBody HouseSaveAllRequest houseSaveAllRequest) throws Exception {
+        log.info(">> [Controller]HouseController saveAllHouse - 보유주택 리스트 일괄 저장");
+        return houseService.saveAllHouse(houseSaveAllRequest);
+    }
+
+    /*public Object saveAllHouse(@RequestBody List<House> houses) throws Exception {
         //TODO: process POST request
         log.info(">> [Controller]HouseController saveAllHouse - 보유주택 리스트 일괄 저장");
-        
+
         return houseService.saveAllHouse(houses);
-    }
+    }*/
 
     // 재산세 기반 주택 불러오기
     @GetMapping("/house/getEtcHouse")
