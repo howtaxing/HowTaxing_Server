@@ -553,7 +553,8 @@ public class HouseService {
                             .rnMgtSn(houseSaveRequest.getRnMgtSn())
                             .ownerCnt(1)
                             .userProportion(100)
-                            .isMoveInRight(houseSaveRequest.getIsMoveInRight())
+                            //.isMoveInRight(houseSaveRequest.getIsMoveInRight())
+                            .isMoveInRight(false)
                             .isDestruction(false)
                             .sourceType(TWO)
                             .build());
