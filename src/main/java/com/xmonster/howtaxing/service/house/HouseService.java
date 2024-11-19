@@ -556,7 +556,7 @@ public class HouseService {
                             //.isMoveInRight(houseSaveRequest.getIsMoveInRight())
                             .isMoveInRight(false)
                             .isDestruction(false)
-                            .sourceType(TWO)
+                            .sourceType(ONE)
                             .build());
         }
 
