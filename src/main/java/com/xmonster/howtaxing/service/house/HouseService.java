@@ -559,7 +559,7 @@ public class HouseService {
                             .area(houseSaveRequest.getArea())
                             .ownerCnt(1)
                             .userProportion(100)
-                            .isMoveInRight(houseSaveRequest.getIsMoveInRight())
+                            .isMoveInRight(false)
                             .isDestruction(false)
                             .sourceType(ONE)
                             .build());
