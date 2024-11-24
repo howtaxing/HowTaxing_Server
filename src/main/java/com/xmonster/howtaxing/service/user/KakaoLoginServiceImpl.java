@@ -53,7 +53,7 @@ public class KakaoLoginServiceImpl implements SocialLoginService {
                 authorizationCode
         );
 
-        log.info("kaka auth response {}", response.toString());
+        log.info("kakao auth response {}", response.toString());
 
         return new Gson()
                 .fromJson(

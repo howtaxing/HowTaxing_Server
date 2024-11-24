@@ -1,21 +1,23 @@
 package com.xmonster.howtaxing.service.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
-import com.xmonster.howtaxing.dto.user.SocialLogoutAndUnlinkRequest;
-import com.xmonster.howtaxing.dto.user.SocialLogoutAndUnlinkResponse;
-import com.xmonster.howtaxing.dto.user.UserLoginDto;
-import com.xmonster.howtaxing.dto.user.UserSignUpDto;
+import com.xmonster.howtaxing.dto.user.*;
 import com.xmonster.howtaxing.feign.kakao.KakaoUserApi;
 import com.xmonster.howtaxing.feign.naver.NaverAuthApi;
+import com.xmonster.howtaxing.feign.naver.NaverUserApi;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
 import com.xmonster.howtaxing.repository.user.UserRepository;
+import com.xmonster.howtaxing.service.jwt.JwtService;
 import com.xmonster.howtaxing.service.redis.RedisService;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.type.Role;
 import com.xmonster.howtaxing.type.SocialType;
+import com.xmonster.howtaxing.utils.GsonLocalDateTimeAdapter;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +29,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -41,14 +45,23 @@ public class UserService {
     private final HouseRepository houseRepository;
     private final UserUtil userUtil;
     private final KakaoUserApi kakaoUserApi;
+    private final NaverUserApi naverUserApi;
     private final NaverAuthApi naverAuthApi;
     private final RedisService redisService;
     private final PasswordEncoder passwordEncoder;
 
+    //private final KakaoLoginServiceImpl kakaoLoginService;
+    //private final NaverLoginServiceImpl naverLoginService;
+    private final JwtService jwtService;
+
     @Value("${spring.security.oauth2.client.registration.naver.client-id}")
     private String naverAppKey;
+
     @Value("${spring.security.oauth2.client.registration.naver.client-secret}")
     private String naverAppSecret;
+
+    @Value("${jwt.access.expiration}")
+    private String accessTokenExpiration;
 
     // 회원가입
     public Object signUp(UserSignUpDto userSignUpDto) throws Exception {
@@ -151,9 +164,11 @@ public class UserService {
     // 로그인
     public Object login(UserLoginDto userLoginDto) throws Exception {
         log.info(">> [Service]UserService login - 로그인");
+
         if(userLoginDto != null){
             log.info("userLoginDto : " + userLoginDto.toString());
         }
+
         return ApiResponse.success(Map.of("result", "로그인이 완료되었습니다."));
     }
 
@@ -174,6 +189,138 @@ public class UserService {
         }
 
         return ApiResponse.success(Map.of("result", "로그아웃이 완료되었습니다."));
+    }
+
+    public Object socialLogin(SocialLoginRequest socialLoginRequest) throws Exception {
+        log.info(">> [Service]UserService socialLogin - 소셜로그인");
+
+        if(socialLoginRequest == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인을 위한 입력값이 존재하지 않습니다.");
+        if(socialLoginRequest.getSocialType() == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 유형이 입력되지 않았습니다.");
+        if(socialLoginRequest.getAccessToken() == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "엑세스 토큰이 입력되지 않았습니다.");
+
+        SocialUserResponse socialUserResponse = null;
+
+        // 카카오 로그인
+        if(SocialType.KAKAO.equals(socialLoginRequest.getSocialType())){
+            //socialUserResponse = kakaoLoginService.getUserInfo(socialLoginRequest.getAccessToken());
+            socialUserResponse = this.getKakaoUserInfo(socialLoginRequest.getAccessToken());
+        }
+        // 네이버 로그인
+        else if(SocialType.NAVER.equals(socialLoginRequest.getSocialType())){
+            //socialUserResponse = naverLoginService.getUserInfo(socialLoginRequest.getAccessToken());
+            socialUserResponse = this.getNaverUserInfo(socialLoginRequest.getAccessToken());
+        }
+
+        if(socialUserResponse == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 응답값이 없습니다.");
+
+        String socialId = socialUserResponse.getId();
+        if(StringUtils.isBlank(socialId)) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 응답값이 없습니다.");
+        
+        User user = userRepository.findBySocialId(socialId).orElse(null);
+        
+        // 비회원(GUEST로 회원가입 처리)
+        if(user == null){
+            user = User.builder()
+                    .socialType(socialLoginRequest.getSocialType())
+                    .socialId(socialId)
+                    .email(socialUserResponse.getEmail())
+                    .name(socialUserResponse.getName())
+                    .socialAccessToken(socialLoginRequest.getAccessToken())
+                    .role(Role.GUEST)
+                    .build();
+
+            userRepository.save(user);
+        }
+
+        String accessToken = jwtService.createAccessToken(socialId);
+        String refreshToken = jwtService.createRefreshToken();
+
+        user.setAttemptFailedCount(0);
+        user.setIsLocked(false);
+        user.updateRefreshToken(refreshToken);
+
+        userRepository.save(user);
+
+        //response.addHeader(jwtService.getAccessHeader(), "Bearer " + accessToken);
+        //response.addHeader(jwtService.getRefreshHeader(), "Bearer " + refreshToken);
+
+        //jwtService.sendAccessAndRefreshToken(response, accessToken, refreshToken);
+        //jwtService.updateRefreshToken(user.getSocialId(), refreshToken);
+
+        //user.updateRefreshToken(refreshToken);
+        //userRepository.saveAndFlush(user);
+
+        log.info("로그인에 성공하였습니다. 아이디 : {}", user.getSocialId());
+        log.info("로그인에 성공하였습니다. AccessToken : {}", accessToken);
+        log.info("발급된 AccessToken 만료 기간 : {}", accessTokenExpiration);
+
+        return ApiResponse.success(
+                SocialLoginResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .role(user.getRole())
+                        .build());
+
+        //return ApiResponse.success(Map.of("result", "로그인이 완료되었습니다."));
+    }
+
+    public SocialUserResponse getKakaoUserInfo(String accessToken) {
+        Map<String, String> headerMap = new HashMap<>();
+        headerMap.put("authorization", " Bearer " + accessToken);
+
+        ResponseEntity<?> response = kakaoUserApi.getUserInfo(headerMap);
+
+        log.info("kakao user response");
+        log.info(response.toString());
+
+        String jsonString = response.getBody().toString();
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeAdapter(LocalDateTime.class, new GsonLocalDateTimeAdapter())
+                .create();
+
+        KaKaoLoginResponse kaKaoLoginResponse = gson.fromJson(jsonString, KaKaoLoginResponse.class);
+        KaKaoLoginResponse.KakaoLoginData kakaoLoginData = Optional.ofNullable(kaKaoLoginResponse.getKakao_account())
+                .orElse(KaKaoLoginResponse.KakaoLoginData.builder().build());
+
+        String name = Optional.ofNullable(kakaoLoginData.getProfile())
+                .orElse(KaKaoLoginResponse.KakaoLoginData.KakaoProfile.builder().build())
+                .getNickname();
+
+        return SocialUserResponse.builder()
+                .id(kaKaoLoginResponse.getId())
+                .gender(kakaoLoginData.getGender())
+                .name(name)
+                .email(kakaoLoginData.getEmail())
+                .build();
+    }
+
+    public SocialUserResponse getNaverUserInfo(String accessToken) {
+        Map<String ,String> headerMap = new HashMap<>();
+        headerMap.put("authorization", "Bearer " + accessToken);
+
+        ResponseEntity<?> response = naverUserApi.getUserInfo(headerMap);
+
+        log.info("naver user response");
+        log.info(response.toString());
+
+        String jsonString = response.getBody().toString();
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeAdapter(LocalDateTime.class, new GsonLocalDateTimeAdapter())
+                .create();
+
+        NaverLoginResponse naverLoginResponse = gson.fromJson(jsonString, NaverLoginResponse.class);
+        NaverLoginResponse.Response naverUserInfo = naverLoginResponse.getResponse();
+
+        return SocialUserResponse.builder()
+                .id(naverUserInfo.getId())
+                .gender(naverUserInfo.getGender())
+                .name(naverUserInfo.getName())
+                .email(naverUserInfo.getEmail())
+                .build();
     }
 
     // 사용자 소셜계정 로그아웃 및 회원탈퇴 처리

@@ -2,6 +2,7 @@ package com.xmonster.howtaxing.controller.user;
 
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
+import com.xmonster.howtaxing.dto.user.SocialLoginRequest;
 import com.xmonster.howtaxing.dto.user.UserLoginDto;
 import com.xmonster.howtaxing.dto.user.UserSignUpDto;
 import com.xmonster.howtaxing.service.user.UserService;
@@ -60,6 +61,13 @@ public class UserController {
     public Object logout() throws Exception {
         log.info(">> [Controller]UserController logout - 로그아웃");
         return userService.logout();
+    }
+
+    // 로그인(아이디/비밀번호)
+    @PostMapping("/user/socialLogin")
+    public Object socialLogin(@RequestBody SocialLoginRequest socialLoginRequest) throws Exception {
+        log.info(">> [Controller]UserController socialLogin - 소셜로그인");
+        return userService.socialLogin(socialLoginRequest);
     }
 
     /*@GetMapping("/oauth2/loginSuccess2")

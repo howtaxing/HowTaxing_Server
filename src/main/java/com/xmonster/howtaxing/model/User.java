@@ -22,7 +22,7 @@ public class User extends DateEntity {
     private String password;                // 비밀번호
 
     @Enumerated(EnumType.STRING)
-    private SocialType socialType;          // SNS유형(0:EMAIL, 1:KAKAO, 2:NAVER, 3:GOOGLE, 4:APPLE, 5:ETC)
+    private SocialType socialType;          // SNS유형(0:IDPASS, 1:KAKAO, 2:NAVER, 3:GOOGLE, 4:APPLE, 5:ETC)
 
     private String socialId;                // SNS아이디(로그인 한 소셜 타입의 식별자 값 (일반 로그인인 경우 IDPASS))
     private String email;                   // 이메일

@@ -95,6 +95,18 @@ public enum ErrorCode {
     /* 리뷰 관련 */
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),
 
+    /* 메시지 관련 */
+    //MESSAGE_SMS_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-001", "SMS 메시지 발송을 위한 입력값이 올바르지 않습니다."),
+    //MESSAGE_SMS_OUTPUT_ERROR(1, HttpStatus.OK, "MESSAGE-002", "SMS 메시지 발송 중 오류가 발생했습니다."),
+    //MESSAGE_SMS_SYSTEM_ERROR(1, HttpStatus.OK, "MESSAGE-003", "SMS 메시지 시스템에 오류가 발생하여 메시지를 발송할 수 없습니다."),
+
+    SMS_AUTH_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-001", "인증번호 발송 입력값이 올바르지 않아요."),
+    SMS_AUTH_COUNT_ERROR(1, HttpStatus.OK, "MESSAGE-002", "인증번호는 하루에 10회까지만 발송할 수 있어요."),
+    SMS_AUTH_SEND_ERROR(1, HttpStatus.OK, "MESSAGE-003", "인증번호 발송에 실패했어요."),
+    SMS_AUTH_CHECK_ERROR(1, HttpStatus.OK, "MESSAGE-004", "인증번호 검증에 실패했어요."),
+    SMS_AUTH_MATCH_ERROR(1, HttpStatus.OK, "MESSAGE-005", "인증번호가 정확하지 않아요."),
+    SMS_AUTH_TIME_ERROR(1, HttpStatus.OK, "MESSAGE-006", "인증시간이 만료되었어요."),
+
     /* 시스템 관련 */
     SYSTEM_UNKNOWN_ERROR(2, HttpStatus.OK, "SYSTEM-001", "알 수 없는 오류가 발생했습니다."),
 
