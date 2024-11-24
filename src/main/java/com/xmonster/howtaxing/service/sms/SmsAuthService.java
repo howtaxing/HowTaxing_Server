@@ -12,6 +12,7 @@ import com.xmonster.howtaxing.feign.sms.SmsSendApi;
 import com.xmonster.howtaxing.model.SmsAuthInfo;
 import com.xmonster.howtaxing.repository.sms.SmsAuthRepository;
 import com.xmonster.howtaxing.type.ErrorCode;
+import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +44,7 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 public class SmsAuthService {
     private final SmsSendApi smsSendApi;
     private final SmsAuthRepository smsAuthRepository;
+    private final UserUtil userUtil;
 
     private static final String SMS_STATUS_CODE_SUCCESS = "202";    // SMS 발송 성공(Naver Cloud Platform 응답값)
 
@@ -67,6 +69,12 @@ public class SmsAuthService {
 
         String id = smsSendAuthCodeRequest.getId();
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber().replace(HYPHEN, EMPTY);
+
+        if(StringUtils.isBlank(id)){
+            id = userUtil.findCurrentUserSocialId();
+        }
+
+        if(StringUtils.isBlank(id)) throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "일반로그인인 경우 아이디가 필수입니다.");
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
@@ -138,12 +146,7 @@ public class SmsAuthService {
             throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR);
         }
 
-        String id = smsSendAuthCodeRequest.getId();
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber();
-
-        if(StringUtils.isBlank(id)){
-            throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
-        }
 
         if(StringUtils.isBlank(phoneNumber)){
             throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "휴대폰번호가 입력되지 않았습니다.");

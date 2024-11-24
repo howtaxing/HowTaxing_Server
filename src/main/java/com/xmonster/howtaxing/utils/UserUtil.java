@@ -22,4 +22,8 @@ public class UserUtil {
     public Long findCurrentUserId() {
         return findCurrentUser().getId();
     }
+
+    public String findCurrentUserSocialId(){
+        return findCurrentUser().getSocialId();
+    }
 }

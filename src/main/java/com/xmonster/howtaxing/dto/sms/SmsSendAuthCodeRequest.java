@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class SmsSendAuthCodeRequest {
-    private String id;              // 아이디(사용자입력ID 또는 소셜ID)
-    private String phoneNumber;     // 전화번호(휴대폰번호)
+    private String phoneNumber;     // [필수] 전화번호(휴대폰번호)
+    private String id;              // [선택] 아이디(사용자입력ID 또는 소셜ID)
 }
