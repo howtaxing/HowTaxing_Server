@@ -120,9 +120,24 @@ public class UserService {
                     .attemptFailedCount(0)
                     .build();
 
+            String accessToken = jwtService.createAccessToken(id);
+            String refreshToken = jwtService.createRefreshToken();
+
+            createdUser.updateRefreshToken(refreshToken);
             createdUser.passwordEncode(passwordEncoder);
 
-            findUser = userRepository.save(createdUser);
+            userRepository.save(createdUser);
+
+            log.info("회원가입에 성공하였습니다. 아이디 : {}", createdUser.getSocialId());
+            log.info("회원가입에 성공하였습니다. AccessToken : {}", accessToken);
+            log.info("발급된 AccessToken 만료 기간 : {}", accessTokenExpiration);
+
+            return ApiResponse.success(
+                    SocialLoginResponse.builder()
+                            .accessToken(accessToken)
+                            .refreshToken(refreshToken)
+                            .role(createdUser.getRole())
+                            .build());
         }
         // 소셜 회원가입
         else{
@@ -130,11 +145,12 @@ public class UserService {
 
             findUser.authorizeUser(); // 유저 권한 세팅(GUEST -> USER)
             findUser.setMktAgr(isMktAgr); // 마케팅동의여부 세팅
+
+            return ApiResponse.success(
+                    SocialLoginResponse.builder()
+                            .role(findUser.getRole())
+                            .build());
         }
-
-        resultMap.put("role", findUser.getRole());
-
-        return ApiResponse.success(resultMap);
     }
 
     // 아이디 중복체크
@@ -284,9 +300,10 @@ public class UserService {
         String phoneNumber = userFindIdRequest.getPhoneNumber();
         String authKey = userFindIdRequest.getAuthKey();
 
-        String socialId = userUtil.findUserSocialIdByPhoneNumber(userFindIdRequest.getPhoneNumber());
+        String socialId = userUtil.findUserSocialIdByPhoneNumber(phoneNumber);
         if(StringUtils.isBlank(socialId)) throw new CustomException(ErrorCode.ID_FIND_INPUT_ERROR, "입력한 전화번호로 아이디를 찾지 못했어요.");
 
+        // 인증키 검증
         boolean isCheckAuthKey = smsAuthService.checkAuthKey(authKey);
         if(!isCheckAuthKey) throw new CustomException(ErrorCode.ID_FIND_AUTH_ERROR);
 
@@ -303,9 +320,37 @@ public class UserService {
         // SMS로 아이디 정보 발송 실패
         if(!isSendMessage) throw new CustomException(ErrorCode.ID_FIND_MESSAGE_ERROR);
 
+        // 인증키 사용 완료 세팅
         smsAuthService.setAuthKeyUsed(authKey);
 
         return ApiResponse.success(Map.of("result", "아이디를 문자로 전송 완료했어요."));
+    }
+
+    // 비밀번호 재설정
+    public Object resetPassword(UserResetPasswordRequest userResetPasswordRequest) throws Exception {
+        log.info(">> [Service]UserService resetPassword - 비밀번호 재설정");
+
+        this.validationCheckForResetPassword(userResetPasswordRequest);
+
+        String phoneNumber = userResetPasswordRequest.getPhoneNumber();
+        String id = userResetPasswordRequest.getId();
+        String authKey = userResetPasswordRequest.getAuthKey();
+        String newPassword = userResetPasswordRequest.getNewPassword();
+
+        // 인증키 검증
+        boolean isCheckAuthKey = smsAuthService.checkAuthKey(authKey);
+        if(!isCheckAuthKey) throw new CustomException(ErrorCode.PW_RESET_AUTH_ERROR);
+
+        User user = userUtil.findUserBySocialId(id);
+        user.setPassword(newPassword);
+        user.passwordEncode(passwordEncoder);
+
+        userRepository.save(user);
+
+        // 인증키 사용 완료 세팅
+        smsAuthService.setAuthKeyUsed(authKey);
+
+        return ApiResponse.success(Map.of("result", "비밀번호 재설정이 완료되었어요."));
     }
 
     // 아이디 찾기 유효성 검증
@@ -318,25 +363,80 @@ public class UserService {
         String authKey = userFindIdRequest.getAuthKey();
 
         if(StringUtils.isBlank(phoneNumber)){
-            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "휴대폰번호가 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.ID_FIND_INPUT_ERROR, "휴대폰번호가 입력되지 않았습니다.");
         }else{
             phoneNumber = phoneNumber.replace(HYPHEN, EMPTY);
 
             if(phoneNumber.length() != 11){
-                throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 휴대폰번호를 입력해주세요.");
+                throw new CustomException(ErrorCode.ID_FIND_INPUT_ERROR, "정확한 휴대폰번호를 입력해주세요.");
             }
         }
         
         if(StringUtils.isBlank(authKey)){
-            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "인증키가 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.ID_FIND_AUTH_ERROR, "인증키가 입력되지 않았습니다.");
         }else{
             if(authKey.length() != 30){
-                throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
+                throw new CustomException(ErrorCode.ID_FIND_AUTH_ERROR, "정확한 인증키를 입력해주세요.");
             }
         }
     }
 
-    // 비밀번호 재설정
+    // 비밀번호 재설정 유효성 검증
+    private void validationCheckForResetPassword(UserResetPasswordRequest userResetPasswordRequest) {
+        if(userResetPasswordRequest == null){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR);
+        }
+
+        String phoneNumber = userResetPasswordRequest.getPhoneNumber();
+        String id = userResetPasswordRequest.getId();
+        String authKey = userResetPasswordRequest.getAuthKey();
+        String newPassword = userResetPasswordRequest.getNewPassword();
+        String newPasswordConfirm = userResetPasswordRequest.getNewPasswordConfirm();
+
+        String socialId = userUtil.findUserSocialIdByPhoneNumber(phoneNumber);
+
+        if(StringUtils.isBlank(phoneNumber)){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "휴대폰번호가 입력되지 않았습니다.");
+        }else{
+            phoneNumber = phoneNumber.replace(HYPHEN, EMPTY);
+
+            if(phoneNumber.length() != 11){
+                throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "정확한 휴대폰번호를 입력해주세요.");
+            }
+        }
+        
+        if(StringUtils.isBlank(id)){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(authKey)){
+            throw new CustomException(ErrorCode.PW_RESET_AUTH_ERROR, "인증키가 입력되지 않았습니다.");
+        }else{
+            if(authKey.length() != 30){
+                throw new CustomException(ErrorCode.PW_RESET_AUTH_ERROR, "정확한 인증키를 입력해주세요.");
+            }
+        }
+        
+        if(StringUtils.isBlank(newPassword)){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "새 비밀번호가 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(newPasswordConfirm)){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "새 비밀번호 확인 값이 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(socialId)){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "입력한 휴대폰번호로 아이디를 찾지 못했어요.");
+        }
+
+        if(!id.equals(socialId)){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "해당 휴대폰번호로 가입된 아이디가 아니에요.");
+        }
+
+        if(!newPassword.equals(newPasswordConfirm)){
+            throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "새 비밀번호와 새 비밀번호 확인 값이 일치하지 않아요.");
+        }
+    }
 
 
     private SocialUserResponse getKakaoUserInfo(String accessToken) {

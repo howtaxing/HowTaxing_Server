@@ -27,6 +27,10 @@ public class UserUtil {
         return findCurrentUser().getSocialId();
     }
 
+    public User findUserBySocialId(String socialId) {
+        return userRepository.findBySocialId(socialId).orElse(null);
+    }
+
     public User findUserByPhoneNumber(String phoneNumber) {
         return userRepository.findByPhoneNumber(phoneNumber);
     }

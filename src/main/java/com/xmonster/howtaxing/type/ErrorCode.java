@@ -33,6 +33,11 @@ public enum ErrorCode {
     ID_FIND_INPUT_ERROR(1, HttpStatus.OK, "FIND-002", "아이디 찾기를 위한 요청 값이 올바르지 않아요."),
     ID_FIND_MESSAGE_ERROR(1, HttpStatus.OK, "FIND-003", "아이디 정보를 전달할 메시지 발송에 실패했어요"),
 
+    /* 비밀번호 재설정 관련 */
+    PW_RESET_AUTH_ERROR(1, HttpStatus.OK, "FIND-001", "비밀번호 재설정 위한 인증키 검증에 실패했어요."),
+    PW_RESET_INPUT_ERROR(1, HttpStatus.OK, "FIND-002", "비밀번호 재설정을 위한 요청 값이 올바르지 않아요."),
+    PW_RESET_FAIL_ERROR(1, HttpStatus.OK, "FIND-003", "비밀번호 재설정에 실패했어요"),
+
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),
     HOUSE_JUSOGOV_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-002", "공공기관에서 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),

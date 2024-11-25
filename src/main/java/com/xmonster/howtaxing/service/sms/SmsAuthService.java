@@ -71,7 +71,8 @@ public class SmsAuthService {
         AuthType authType = AuthType.valueOf(smsSendAuthCodeRequest.getAuthType());
 
         if(StringUtils.isBlank(id)){
-            id = userUtil.findCurrentUserSocialId();
+            //id = userUtil.findCurrentUserSocialId();
+            id = userUtil.findUserSocialIdByPhoneNumber(phoneNumber);
         }
 
         if(StringUtils.isBlank(id)) throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "아이디 정보가 확인되지 않아요.");

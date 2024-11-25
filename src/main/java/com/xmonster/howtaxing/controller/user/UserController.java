@@ -3,10 +3,7 @@ package com.xmonster.howtaxing.controller.user;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.sms.SmsCheckAuthCodeRequest;
-import com.xmonster.howtaxing.dto.user.SocialLoginRequest;
-import com.xmonster.howtaxing.dto.user.UserFindIdRequest;
-import com.xmonster.howtaxing.dto.user.UserLoginDto;
-import com.xmonster.howtaxing.dto.user.UserSignUpDto;
+import com.xmonster.howtaxing.dto.user.*;
 import com.xmonster.howtaxing.service.user.UserService;
 import com.xmonster.howtaxing.type.ErrorCode;
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
@@ -206,7 +203,11 @@ public class UserController {
     }
 
     // 비밀번호 재설정(일반로그인)
-
+    @PostMapping("/user/resetPassword")
+    public Object resetPassword(@RequestBody UserResetPasswordRequest userResetPasswordRequest) throws Exception {
+        log.info(">> [Controller]UserController resetPassword - 비밀번호 재설정(일반로그인)");
+        return userService.resetPassword(userResetPasswordRequest);
+    }
 
     @GetMapping("/user/callback")
     public void userCallback(@RequestParam String userId, @RequestParam String referrerType){

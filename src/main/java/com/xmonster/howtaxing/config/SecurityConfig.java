@@ -76,7 +76,7 @@ public class SecurityConfig {
                 .antMatchers("/","/css/**","/images/**","/js/**","/favicon.ico","/h2-console/**").permitAll()
                 .antMatchers("/user/signUp", "/user/idCheck").permitAll()                           // '회원가입', '아이디 중복체크' 접근 허용
                 .antMatchers("/user/socialLogin").permitAll()                                          // '소셜로그인(카카오, 네이버)' 접근 허용
-                .antMatchers("/user/findUserId").permitAll()                                           // '아이디 찾기' 접근 허용
+                .antMatchers("/user/findUserId", "/user/resetPassword").permitAll()                 // '아이디 찾기', '비밀번호 재설정' 접근 허용
                 .antMatchers("/login/oauth2/code/kakao", "/login/oauth2/code/naver").permitAll()    // '소셜로그인(카카오, 네이버)' 접근 허용
                 .antMatchers("/oauth2/loginSuccess", "/oauth2/loginFail").permitAll()               // '소셜로그인 완료' 접근 허용
                 .antMatchers("/login/loginSuccess", "/login/loginFail").permitAll()                 // '일반로그인 완료' 접근 허용
