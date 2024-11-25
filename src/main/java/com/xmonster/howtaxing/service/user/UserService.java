@@ -5,25 +5,19 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
-import com.xmonster.howtaxing.dto.sms.SmsCheckAuthCodeRequest;
 import com.xmonster.howtaxing.dto.sms.SmsSendMessageRequest;
 import com.xmonster.howtaxing.dto.user.*;
 import com.xmonster.howtaxing.feign.kakao.KakaoUserApi;
 import com.xmonster.howtaxing.feign.naver.NaverAuthApi;
 import com.xmonster.howtaxing.feign.naver.NaverUserApi;
-import com.xmonster.howtaxing.model.SmsAuthInfo;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
-import com.xmonster.howtaxing.repository.sms.SmsAuthRepository;
 import com.xmonster.howtaxing.repository.user.UserRepository;
 import com.xmonster.howtaxing.service.jwt.JwtService;
 import com.xmonster.howtaxing.service.redis.RedisService;
 import com.xmonster.howtaxing.service.sms.SmsAuthService;
 import com.xmonster.howtaxing.service.sms.SmsMessageService;
-import com.xmonster.howtaxing.type.AuthType;
-import com.xmonster.howtaxing.type.ErrorCode;
-import com.xmonster.howtaxing.type.Role;
-import com.xmonster.howtaxing.type.SocialType;
+import com.xmonster.howtaxing.type.*;
 import com.xmonster.howtaxing.utils.GsonLocalDateTimeAdapter;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +49,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final HouseRepository houseRepository;
-    private final SmsAuthRepository smsAuthRepository;
 
     private final UserUtil userUtil;
 
@@ -78,35 +71,25 @@ public class UserService {
     public Object signUp(UserSignUpDto userSignUpDto) throws Exception {
         log.info(">> [Service]UserService signUp - 회원가입");
 
-        Map<String, Object> resultMap = new HashMap<>();
-        String joinType = EMPTY;
-        String id = EMPTY;
-        String password = EMPTY;
-        String email = EMPTY;
-        boolean isMktAgr = false;
-        User findUser = null;
+        this.validationCheckForSignUp(userSignUpDto);
 
-        if(userSignUpDto != null){
-            joinType = StringUtils.defaultString(userSignUpDto.getJoinType());
-            id = StringUtils.defaultString(userSignUpDto.getId());
-            password = StringUtils.defaultString(userSignUpDto.getPassword());
-            email = StringUtils.defaultString(userSignUpDto.getEmail());
-            isMktAgr = (userSignUpDto.getMktAgr() != null) ? userSignUpDto.getMktAgr() : false;
-        }
+        String joinType = userSignUpDto.getJoinType();
+        String id = userSignUpDto.getId();
+        String password = userSignUpDto.getPassword();
+        String email = userSignUpDto.getEmail();
+        String phoneNumber = userSignUpDto.getPhoneNumber();
+        boolean isMktAgr = userSignUpDto.getMktAgr();
 
         // 아이디/비밀번호 회원가입
         if(SocialType.IDPASS.toString().equals(joinType)){
-            if(EMPTY.equals(id)){
-                throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
-            }
-
-            if(EMPTY.equals(password)){
-                throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "비밀번호가 입력되지 않았습니다.");
-            }
-
-            User user = userRepository.findBySocialId(id).orElse(null);
-            if(user != null){
+            // 이미 가입된 아이디
+            if(userRepository.findBySocialId(id).orElse(null) != null){
                 throw new CustomException(ErrorCode.JOIN_USER_ID_EXIST);
+            }
+
+            // 이미 가입된 계정의 휴대폰 번호
+            if(userUtil.findUserByPhoneNumber(phoneNumber) != null){
+                throw new CustomException(ErrorCode.JOIN_PHONENUMBER_DUPLICATE);
             }
 
             User createdUser = User.builder()
@@ -141,8 +124,8 @@ public class UserService {
         }
         // 소셜 회원가입
         else{
-            findUser = userUtil.findCurrentUser();
-
+            //User findUser = userUtil.findCurrentUser();
+            User findUser = userUtil.findUserBySocialId(id);
             findUser.authorizeUser(); // 유저 권한 세팅(GUEST -> USER)
             findUser.setMktAgr(isMktAgr); // 마케팅동의여부 세팅
 
@@ -351,6 +334,51 @@ public class UserService {
         smsAuthService.setAuthKeyUsed(authKey);
 
         return ApiResponse.success(Map.of("result", "비밀번호 재설정이 완료되었어요."));
+    }
+
+    // 회원가입 유효성 검증
+    private void validationCheckForSignUp(UserSignUpDto userSignUpDto){
+        if(userSignUpDto == null){
+            throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR);
+        }
+
+        String joinType = userSignUpDto.getJoinType();
+        String id = userSignUpDto.getId();
+        String password = userSignUpDto.getPassword();
+        String phoneNumber = userSignUpDto.getPhoneNumber();
+        Boolean isMktAgr = userSignUpDto.getMktAgr();
+
+        if(StringUtils.isBlank(joinType)){
+            throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "가입유형이 입력되지 않았습니다.");
+        }else{
+            if(!joinType.equals(JoinType.IDPASS.toString()) && !joinType.equals(JoinType.SOCIAL.toString())){
+                throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "가입유형이 올바르지 않습니다.");
+            }
+        }
+
+        if(StringUtils.isBlank(id)){
+            throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
+        }
+
+        if(joinType.equals(JoinType.IDPASS.toString())){
+            if(StringUtils.isBlank(password)){
+                throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "비밀번호가 입력되지 않았습니다.");
+            }
+        }
+
+        if(StringUtils.isBlank(phoneNumber)){
+            throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "휴대폰번호가 입력되지 않았습니다.");
+        }else{
+            phoneNumber = phoneNumber.replace(HYPHEN, EMPTY);
+
+            if(phoneNumber.length() != 11){
+                throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "정확한 휴대폰번호를 입력해주세요.");
+            }
+        }
+
+        if(isMktAgr == null){
+            throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "마케팅 동의여부 값이 입력되지 않았습니다.");
+        }
     }
 
     // 아이디 찾기 유효성 검증

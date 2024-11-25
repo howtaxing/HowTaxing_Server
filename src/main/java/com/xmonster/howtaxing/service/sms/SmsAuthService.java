@@ -70,13 +70,6 @@ public class SmsAuthService {
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber().replace(HYPHEN, EMPTY);
         AuthType authType = AuthType.valueOf(smsSendAuthCodeRequest.getAuthType());
 
-        if(StringUtils.isBlank(id)){
-            //id = userUtil.findCurrentUserSocialId();
-            id = userUtil.findUserSocialIdByPhoneNumber(phoneNumber);
-        }
-
-        if(StringUtils.isBlank(id)) throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "아이디 정보가 확인되지 않아요.");
-
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
         long todaySendCount = smsAuthRepository.countByPhoneNumberAndAuthTypeAndSendDatetimeBetween(phoneNumber, authType, startOfDay, endOfDay);
@@ -254,6 +247,7 @@ public class SmsAuthService {
         }
 
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber();
+        String id = smsSendAuthCodeRequest.getId();
         String authType = smsSendAuthCodeRequest.getAuthType();
 
         if(StringUtils.isBlank(phoneNumber)){
@@ -264,6 +258,10 @@ public class SmsAuthService {
             if(phoneNumber.length() != 11){
                 throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "정확한 휴대폰번호를 입력해주세요.");
             }
+        }
+
+        if(StringUtils.isBlank(id)){
+            throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
         }
 
         if(StringUtils.isBlank(authType)){

@@ -9,7 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class UserSignUpDto {
-    private String joinType;        // [필수] 가입유형("IDPASS":아이디/비밀번호 회원가입, "SOCIAL" : 소셜 회원가입)
+    private String joinType;        // [필수] 가입유형("IDPASS":아이디/비밀번호 회원가입, "SOCIAL":소셜 회원가입)
     private String id;              // [선택] 아이디(joinType이 'IDPASS' 인 경우 필수)
     private String password;        // [선택] 비밀번호(joinType이 'IDPASS' 인 경우 필수)
     private String email;           // [선택] 이메일(현재 미사용)
