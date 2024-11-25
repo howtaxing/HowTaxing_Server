@@ -5,15 +5,22 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
+import com.xmonster.howtaxing.dto.sms.SmsCheckAuthCodeRequest;
+import com.xmonster.howtaxing.dto.sms.SmsSendMessageRequest;
 import com.xmonster.howtaxing.dto.user.*;
 import com.xmonster.howtaxing.feign.kakao.KakaoUserApi;
 import com.xmonster.howtaxing.feign.naver.NaverAuthApi;
 import com.xmonster.howtaxing.feign.naver.NaverUserApi;
+import com.xmonster.howtaxing.model.SmsAuthInfo;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.house.HouseRepository;
+import com.xmonster.howtaxing.repository.sms.SmsAuthRepository;
 import com.xmonster.howtaxing.repository.user.UserRepository;
 import com.xmonster.howtaxing.service.jwt.JwtService;
 import com.xmonster.howtaxing.service.redis.RedisService;
+import com.xmonster.howtaxing.service.sms.SmsAuthService;
+import com.xmonster.howtaxing.service.sms.SmsMessageService;
+import com.xmonster.howtaxing.type.AuthType;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.type.Role;
 import com.xmonster.howtaxing.type.SocialType;
@@ -41,18 +48,22 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 @RequiredArgsConstructor
 @Slf4j
 public class UserService {
+    private final JwtService jwtService;
+    private final RedisService redisService;
+    private final SmsAuthService smsAuthService;
+    private final SmsMessageService smsMessageService;
+
     private final UserRepository userRepository;
     private final HouseRepository houseRepository;
+    private final SmsAuthRepository smsAuthRepository;
+
     private final UserUtil userUtil;
+
     private final KakaoUserApi kakaoUserApi;
     private final NaverUserApi naverUserApi;
     private final NaverAuthApi naverAuthApi;
-    private final RedisService redisService;
-    private final PasswordEncoder passwordEncoder;
 
-    //private final KakaoLoginServiceImpl kakaoLoginService;
-    //private final NaverLoginServiceImpl naverLoginService;
-    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${spring.security.oauth2.client.registration.naver.client-id}")
     private String naverAppKey;
@@ -264,7 +275,71 @@ public class UserService {
         //return ApiResponse.success(Map.of("result", "로그인이 완료되었습니다."));
     }
 
-    public SocialUserResponse getKakaoUserInfo(String accessToken) {
+    // 아이디 찾기
+    public Object findUserId(UserFindIdRequest userFindIdRequest) throws Exception {
+        log.info(">> [Service]UserService findUserId - 아이디 찾기");
+
+        this.validationCheckForFindUserId(userFindIdRequest);
+
+        String phoneNumber = userFindIdRequest.getPhoneNumber();
+        String authKey = userFindIdRequest.getAuthKey();
+
+        String socialId = userUtil.findUserSocialIdByPhoneNumber(userFindIdRequest.getPhoneNumber());
+        if(StringUtils.isBlank(socialId)) throw new CustomException(ErrorCode.ID_FIND_INPUT_ERROR, "입력한 전화번호로 아이디를 찾지 못했어요.");
+
+        boolean isCheckAuthKey = smsAuthService.checkAuthKey(authKey);
+        if(!isCheckAuthKey) throw new CustomException(ErrorCode.ID_FIND_AUTH_ERROR);
+
+        String messageContent = "회원님의 아이디는 [" + socialId + "] 입니다.";
+        SmsSendMessageRequest smsSendMessageRequest =
+                SmsSendMessageRequest.builder()
+                        .phoneNumber(phoneNumber)
+                        .messageContent(messageContent)
+                        .build();
+
+        // 아이디를 문자로 전송
+        boolean isSendMessage = smsMessageService.sendMessage(smsSendMessageRequest);
+
+        // SMS로 아이디 정보 발송 실패
+        if(!isSendMessage) throw new CustomException(ErrorCode.ID_FIND_MESSAGE_ERROR);
+
+        smsAuthService.setAuthKeyUsed(authKey);
+
+        return ApiResponse.success(Map.of("result", "아이디를 문자로 전송 완료했어요."));
+    }
+
+    // 아이디 찾기 유효성 검증
+    private void validationCheckForFindUserId(UserFindIdRequest userFindIdRequest) {
+        if(userFindIdRequest == null){
+            throw new CustomException(ErrorCode.ID_FIND_INPUT_ERROR);
+        }
+
+        String phoneNumber = userFindIdRequest.getPhoneNumber();
+        String authKey = userFindIdRequest.getAuthKey();
+
+        if(StringUtils.isBlank(phoneNumber)){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "휴대폰번호가 입력되지 않았습니다.");
+        }else{
+            phoneNumber = phoneNumber.replace(HYPHEN, EMPTY);
+
+            if(phoneNumber.length() != 11){
+                throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 휴대폰번호를 입력해주세요.");
+            }
+        }
+        
+        if(StringUtils.isBlank(authKey)){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "인증키가 입력되지 않았습니다.");
+        }else{
+            if(authKey.length() != 30){
+                throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
+            }
+        }
+    }
+
+    // 비밀번호 재설정
+
+
+    private SocialUserResponse getKakaoUserInfo(String accessToken) {
         Map<String, String> headerMap = new HashMap<>();
         headerMap.put("authorization", " Bearer " + accessToken);
 
@@ -296,7 +371,7 @@ public class UserService {
                 .build();
     }
 
-    public SocialUserResponse getNaverUserInfo(String accessToken) {
+    private SocialUserResponse getNaverUserInfo(String accessToken) {
         Map<String ,String> headerMap = new HashMap<>();
         headerMap.put("authorization", "Bearer " + accessToken);
 

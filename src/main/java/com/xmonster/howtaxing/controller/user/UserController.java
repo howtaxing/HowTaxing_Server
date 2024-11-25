@@ -2,7 +2,9 @@ package com.xmonster.howtaxing.controller.user;
 
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
+import com.xmonster.howtaxing.dto.sms.SmsCheckAuthCodeRequest;
 import com.xmonster.howtaxing.dto.user.SocialLoginRequest;
+import com.xmonster.howtaxing.dto.user.UserFindIdRequest;
 import com.xmonster.howtaxing.dto.user.UserLoginDto;
 import com.xmonster.howtaxing.dto.user.UserSignUpDto;
 import com.xmonster.howtaxing.service.user.UserService;
@@ -195,6 +197,16 @@ public class UserController {
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }
     }
+
+    // 아이디 찾기(일반로그인)
+    @PostMapping("/user/findUserId")
+    public Object findUserId(@RequestBody UserFindIdRequest userFindIdRequest) throws Exception {
+        log.info(">> [Controller]UserController findUserId - 아이디 찾기(일반로그인)");
+        return userService.findUserId(userFindIdRequest);
+    }
+
+    // 비밀번호 재설정(일반로그인)
+
 
     @GetMapping("/user/callback")
     public void userCallback(@RequestParam String userId, @RequestParam String referrerType){

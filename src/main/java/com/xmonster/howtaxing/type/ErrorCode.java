@@ -28,6 +28,11 @@ public enum ErrorCode {
     ID_CHECK_INPUT_ERROR(1, HttpStatus.OK, "IDCHECK-001", "아이디 중복체크를 위한 입력값이 올바르지 않습니다."),
     ID_CHECK_ALREADY_EXIST(1, HttpStatus.OK, "IDCHECK-002", "이미 존재하는 아이디 입니다."),
 
+    /* 아이디 찾기 관련 */
+    ID_FIND_AUTH_ERROR(1, HttpStatus.OK, "FIND-001", "아이디 찾기를 위한 인증키 검증에 실패했어요."),
+    ID_FIND_INPUT_ERROR(1, HttpStatus.OK, "FIND-002", "아이디 찾기를 위한 요청 값이 올바르지 않아요."),
+    ID_FIND_MESSAGE_ERROR(1, HttpStatus.OK, "FIND-003", "아이디 정보를 전달할 메시지 발송에 실패했어요"),
+
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),
     HOUSE_JUSOGOV_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-002", "공공기관에서 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),
@@ -96,16 +101,15 @@ public enum ErrorCode {
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),
 
     /* 메시지 관련 */
-    //MESSAGE_SMS_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-001", "SMS 메시지 발송을 위한 입력값이 올바르지 않습니다."),
-    //MESSAGE_SMS_OUTPUT_ERROR(1, HttpStatus.OK, "MESSAGE-002", "SMS 메시지 발송 중 오류가 발생했습니다."),
-    //MESSAGE_SMS_SYSTEM_ERROR(1, HttpStatus.OK, "MESSAGE-003", "SMS 메시지 시스템에 오류가 발생하여 메시지를 발송할 수 없습니다."),
-
     SMS_AUTH_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-001", "인증번호 발송 입력값이 올바르지 않아요."),
     SMS_AUTH_COUNT_ERROR(1, HttpStatus.OK, "MESSAGE-002", "인증번호는 하루에 10회까지만 발송할 수 있어요."),
     SMS_AUTH_SEND_ERROR(1, HttpStatus.OK, "MESSAGE-003", "인증번호 발송에 실패했어요."),
     SMS_AUTH_CHECK_ERROR(1, HttpStatus.OK, "MESSAGE-004", "인증번호 검증에 실패했어요."),
     SMS_AUTH_MATCH_ERROR(1, HttpStatus.OK, "MESSAGE-005", "인증번호가 정확하지 않아요."),
     SMS_AUTH_TIME_ERROR(1, HttpStatus.OK, "MESSAGE-006", "인증시간이 만료되었어요."),
+    SMS_MSG_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-007", "SMS 발송을 위한 입력값이 올바르지 않아요."),
+    SMS_MSG_OUTPUT_ERROR(1, HttpStatus.OK, "MESSAGE-008", "SMS 발송 중 오류가 발생했어요."),
+    SMS_MSG_SYSTEM_ERROR(1, HttpStatus.OK, "MESSAGE-009", "SMS 시스템에 오류가 발생하여 메시지를 발송할 수 없어요."),
 
     /* 시스템 관련 */
     SYSTEM_UNKNOWN_ERROR(2, HttpStatus.OK, "SYSTEM-001", "알 수 없는 오류가 발생했습니다."),

@@ -3,14 +3,12 @@ package com.xmonster.howtaxing.service.sms;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
-import com.xmonster.howtaxing.dto.sms.SmsCheckAuthCodeRequest;
-import com.xmonster.howtaxing.dto.sms.SmsMessageBodyRequest;
+import com.xmonster.howtaxing.dto.sms.*;
 import com.xmonster.howtaxing.dto.sms.SmsMessageBodyRequest.Message;
-import com.xmonster.howtaxing.dto.sms.SmsMessageBodyResponse;
-import com.xmonster.howtaxing.dto.sms.SmsSendAuthCodeRequest;
 import com.xmonster.howtaxing.feign.sms.SmsSendApi;
 import com.xmonster.howtaxing.model.SmsAuthInfo;
 import com.xmonster.howtaxing.repository.sms.SmsAuthRepository;
+import com.xmonster.howtaxing.type.AuthType;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +31,7 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
@@ -69,18 +68,19 @@ public class SmsAuthService {
 
         String id = smsSendAuthCodeRequest.getId();
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber().replace(HYPHEN, EMPTY);
+        AuthType authType = AuthType.valueOf(smsSendAuthCodeRequest.getAuthType());
 
         if(StringUtils.isBlank(id)){
             id = userUtil.findCurrentUserSocialId();
         }
 
-        if(StringUtils.isBlank(id)) throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "일반로그인인 경우 아이디가 필수입니다.");
+        if(StringUtils.isBlank(id)) throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "아이디 정보가 확인되지 않아요.");
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
-        long todaySendCount = smsAuthRepository.countByPhoneNumberAndSendDatetimeBetween(phoneNumber, startOfDay, endOfDay);
+        long todaySendCount = smsAuthRepository.countByPhoneNumberAndAuthTypeAndSendDatetimeBetween(phoneNumber, authType, startOfDay, endOfDay);
 
-        // 인증번호 10회 이상 발송 불가
+        // 인증유형 별 인증번호 10회 이상 발송 불가
         if(todaySendCount > 10) throw new CustomException(ErrorCode.SMS_AUTH_COUNT_ERROR);
 
         // 인증번호 생성
@@ -94,16 +94,27 @@ public class SmsAuthService {
             throw new CustomException(ErrorCode.SMS_AUTH_SEND_ERROR);
         }
 
+        LocalDateTime sendDatetime = LocalDateTime.now();
+
         // 인증정보 저장
         smsAuthRepository.saveAndFlush(
                 SmsAuthInfo.builder()
-                        .socialId(id)
                         .phoneNumber(phoneNumber)
+                        .socialId(id)
+                        .authType(authType)
                         .authCode(authCode)
-                        .sendDatetime(LocalDateTime.now())
+                        .sendDatetime(sendDatetime)
+                        .isAuthKeyUsed(false)
                         .build());
 
-        return ApiResponse.success(Map.of("result", "입력하신 휴대폰 번호로 인증번호를 발송했어요."));
+        //return ApiResponse.success(Map.of("result", "입력하신 휴대폰 번호로 인증번호를 발송했어요."));
+        return ApiResponse.success(
+                SmsSendAuthCodeResponse.builder()
+                        .phoneNumber(phoneNumber)
+                        .id(id)
+                        .authType(authType.toString())
+                        .sendDatetime(sendDatetime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                        .build());
     }
 
     // 인증번호 검증
@@ -114,9 +125,104 @@ public class SmsAuthService {
         this.validationCheckForCheckAuthCode(smsCheckAuthCodeRequest);
 
         String phoneNumber = smsCheckAuthCodeRequest.getPhoneNumber().replace(HYPHEN, EMPTY);
+        AuthType authType = AuthType.valueOf(smsCheckAuthCodeRequest.getAuthType());
         String authCode = smsCheckAuthCodeRequest.getAuthCode();
         
-        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByPhoneNumberOrderBySendDatetimeDesc(phoneNumber);
+        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByPhoneNumberAndAuthTypeOrderBySendDatetimeDesc(phoneNumber, authType);
+        if(smsAuthInfo == null){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "발송된 인증번호가 없습니다.");
+        }
+
+        LocalDateTime sendDatetime = smsAuthInfo.getSendDatetime();
+        String orgAuthCode = StringUtils.defaultString(smsAuthInfo.getAuthCode());
+
+        // 인증시간 만료(3분)
+        if(LocalDateTime.now().minusMinutes(3).isAfter(sendDatetime)){
+            throw new CustomException(ErrorCode.SMS_AUTH_TIME_ERROR);
+        }
+
+        // 인증번호 불일치
+        if(!orgAuthCode.equals(authCode)){
+            throw new CustomException(ErrorCode.SMS_AUTH_MATCH_ERROR);
+        }
+
+        LocalDateTime authDatetime = LocalDateTime.now();   // 인증일시
+        String authKey = this.generateAuthKey();            // 인증키(생성)
+
+        // 인증일시 및 인증키를 SMS 인증정보에 저장
+        smsAuthInfo.setAuthDatetime(authDatetime);
+        smsAuthInfo.setAuthKey(authKey);
+        smsAuthRepository.save(smsAuthInfo);
+
+        //return ApiResponse.success(Map.of("result", "인증번호가 일치합니다."));
+        return ApiResponse.success(
+                SmsCheckAuthCodeResponse.builder()
+                        .phoneNumber(phoneNumber)
+                        .id(smsAuthInfo.getSocialId())
+                        .authType(authType.toString())
+                        .sendDatetime(sendDatetime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                        .authDatetime(authDatetime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                        .authKey(authKey)
+                        .build());
+    }
+
+    // 인증키 검증
+    public boolean checkAuthKey(String authKey) throws Exception {
+        log.info(">> [Service]SmsAuthService checkAuthKey - 인증키 검증");
+
+        if(StringUtils.isBlank(authKey)){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "인증키가 입력되지 않았습니다.");
+        }else{
+            if(authKey.length() != 30){
+                throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
+            }
+        }
+
+        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByAuthKeyOrderByAuthDatetimeDesc(authKey);
+        if(smsAuthInfo == null){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "해당 인증키가 없습니다.");
+        }
+
+        String orgAuthKey = StringUtils.defaultString(smsAuthInfo.getAuthKey());
+        LocalDateTime authDatetime = smsAuthInfo.getAuthDatetime();
+        boolean isAuthKeyUsed = smsAuthInfo.getIsAuthKeyUsed();
+        
+        return orgAuthKey.equals(authKey) && !isAuthKeyUsed && LocalDateTime.now().minusDays(1).isAfter(authDatetime);
+    }
+
+    // 인증키 사용 완료 세팅
+    public void setAuthKeyUsed(String authKey){
+        log.info(">> [Service]SmsAuthService setAuthKeyUsed - 인증키 사용 완료 세팅");
+
+        if(StringUtils.isBlank(authKey)){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "인증키가 입력되지 않았습니다.");
+        }else{
+            if(authKey.length() != 30){
+                throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
+            }
+        }
+
+        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByAuthKeyOrderByAuthDatetimeDesc(authKey);
+        if(smsAuthInfo == null){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "해당 인증키가 없습니다.");
+        }
+
+        smsAuthInfo.setIsAuthKeyUsed(true);
+        smsAuthRepository.save(smsAuthInfo);
+    }
+
+    // 타 서비스 인증번호 검증(필요없음)
+    public boolean checkAuthCodeForOtherService(SmsCheckAuthCodeRequest smsCheckAuthCodeRequest) throws Exception {
+        log.info(">> [Service]SmsAuthService checkAuthCodeForOtherService - 타 서비스 인증번호 검증");
+
+        // 인증번호 검증 유효값 체크
+        this.validationCheckForCheckAuthCode(smsCheckAuthCodeRequest);
+
+        String phoneNumber = smsCheckAuthCodeRequest.getPhoneNumber().replace(HYPHEN, EMPTY);
+        AuthType authType = AuthType.valueOf(smsCheckAuthCodeRequest.getAuthType());
+        String authCode = smsCheckAuthCodeRequest.getAuthCode();
+
+        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByPhoneNumberAndAuthTypeOrderBySendDatetimeDesc(phoneNumber, authType);
         if(smsAuthInfo == null){
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "발송된 인증번호가 없습니다.");
         }
@@ -137,7 +243,7 @@ public class SmsAuthService {
         smsAuthInfo.setAuthDatetime(LocalDateTime.now());
         smsAuthRepository.save(smsAuthInfo);
 
-        return ApiResponse.success(Map.of("result", "인증번호가 일치합니다."));
+        return true;
     }
 
     // 인증번호 발송 유효값 체크
@@ -147,6 +253,7 @@ public class SmsAuthService {
         }
 
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber();
+        String authType = smsSendAuthCodeRequest.getAuthType();
 
         if(StringUtils.isBlank(phoneNumber)){
             throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "휴대폰번호가 입력되지 않았습니다.");
@@ -155,6 +262,17 @@ public class SmsAuthService {
 
             if(phoneNumber.length() != 11){
                 throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "정확한 휴대폰번호를 입력해주세요.");
+            }
+        }
+
+        if(StringUtils.isBlank(authType)){
+            throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "인증유형이 입력되지 않았습니다.");
+        }else{
+            if(!AuthType.JOIN.toString().equals(authType) &&
+                    !AuthType.FIND_ID.toString().equals(authType) &&
+                    !AuthType.RESET_PW.toString().equals(authType) &&
+                    !AuthType.ETC.toString().equals(authType)){
+                throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "정확한 인증 유형을 입력해주세요.(JOIN:회원가입, FIND_ID:아이디찾기, RESET_PW:비밀번호재설정)");
             }
         }
     }
@@ -166,7 +284,7 @@ public class SmsAuthService {
         }
 
         String phoneNumber = smsCheckAuthCodeRequest.getPhoneNumber();
-        String authCode = smsCheckAuthCodeRequest.getAuthCode();
+        String authType = smsCheckAuthCodeRequest.getAuthType();
 
         if(StringUtils.isBlank(phoneNumber)){
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "휴대폰번호가 입력되지 않았습니다.");
@@ -175,6 +293,17 @@ public class SmsAuthService {
 
             if(phoneNumber.length() != 11){
                 throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 휴대폰번호를 입력해주세요.");
+            }
+        }
+
+        if(StringUtils.isBlank(authType)){
+            throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "인증유형이 입력되지 않았습니다.");
+        }else{
+            if(!AuthType.JOIN.toString().equals(authType) &&
+                    !AuthType.FIND_ID.toString().equals(authType) &&
+                    !AuthType.RESET_PW.toString().equals(authType) &&
+                    !AuthType.ETC.toString().equals(authType)){
+                throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "정확한 인증 유형을 입력해주세요.(JOIN:회원가입, FIND_ID:아이디찾기, RESET_PW:비밀번호재설정)");
             }
         }
     }
@@ -268,6 +397,21 @@ public class SmsAuthService {
         }
 
         return code.toString();
+    }
+
+    // 인증키 생성
+    private String generateAuthKey(){
+        final String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        final int keyLength = 30;
+        SecureRandom sRandom = new SecureRandom();
+
+        StringBuilder key = new StringBuilder(keyLength);
+
+        for(int i=0; i<keyLength; i++){
+            key.append(chars.charAt(sRandom.nextInt(chars.length())));
+        }
+
+        return key.toString();
     }
 
     // 데이터 변환(Json -> Object)
