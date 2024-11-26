@@ -189,7 +189,7 @@ public class SmsAuthService {
         LocalDateTime authDatetime = smsAuthInfo.getAuthDatetime();
         boolean isAuthKeyUsed = smsAuthInfo.getIsAuthKeyUsed();
         
-        return orgAuthKey.equals(authKey) && !isAuthKeyUsed && LocalDateTime.now().minusDays(1).isAfter(authDatetime);
+        return orgAuthKey.equals(authKey) && !isAuthKeyUsed && LocalDateTime.now().minusDays(1).isBefore(authDatetime);
     }
 
     // 인증키 사용 완료 세팅
