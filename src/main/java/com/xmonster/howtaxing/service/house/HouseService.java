@@ -162,7 +162,8 @@ public class HouseService {
         boolean isDev = Arrays.asList(activeProfiles).contains("dev");
         
         HyphenUserHouseListResponse hyphenUserHouseListResponse;
-        if (isLocal || isDev) {
+        //if (isLocal || isDev) {
+        if(isLocal){
             // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
             hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse(houseListSearchRequest.getUserNm());
         } else {
