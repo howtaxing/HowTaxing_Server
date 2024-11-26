@@ -1,15 +1,13 @@
 package com.xmonster.howtaxing.dto.sms;
 
 import com.xmonster.howtaxing.type.AuthType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@ToString
 public class SmsSendAuthCodeRequest {
     private String phoneNumber;     // [필수] 전화번호(휴대폰번호)
     private String id;              // [선택] 아이디(사용자입력ID 또는 소셜ID)

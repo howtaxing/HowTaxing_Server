@@ -388,6 +388,8 @@ public class UserService {
             throw new CustomException(ErrorCode.ID_FIND_INPUT_ERROR);
         }
 
+        log.info(userFindIdRequest.toString());
+
         String phoneNumber = userFindIdRequest.getPhoneNumber();
         String authKey = userFindIdRequest.getAuthKey();
 
@@ -415,6 +417,8 @@ public class UserService {
         if(userResetPasswordRequest == null){
             throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR);
         }
+
+        log.info(userResetPasswordRequest.toString());
 
         String phoneNumber = userResetPasswordRequest.getPhoneNumber();
         String id = userResetPasswordRequest.getId();

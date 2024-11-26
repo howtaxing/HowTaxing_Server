@@ -219,6 +219,8 @@ public class SmsAuthService {
             throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR);
         }
 
+        log.info(smsSendAuthCodeRequest.toString());
+
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber();
         String id = smsSendAuthCodeRequest.getId();
         String authType = smsSendAuthCodeRequest.getAuthType();
@@ -257,6 +259,8 @@ public class SmsAuthService {
         if(smsCheckAuthCodeRequest == null){
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "인증번호 검증을 위한 입력값이 올바르지 않아요.");
         }
+
+        log.info(smsCheckAuthCodeRequest.toString());
 
         String phoneNumber = smsCheckAuthCodeRequest.getPhoneNumber();
         String authType = smsCheckAuthCodeRequest.getAuthType();

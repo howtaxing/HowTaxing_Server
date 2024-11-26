@@ -1,10 +1,7 @@
 package com.xmonster.howtaxing.dto.user;
 
 import com.xmonster.howtaxing.type.SocialType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.validation.constraints.NotNull;
 
@@ -12,6 +9,7 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@ToString
 public class SocialLoginRequest {
     private SocialType socialType;
     private String accessToken;
