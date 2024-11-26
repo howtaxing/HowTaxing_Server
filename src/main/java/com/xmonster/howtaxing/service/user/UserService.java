@@ -96,6 +96,7 @@ public class UserService {
                     .socialId(id)
                     .socialType(SocialType.IDPASS)
                     .password(password)
+                    .phoneNumber(phoneNumber)
                     .email(email)
                     .isMktAgr(isMktAgr)
                     .role(Role.USER)

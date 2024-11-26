@@ -213,41 +213,6 @@ public class SmsAuthService {
         smsAuthRepository.save(smsAuthInfo);
     }
 
-    // 타 서비스 인증번호 검증(필요없음)
-    public boolean checkAuthCodeForOtherService(SmsCheckAuthCodeRequest smsCheckAuthCodeRequest) throws Exception {
-        log.info(">> [Service]SmsAuthService checkAuthCodeForOtherService - 타 서비스 인증번호 검증");
-
-        // 인증번호 검증 유효값 체크
-        this.validationCheckForCheckAuthCode(smsCheckAuthCodeRequest);
-
-        String phoneNumber = smsCheckAuthCodeRequest.getPhoneNumber().replace(HYPHEN, EMPTY);
-        AuthType authType = AuthType.valueOf(smsCheckAuthCodeRequest.getAuthType());
-        String authCode = smsCheckAuthCodeRequest.getAuthCode();
-
-        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByPhoneNumberAndAuthTypeOrderBySendDatetimeDesc(phoneNumber, authType);
-        if(smsAuthInfo == null){
-            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "발송된 인증번호가 없습니다.");
-        }
-
-        LocalDateTime sendDatetime = smsAuthInfo.getSendDatetime();
-        String orgAuthCode = StringUtils.defaultString(smsAuthInfo.getAuthCode());
-
-        // 인증시간 만료(3분)
-        if(LocalDateTime.now().minusMinutes(3).isBefore(sendDatetime)){
-            throw new CustomException(ErrorCode.SMS_AUTH_TIME_ERROR);
-        }
-
-        // 인증번호 불일치
-        if(!orgAuthCode.equals(authCode)){
-            throw new CustomException(ErrorCode.SMS_AUTH_MATCH_ERROR);
-        }
-
-        smsAuthInfo.setAuthDatetime(LocalDateTime.now());
-        smsAuthRepository.save(smsAuthInfo);
-
-        return true;
-    }
-
     // 인증번호 발송 유효값 체크
     private void validationCheckForSendAuthCode(SmsSendAuthCodeRequest smsSendAuthCodeRequest){
         if(smsSendAuthCodeRequest == null){

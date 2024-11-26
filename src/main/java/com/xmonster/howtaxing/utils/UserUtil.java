@@ -36,6 +36,12 @@ public class UserUtil {
     }
 
     public String findUserSocialIdByPhoneNumber(String phoneNumber) {
-        return findUserByPhoneNumber(phoneNumber).getSocialId();
+        User findUser = findUserByPhoneNumber(phoneNumber);
+
+        if(findUser == null){
+            throw new CustomException(ErrorCode.USER_NOT_FOUND, "가입된 회원의 휴대폰번호가 아닙니다.");
+        }
+
+        return findUser.getSocialId();
     }
 }
