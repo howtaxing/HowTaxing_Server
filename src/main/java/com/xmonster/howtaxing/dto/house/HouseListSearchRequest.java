@@ -7,6 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@ToString
 public class HouseListSearchRequest {
     private String certOrg;         // 인증기관(공통-kb:KB, naver:네이버, toss:토스)
     private String userNm;          // 이름(KB,토스)

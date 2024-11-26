@@ -265,16 +265,7 @@ public class UserService {
         user.setIsLocked(false);
         user.updateRefreshToken(refreshToken);
 
-        userRepository.save(user);
-
-        //response.addHeader(jwtService.getAccessHeader(), "Bearer " + accessToken);
-        //response.addHeader(jwtService.getRefreshHeader(), "Bearer " + refreshToken);
-
-        //jwtService.sendAccessAndRefreshToken(response, accessToken, refreshToken);
-        //jwtService.updateRefreshToken(user.getSocialId(), refreshToken);
-
-        //user.updateRefreshToken(refreshToken);
-        //userRepository.saveAndFlush(user);
+        userRepository.saveAndFlush(user);
 
         log.info("로그인에 성공하였습니다. 아이디 : {}", user.getSocialId());
         log.info("로그인에 성공하였습니다. AccessToken : {}", accessToken);
@@ -494,7 +485,6 @@ public class UserService {
             throw new CustomException(ErrorCode.PW_RESET_INPUT_ERROR, "새 비밀번호와 새 비밀번호 확인 값이 일치하지 않아요.");
         }
     }
-
 
     private SocialUserResponse getKakaoUserInfo(String accessToken) {
         Map<String, String> headerMap = new HashMap<>();
