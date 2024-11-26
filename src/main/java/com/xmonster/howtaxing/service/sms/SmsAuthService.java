@@ -66,9 +66,17 @@ public class SmsAuthService {
         // 인증번호 발송 유효값 체크
         this.validationCheckForSendAuthCode(smsSendAuthCodeRequest);
 
-        String id = smsSendAuthCodeRequest.getId();
         String phoneNumber = smsSendAuthCodeRequest.getPhoneNumber().replace(HYPHEN, EMPTY);
         AuthType authType = AuthType.valueOf(smsSendAuthCodeRequest.getAuthType());
+        String id = smsSendAuthCodeRequest.getId();
+
+        if(AuthType.FIND_ID.equals(authType)){
+            id = userUtil.findUserSocialIdByPhoneNumber(phoneNumber);
+
+            if(StringUtils.isBlank(id)){
+                throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "가입된 회원의 휴대폰번호가 아닙니다.");
+            }
+        }
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
@@ -259,11 +267,7 @@ public class SmsAuthService {
                 throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "정확한 휴대폰번호를 입력해주세요.");
             }
         }
-
-        if(StringUtils.isBlank(id)){
-            throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
-        }
-
+        
         if(StringUtils.isBlank(authType)){
             throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "인증유형이 입력되지 않았습니다.");
         }else{
@@ -272,6 +276,13 @@ public class SmsAuthService {
                     !AuthType.RESET_PW.toString().equals(authType) &&
                     !AuthType.ETC.toString().equals(authType)){
                 throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "정확한 인증 유형을 입력해주세요.(JOIN:회원가입, FIND_ID:아이디찾기, RESET_PW:비밀번호재설정)");
+            }
+
+            // 아이디 찾기를 제외한 다른 케이스에는 아이디 입력여부 체크
+            if(!AuthType.FIND_ID.toString().equals(authType)){
+                if(StringUtils.isBlank(id)){
+                    throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "아이디가 입력되지 않았습니다.");
+                }
             }
         }
     }
