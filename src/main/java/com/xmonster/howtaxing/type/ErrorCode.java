@@ -21,6 +21,7 @@ public enum ErrorCode {
     /* 회원가입 관련 */
     JOIN_USER_INPUT_ERROR(1, HttpStatus.OK, "JOIN-001", "회원가입을 위한 입력값이 올바르지 않습니다."),
     JOIN_USER_OUTPUT_ERROR(1, HttpStatus.OK, "JOIN-002", "회원가입 중 오류가 발생했습니다."),
+    JOIN_USER_AUTH_ERROR(1, HttpStatus.OK, "JOIN-003", "회원가입을 위한 인증키 검증에 실패했어요."),
     JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-003", "이미 존재하는 아이디 입니다."),
     JOIN_PHONENUMBER_DUPLICATE(1, HttpStatus.OK, "JOIN-004", "이미 사용 중인 휴대폰 번호에요."),
 

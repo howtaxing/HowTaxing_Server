@@ -79,6 +79,10 @@ public class UserService {
         String email = userSignUpDto.getEmail();
         String phoneNumber = userSignUpDto.getPhoneNumber();
         boolean isMktAgr = userSignUpDto.getMktAgr();
+        String authKey = userSignUpDto.getAuthKey();
+
+        boolean isCheckAuthKey = smsAuthService.checkAuthKey(authKey);
+        if(!isCheckAuthKey) throw new CustomException(ErrorCode.JOIN_USER_AUTH_ERROR);
 
         // 아이디/비밀번호 회원가입
         if(SocialType.IDPASS.toString().equals(joinType)){
@@ -112,9 +116,12 @@ public class UserService {
 
             userRepository.save(createdUser);
 
-            log.info("회원가입에 성공하였습니다. 아이디 : {}", createdUser.getSocialId());
-            log.info("회원가입에 성공하였습니다. AccessToken : {}", accessToken);
+            log.info("일반 회원가입에 성공하였습니다. 아이디 : {}", createdUser.getSocialId());
+            log.info("일반 회원가입에 성공하였습니다. AccessToken : {}", accessToken);
             log.info("발급된 AccessToken 만료 기간 : {}", accessTokenExpiration);
+
+            // 인증키 사용 완료 세팅
+            smsAuthService.setAuthKeyUsed(authKey);
 
             return ApiResponse.success(
                     SocialLoginResponse.builder()
@@ -127,8 +134,16 @@ public class UserService {
         else{
             //User findUser = userUtil.findCurrentUser();
             User findUser = userUtil.findUserBySocialId(id);
-            findUser.authorizeUser(); // 유저 권한 세팅(GUEST -> USER)
-            findUser.setMktAgr(isMktAgr); // 마케팅동의여부 세팅
+            findUser.authorizeUser();               // 유저 권한 세팅(GUEST -> USER)
+            findUser.setPhoneNumber(phoneNumber);   // 휴대폰번호 세팅
+            findUser.setMktAgr(isMktAgr);           // 마케팅동의여부 세팅
+
+            userRepository.save(findUser);
+
+            log.info("소셜 회원가입에 성공하였습니다. 아이디 : {}", findUser.getSocialId());
+
+            // 인증키 사용 완료 세팅
+            smsAuthService.setAuthKeyUsed(authKey);
 
             return ApiResponse.success(
                     SocialLoginResponse.builder()
@@ -348,6 +363,7 @@ public class UserService {
         String password = userSignUpDto.getPassword();
         String phoneNumber = userSignUpDto.getPhoneNumber();
         Boolean isMktAgr = userSignUpDto.getMktAgr();
+        String authKey = userSignUpDto.getAuthKey();
 
         if(StringUtils.isBlank(joinType)){
             throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "가입유형이 입력되지 않았습니다.");
@@ -379,6 +395,14 @@ public class UserService {
 
         if(isMktAgr == null){
             throw new CustomException(ErrorCode.JOIN_USER_INPUT_ERROR, "마케팅 동의여부 값이 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(authKey)){
+            throw new CustomException(ErrorCode.PW_RESET_AUTH_ERROR, "인증키가 입력되지 않았습니다.");
+        }else{
+            if(authKey.length() != 30){
+                throw new CustomException(ErrorCode.PW_RESET_AUTH_ERROR, "정확한 인증키를 입력해주세요.");
+            }
         }
     }
 
