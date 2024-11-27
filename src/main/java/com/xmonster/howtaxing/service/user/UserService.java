@@ -217,12 +217,12 @@ public class UserService {
         return ApiResponse.success(Map.of("result", "로그아웃이 완료되었습니다."));
     }
 
+    // 소셜 로그인
     public Object socialLogin(SocialLoginRequest socialLoginRequest) throws Exception {
         log.info(">> [Service]UserService socialLogin - 소셜로그인");
 
-        if(socialLoginRequest == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인을 위한 입력값이 존재하지 않습니다.");
-        if(socialLoginRequest.getSocialType() == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 유형이 입력되지 않았습니다.");
-        if(socialLoginRequest.getAccessToken() == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "엑세스 토큰이 입력되지 않았습니다.");
+        // 소셜로그인 유효성 검증
+        this.validationCheckForSocialLogin(socialLoginRequest);
 
         SocialUserResponse socialUserResponse = null;
 
@@ -341,6 +341,26 @@ public class UserService {
         smsAuthService.setAuthKeyUsed(authKey);
 
         return ApiResponse.success(Map.of("result", "비밀번호 재설정이 완료되었어요."));
+    }
+
+    // 소셜로그인 유효성 검증
+    private void validationCheckForSocialLogin(SocialLoginRequest socialLoginRequest) {
+        if(socialLoginRequest == null){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인을 위한 입력값이 존재하지 않습니다.");
+        }
+
+        log.info(socialLoginRequest.toString());
+
+        SocialType socialType = socialLoginRequest.getSocialType();
+        String socialAccessToken = socialLoginRequest.getAccessToken();
+
+        if(socialType == null){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 유형이 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(socialAccessToken)){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "엑세스 토큰이 입력되지 않았습니다.");
+        }
     }
 
     // 회원가입 유효성 검증
