@@ -182,12 +182,10 @@ public class SmsAuthService {
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
         }
 
-        List<SmsAuthInfo> smsAuthInfoList = smsAuthRepository.findTopByAuthKeyOrderByAuthDatetimeDesc(authKey);
-        if(smsAuthInfoList == null){
+        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByAuthKeyOrderByAuthDatetimeDesc(authKey);
+        if(smsAuthInfo == null){
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "해당 인증키가 없습니다.");
         }
-
-        SmsAuthInfo smsAuthInfo = smsAuthInfoList.get(0);
 
         String orgAuthKey = StringUtils.defaultString(smsAuthInfo.getAuthKey());
         LocalDateTime authDatetime = smsAuthInfo.getAuthDatetime();
@@ -210,12 +208,10 @@ public class SmsAuthService {
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
         }
 
-        List<SmsAuthInfo> smsAuthInfoList = smsAuthRepository.findTopByAuthKeyOrderByAuthDatetimeDesc(authKey);
-        if(smsAuthInfoList == null){
+        SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByAuthKeyOrderByAuthDatetimeDesc(authKey);
+        if(smsAuthInfo == null){
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "해당 인증키가 없습니다.");
         }
-
-        SmsAuthInfo smsAuthInfo = smsAuthInfoList.get(0);
 
         smsAuthInfo.setIsAuthKeyUsed(true);
         smsAuthRepository.save(smsAuthInfo);
