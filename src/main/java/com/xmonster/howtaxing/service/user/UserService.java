@@ -132,7 +132,11 @@ public class UserService {
         }
         // 소셜 회원가입
         else{
-            //User findUser = userUtil.findCurrentUser();
+            // 이미 가입된 계정의 휴대폰 번호
+            if(userUtil.findUserByPhoneNumber(phoneNumber) != null){
+                throw new CustomException(ErrorCode.JOIN_PHONENUMBER_DUPLICATE);
+            }
+
             User findUser = userUtil.findUserBySocialId(id);
             findUser.authorizeUser();               // 유저 권한 세팅(GUEST -> USER)
             findUser.setPhoneNumber(phoneNumber);   // 휴대폰번호 세팅
@@ -572,6 +576,8 @@ public class UserService {
 
         String socialId = StringUtils.defaultString(findUser.getSocialId());
         String socialAccessToken = StringUtils.defaultString(findUser.getSocialAccessToken());
+
+        log.info("[로그아웃 및 회원탈퇴] socialId : " + socialId + ", socialAccessToken : " + socialAccessToken);
 
         boolean resultFlag = false;
 
