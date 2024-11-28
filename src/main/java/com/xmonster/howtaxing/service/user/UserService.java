@@ -228,16 +228,17 @@ public class UserService {
         // 소셜로그인 유효성 검증
         this.validationCheckForSocialLogin(socialLoginRequest);
 
+        SocialType socialType = socialLoginRequest.getSocialType();
+        String socialAccessToken = socialLoginRequest.getAccessToken();
+
         SocialUserResponse socialUserResponse = null;
 
         // 카카오 로그인
-        if(SocialType.KAKAO.equals(socialLoginRequest.getSocialType())){
-            //socialUserResponse = kakaoLoginService.getUserInfo(socialLoginRequest.getAccessToken());
+        if(SocialType.KAKAO.equals(socialType)){
             socialUserResponse = this.getKakaoUserInfo(socialLoginRequest.getAccessToken());
         }
         // 네이버 로그인
-        else if(SocialType.NAVER.equals(socialLoginRequest.getSocialType())){
-            //socialUserResponse = naverLoginService.getUserInfo(socialLoginRequest.getAccessToken());
+        else if(SocialType.NAVER.equals(socialType)){
             socialUserResponse = this.getNaverUserInfo(socialLoginRequest.getAccessToken());
         }
 
@@ -245,34 +246,36 @@ public class UserService {
 
         String socialId = socialUserResponse.getId();
         if(StringUtils.isBlank(socialId)) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 응답값이 없습니다.");
+
+        String accessToken = jwtService.createAccessToken(socialId);
+        String refreshToken = jwtService.createRefreshToken();
         
         User user = userRepository.findBySocialId(socialId).orElse(null);
         
         // 비회원(GUEST로 회원가입 처리)
         if(user == null){
             user = User.builder()
-                    .socialType(socialLoginRequest.getSocialType())
+                    .socialType(socialType)
                     .socialId(socialId)
                     .email(socialUserResponse.getEmail())
                     .name(socialUserResponse.getName())
-                    .socialAccessToken(socialLoginRequest.getAccessToken())
+                    .socialAccessToken(socialAccessToken)
                     .role(Role.GUEST)
                     .build();
 
-            userRepository.save(user);
+            //userRepository.save(user);
+        }else{
+            user.setAttemptFailedCount(0);
+            user.setIsLocked(false);
+            user.updateRefreshToken(refreshToken);
+            user.setSocialAccessToken(socialAccessToken);
         }
-
-        String accessToken = jwtService.createAccessToken(socialId);
-        String refreshToken = jwtService.createRefreshToken();
-
-        user.setAttemptFailedCount(0);
-        user.setIsLocked(false);
-        user.updateRefreshToken(refreshToken);
 
         userRepository.saveAndFlush(user);
 
         log.info("로그인에 성공하였습니다. 아이디 : {}", user.getSocialId());
         log.info("로그인에 성공하였습니다. AccessToken : {}", accessToken);
+        log.info("사용자 Role : {}", user.getRole());
         log.info("발급된 AccessToken 만료 기간 : {}", accessTokenExpiration);
 
         return ApiResponse.success(
@@ -281,8 +284,6 @@ public class UserService {
                         .refreshToken(refreshToken)
                         .role(user.getRole())
                         .build());
-
-        //return ApiResponse.success(Map.of("result", "로그인이 완료되었습니다."));
     }
 
     // 아이디 찾기
