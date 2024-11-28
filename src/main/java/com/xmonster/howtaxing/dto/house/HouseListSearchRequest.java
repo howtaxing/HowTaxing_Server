@@ -16,4 +16,5 @@ public class HouseListSearchRequest {
     private String userId;          // 아이디(네이버)
     private String userPw;          // 비밀번호(네이버)
     private String calcType;        // 계산유형(01:취득세, 02:양도소득세)
+    private Boolean isDummy;        // 더미여부
 }

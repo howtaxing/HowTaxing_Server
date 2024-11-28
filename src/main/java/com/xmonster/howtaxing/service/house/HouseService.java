@@ -159,11 +159,17 @@ public class HouseService {
     public Object loadHouseFromRealty(HouseListSearchRequest houseListSearchRequest) {
         String[] activeProfiles = environment.getActiveProfiles();
         boolean isLocal = Arrays.asList(activeProfiles).contains("local");
-        boolean isDev = Arrays.asList(activeProfiles).contains("dev");
+        //boolean isDev = Arrays.asList(activeProfiles).contains("dev");
+
+        if(houseListSearchRequest == null){
+            throw new CustomException(ErrorCode.HOUSE_HYPHEN_INPUT_ERROR);
+        }
+
+        boolean isDummy = (houseListSearchRequest.getIsDummy() != null) ? houseListSearchRequest.getIsDummy() : false;
         
         HyphenUserHouseListResponse hyphenUserHouseListResponse;
         //if(isLocal){
-        if (isLocal || isDev) {
+        if (isDummy) {
             // 로컬환경 : 하이픈 주택소유정보 테스트용 json data 세팅
             hyphenUserHouseListResponse = getMockedHyphenUserHouseListResponse(houseListSearchRequest.getUserNm());
         } else {
