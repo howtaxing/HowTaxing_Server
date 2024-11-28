@@ -5,6 +5,7 @@ import com.xmonster.howtaxing.type.AuthType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface SmsAuthRepository extends JpaRepository<SmsAuthInfo, Long> {
     //SmsAuthInfo findLastByPhoneNumber(String phoneNumber);
@@ -16,5 +17,5 @@ public interface SmsAuthRepository extends JpaRepository<SmsAuthInfo, Long> {
     Long countByPhoneNumberAndAuthTypeAndSendDatetimeBetween(String phoneNumber, AuthType authType, LocalDateTime startOfDay, LocalDateTime endOfDay);
 
     // 인증정보 가져오기(인증키 비교 및 사용 처리 목적)
-    SmsAuthInfo findTopByAuthKeyOrderByAuthDatetimeDesc(String authKey);
+    List<SmsAuthInfo> findTopByAuthKeyOrderByAuthDatetimeDesc(String authKey);
 }
