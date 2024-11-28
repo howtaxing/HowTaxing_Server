@@ -174,10 +174,12 @@ public class SmsAuthService {
 
         if(StringUtils.isBlank(authKey)){
             throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "인증키가 입력되지 않았습니다.");
-        }else{
-            if(authKey.length() != 30){
-                throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
-            }
+        }
+
+        log.info("authKey : " + authKey);
+
+        if(authKey.length() != 30){
+            throw new CustomException(ErrorCode.SMS_AUTH_CHECK_ERROR, "정확한 인증키를 입력해주세요.");
         }
 
         SmsAuthInfo smsAuthInfo = smsAuthRepository.findTopByAuthKeyOrderByAuthDatetimeDesc(authKey);
