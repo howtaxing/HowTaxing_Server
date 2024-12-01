@@ -1946,15 +1946,16 @@ public class CalculationBuyService {
 
             int ownerCount = calculationBuyResultRequest.getOwnerCnt();
             double userProportion = (double)calculationBuyResultRequest.getUserProportion() / 100;
-            double restProPortion = 1 - userProportion;
+            double restProportion = 1 - userProportion;
 
             for(int i=0; i<ownerCount; i++){
                 double proportion = 1;
                 if(ownerCount > 1){
                     if(i == 0) proportion = userProportion;
-                    else proportion = restProPortion;
+                    else proportion = restProportion;
                 }
 
+                String proportionRateStr = String.format("%.0f", proportion*100);
                 String buyPriceStr = String.format("%.0f", buyPrice*proportion);
                 String buyTaxRateStr = String.format("%.2f", buyTaxRate*100);
                 String buyTaxPriceStr = String.format("%.0f", buyTaxPrice*proportion);
@@ -1966,6 +1967,7 @@ public class CalculationBuyService {
 
                 calculationBuyResultOneList.add(
                         CalculationBuyOneResult.builder()
+                                .userProportion(proportionRateStr)
                                 .buyPrice(buyPriceStr)
                                 .buyTaxRate(buyTaxRateStr)
                                 .buyTaxPrice(buyTaxPriceStr)
@@ -2075,6 +2077,7 @@ public class CalculationBuyService {
                                                         .calcHistoryId(calcHistoryId)
                                                         .detailHistorySeq(calculationBuyResponseHistorySeq)
                                                         .build())
+                                        .userProportion(calculationBuyOneResult.getUserProportion())
                                         .buyPrice(calculationBuyOneResult.getBuyPrice())
                                         .buyTaxRate(calculationBuyOneResult.getBuyTaxRate())
                                         .buyTaxPrice(calculationBuyOneResult.getBuyTaxPrice())
@@ -2199,10 +2202,10 @@ public class CalculationBuyService {
                 textData.append("2. 계산결과").append(NEW_LINE);
                 for(int i=0; i<calculationBuyOneResultList.size(); i++){
                     calculationBuyOneResult = calculationBuyOneResultList.get(i);
-                    textData.append(SPACE).append(i+1).append(") 소유자").append(i+1).append("(지분율 : ").append(calculationBuyResultRequest.getUserProportion()).append("%)").append(NEW_LINE);
+                    textData.append(SPACE).append(i+1).append(") 소유자").append(i+1).append("(지분율 : ").append(calculationBuyOneResult.getUserProportion()).append("%)").append(NEW_LINE);
                     textData.append("  - 취득세 합계 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getTotalTaxPrice()))).append("원").append(NEW_LINE);
                     textData.append("  - 취득세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getBuyTaxPrice()))).append("원").append(NEW_LINE);
-                    textData.append("  - 취득금액(").append("지분비율 ").append(calculationBuyResultRequest.getUserProportion()).append("%) : ").append(df.format(calculationBuyResultRequest.getBuyPrice())).append("원").append(NEW_LINE);
+                    textData.append("  - 취득금액(").append("지분비율 ").append(calculationBuyOneResult.getUserProportion()).append("%) : ").append(df.format(calculationBuyResultRequest.getBuyPrice())).append("원").append(NEW_LINE);
                     textData.append("  - 취득세율 : ").append(calculationBuyOneResult.getBuyTaxRate()).append("%").append(NEW_LINE);
                     textData.append("  - 지방교육세 : ").append(df.format(Long.parseLong(calculationBuyOneResult.getEduTaxPrice()))).append("원").append(NEW_LINE);
                     textData.append("  - 지방교육세율 : ").append(calculationBuyOneResult.getEduTaxRate()).append("%").append(NEW_LINE);

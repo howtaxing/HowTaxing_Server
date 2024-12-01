@@ -25,6 +25,7 @@ public class CalculationBuyResultResponse {
     @ToString
     @Builder
     public static class CalculationBuyOneResult {
+        private String userProportion;      // 본인지분비율
         private String buyPrice;            // 취득가액
         private String buyTaxRate;          // 취득세율
         private String buyTaxPrice;         // 취득세액

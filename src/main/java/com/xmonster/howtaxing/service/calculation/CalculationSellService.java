@@ -2899,6 +2899,8 @@ public class CalculationSellService {
                 log.info("- 총납부세액 : " + totalTaxPrice);
                 log.info("----------------------------------");
 
+                String proportionRateStr = String.format("%.0f", proportion*100);
+
                 String buyPriceStr = Long.toString(buyPrice);
                 String buyDateStr = buyDate.toString();
                 String sellPriceStr = Long.toString(sellPrice);
@@ -2924,6 +2926,7 @@ public class CalculationSellService {
 
                 calculationSellResultOneList.add(
                         CalculationSellOneResult.builder()
+                                .userProportion(proportionRateStr)
                                 .buyPrice(buyPriceStr)
                                 .buyDate(buyDateStr)
                                 .sellPrice(sellPriceStr)
@@ -3028,6 +3031,7 @@ public class CalculationSellService {
                                                         .calcHistoryId(calcHistoryId)
                                                         .detailHistorySeq(calculationSellResponseHistorySeq)
                                                         .build())
+                                        .userProportion(calculationSellOneResult.getUserProportion())
                                         .buyPrice(calculationSellOneResult.getBuyPrice())
                                         .buyDate(calculationSellOneResult.getBuyDate())
                                         .sellPrice(calculationSellOneResult.getSellPrice())

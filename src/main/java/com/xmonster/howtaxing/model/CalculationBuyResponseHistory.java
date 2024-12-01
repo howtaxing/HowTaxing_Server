@@ -21,6 +21,7 @@ public class CalculationBuyResponseHistory implements Serializable {
     @EmbeddedId
     private CalculationHistoryId calculationHistoryId;
 
+    private String userProportion;      // 본인지분비율
     private String buyPrice;            // 취득가액
     private String buyTaxRate;          // 취득세율
     private String buyTaxPrice;         // 취득세액
