@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 public class PubLandPriceAndAreaResponse {
-    private String complexName;
-    private String dongName;
-    private String hoName;
-    private BigDecimal area;
-    private Long pubLandPrice;
+    private String complexName;     // 단지명
+    private String dongName;        // 동
+    private String hoName;          // 호
+    private BigDecimal area;        // 전용면적
+    private Long pubLandPrice;      // 공시가격
 }

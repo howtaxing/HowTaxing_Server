@@ -42,22 +42,22 @@ public enum ErrorCode {
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),
     HOUSE_JUSOGOV_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-002", "공공기관에서 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),
-    HOUSE_JUSOGOV_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-003", "공공기관의 시스템에 문제가 발생하여 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_JUSOGOV_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-003", "공공기관의 시스템에 문제가 발생하여 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 주택(보유주택 조회) 관련 */
     HOUSE_HYPHEN_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-004", "보유주택 정보 조회를 위한 간편인증 입력값이 올바르지 않습니다."),
-    HOUSE_HYPHEN_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-005", "공공기관에서 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
-    HOUSE_HYPHEN_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-006", "공공기관의 시스템에 문제가 발생하여 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_HYPHEN_OUTPUT_ERROR(2, HttpStatus.OK, "HOUSE-005", "공공기관에서 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_HYPHEN_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-006", "공공기관의 시스템에 문제가 발생하여 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 주택(양도주택 거주기간 조회) 관련 */
     HYPHEN_STAY_PERIOD_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-007", "주택 거주기간 조회를 위한 입력값이 올바르지 않습니다."),
-    HYPHEN_STAY_PERIOD_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-008", "공공기관에서 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
-    HYPHEN_STAY_PERIOD_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-009", "공공기관의 시스템에 문제가 발생하여 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
+    HYPHEN_STAY_PERIOD_OUTPUT_ERROR(2, HttpStatus.OK, "HOUSE-008", "공공기관에서 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
+    HYPHEN_STAY_PERIOD_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-009", "공공기관의 시스템에 문제가 발생하여 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 공시가격 및 전용면적 관련 */
     HOUSE_VWORLD_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-010", "공시가격 및 전용면적 조회를 위한 요청값이 올바르지 않습니다."),
-    HOUSE_VWORLD_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-011", "공공기관에서 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
-    HOUSE_VWORLD_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-012", "공공기관의 시스템에 문제가 발생하여 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_VWORLD_OUTPUT_ERROR(2, HttpStatus.OK, "HOUSE-011", "공공기관에서 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_VWORLD_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-012", "공공기관의 시스템에 문제가 발생하여 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 주택(내부 데이터) 관련 */
     HOUSE_NOT_FOUND_ERROR(1, HttpStatus.OK, "HOUSE-013", "해당 주택 정보를 찾을 수 없습니다."),
@@ -68,14 +68,14 @@ public enum ErrorCode {
 
     /* 주택(청약홈 로드 데이터) 관련 */
     HOUSE_GET_INFO_ERROR(1, HttpStatus.OK, "HOUSE-018", "보유주택 정보 조회를 위한 필수 입력값이 올바르지 않습니다."),
-    HOUSE_GET_INFO_NOT_FOUND(1, HttpStatus.OK, "HOUSE-019", "보유주택 정보 조회에 실패하였습니다."),
+    HOUSE_GET_INFO_NOT_FOUND(2, HttpStatus.OK, "HOUSE-019", "보유주택 정보 조회에 실패하였습니다."),
 
     /* 주택(보유주택 조회) 관련 */
-    HOUSE_HYPHEN_RLNO_ERROR(1, HttpStatus.OK, "HOUSE-020", "청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다."),
-    HOUSE_HYPHEN_ACCOUNT_ERROR(1, HttpStatus.OK, "HOUSE-021", "해당 간편인증 회원이 아니거나 아이디 또는 패스워드가 틀려 청약홈 인증에 실패했습니다."),
+    HOUSE_HYPHEN_RLNO_ERROR(2, HttpStatus.OK, "HOUSE-020", "청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다."),
+    HOUSE_HYPHEN_ACCOUNT_ERROR(2, HttpStatus.OK, "HOUSE-021", "해당 간편인증 회원이 아니거나 아이디 또는 패스워드가 틀려 청약홈 인증에 실패했습니다."),
 
     /* 주소 관련 오류 */
-    ADDRESS_SEPARATE_ERROR(1, HttpStatus.OK, "ADDRESS-001", "주소 데이터 프로세스 중 오류가 발생했습니다."),
+    ADDRESS_SEPARATE_ERROR(2, HttpStatus.OK, "ADDRESS-001", "주소 데이터 프로세스 중 오류가 발생했습니다."),
     
     /* 추가질의 항목 조회 관련 */
     QUESTION_INPUT_ERROR(1, HttpStatus.OK, "QUESTION-001", "추가질의항목 조회를 위한 입력값이 올바르지 않습니다."),
@@ -83,8 +83,8 @@ public enum ErrorCode {
     QUESTION_OUTPUT_ERROR(1, HttpStatus.OK, "QUESTION-003", "추가질의항목 조회 중 오류가 발생했습니다."),
 
     /* 계산 관련 */
-    CALCULATION_BUY_TAX_FAILED(2, HttpStatus.OK, "CALCULATION-001", "취득세 계산 중 오류가 발생했습니다."),
-    CALCULATION_SELL_TAX_FAILED(2, HttpStatus.OK, "CALCULATION-002", "양도소득세 계산 중 오류가 발생했습니다."),
+    CALCULATION_BUY_TAX_FAILED(3, HttpStatus.OK, "CALCULATION-001", "취득세 계산 중 오류가 발생했습니다."),
+    CALCULATION_SELL_TAX_FAILED(3, HttpStatus.OK, "CALCULATION-002", "양도소득세 계산 중 오류가 발생했습니다."),
 
     /* 상담 관련 */
     CONSULTING_SCHEDULE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-001", "상담가능일정 조회를 위한 입력값이 올바르지 않습니다."),
@@ -123,7 +123,7 @@ public enum ErrorCode {
     /* 기타 */
     ETC_ERROR(2, HttpStatus.OK, "ETC-001", "오류가 발생했습니다.");
 
-    private final int type;                 // (오류)유형 (1:단순 오류 메시지, 2:상담 연결 메시지)
+    private final int type;                 // (오류)유형 (1:단순 오류 메시지, 2:카카오톡 연결 메시지, 3:상담 연결 메시지)
     private final HttpStatus httpStatus;	// HttpStatus (400, 404, 500...)
     private final String code;				// (오류)코드 ("ACCOUNT-001")
     private final String message;			// (오류)설명 ("사용자를 찾을 수 없습니다.")

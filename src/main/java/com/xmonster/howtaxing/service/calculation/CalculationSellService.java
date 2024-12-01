@@ -2667,18 +2667,19 @@ public class CalculationSellService {
 
                 double dedRate = 0;             // 공제율
 
-                long buyPrice = (long)(house.getBuyPrice() * proportion);                               // 취득가액
-                LocalDate buyDate = house.getBuyDate();                                                 // 취득일자
-                long sellPrice = (long)(calculationSellResultRequest.getSellPrice() * proportion);      // 양도가액
-                LocalDate sellDate = calculationSellResultRequest.getSellDate();                        // 양도일자
-                long necExpensePrice = calculationSellResultRequest.getNecExpensePrice();               // 필요경비금액
-                sellProfitPrice = sellPrice - (buyPrice + necExpensePrice);                             // 양도차익금액(양도가액 - (취득가액 + 필요경비))
+                long buyPrice = (long)(house.getBuyPrice() * proportion);                       // 취득가액
+                LocalDate buyDate = house.getBuyDate();                                         // 취득일자
+                long totalSellPrice = calculationSellResultRequest.getSellPrice();              // 전체 양도가액
+                long sellPrice = (long)(totalSellPrice * proportion);                           // 양도가액
+                LocalDate sellDate = calculationSellResultRequest.getSellDate();                // 양도일자
+                long necExpensePrice = calculationSellResultRequest.getNecExpensePrice();       // 필요경비금액
+                sellProfitPrice = sellPrice - (buyPrice + necExpensePrice);                     // 양도차익금액(양도가액 - (취득가액 + 필요경비))
 
                 // 양도차익금액이 0보다 작으면 0으로 세팅
                 if(sellProfitPrice < 0) sellProfitPrice = 0;
 
-                retentionPeriodDay = ChronoUnit.DAYS.between(buyDate, sellDate);                        // 보유기간(일)
-                retentionPeriodYear = ChronoUnit.YEARS.between(buyDate, sellDate);                      // 보유기간(년)
+                retentionPeriodDay = ChronoUnit.DAYS.between(buyDate, sellDate);                // 보유기간(일)
+                retentionPeriodYear = ChronoUnit.YEARS.between(buyDate, sellDate);              // 보유기간(년)
 
                 log.info("----------------------------------");
                 log.info("- 취득가액 : " + buyPrice);
@@ -2730,9 +2731,8 @@ public class CalculationSellService {
                             if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
                                 // 기준금액(12억)
                                 if(taxRateInfo.getBasePrice() != null){
-                                    //nonTaxablePrice = (taxRateInfo.getBasePrice() * sellProfitPrice) / sellPrice;
-                                    // 과세대상양도차익 = 양도차익 x (양도가액 - 12억) / 양도가액
-                                    taxablePrice = sellProfitPrice * (sellPrice - taxRateInfo.getBasePrice()) / sellPrice;
+                                    // 과세대상양도차익 = 양도차익 x (전체양도가액 - 12억) / 전체양도가액
+                                    taxablePrice = sellProfitPrice * (totalSellPrice - taxRateInfo.getBasePrice()) / totalSellPrice;
                                 }
 
                                 // 비과세대상양도차익금액 = 양도차익 - 과세대상양도차익

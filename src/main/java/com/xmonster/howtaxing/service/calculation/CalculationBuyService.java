@@ -8,10 +8,13 @@ import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.Calcu
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 
 import com.xmonster.howtaxing.dto.house.HouseAddressDto;
+import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaRequest;
+import com.xmonster.howtaxing.dto.vworld.PubLandPriceAndAreaResponse;
 import com.xmonster.howtaxing.model.*;
 import com.xmonster.howtaxing.repository.adjustment_target_area.AdjustmentTargetAreaRepository;
 import com.xmonster.howtaxing.repository.calculation.*;
 import com.xmonster.howtaxing.service.house.HouseAddressService;
+import com.xmonster.howtaxing.service.house.VworldService;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.utils.HouseUtil;
 import com.xmonster.howtaxing.utils.UserUtil;
@@ -38,6 +41,7 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 @Slf4j
 public class CalculationBuyService {
     private final HouseAddressService houseAddressService;
+    private final VworldService vworldService;
 
     private final CalculationProcessRepository calculationProcessRepository;
     private final TaxRateInfoRepository taxRateInfoRepository;
@@ -167,10 +171,6 @@ public class CalculationBuyService {
         if(isMoveInRight == null){
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 입주권여부 정보가 입력되지 않았습니다.");
         }
-
-        /*if(hasSellPlan == null){
-            throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 양도예정여부 정보가 입력되지 않았습니다.");
-        }*/
 
         if(isOwnHouseCntRegist == null){
             throw new CustomException(ErrorCode.CALCULATION_BUY_TAX_FAILED, "취득주택의 보유주택수직접입력여부 정보가 입력되지 않았습니다.");
@@ -2291,13 +2291,59 @@ public class CalculationBuyService {
         // (취득주택 포함)보유주택 수 가져오기
         private long getOwnHouseCount(CalculationBuyResultRequest calculationBuyResultRequest){
             log.info(">>> CalculationBranch getOwnHouseCount - (취득주택 포함)보유주택 수 가져오기");
-
+            
+            // 사용자 직접입력을 통해 보유주택 수를 받아온 경우
             if(calculationBuyResultRequest.getIsOwnHouseCntRegist()){
                 log.info("보유주택 수 직접입력을 통한 보유주택 수 가져오기");
                 return calculationBuyResultRequest.getOwnHouseCnt() + 1;    // 취득주택 포함이므로 +1
-            }else{
+            }
+            // 청약홈을 통해 받아온 보유주택 정보를 가지고 보유주택 수를 계산 하는 경우
+            else{
                 log.info("보유주택 수 조회(청약홈)를 통한 보유주택 수 가져오기");
-                return houseUtil.countOwnHouse() + 1; // 취득주택 포함이므로 + 1
+
+                long ownHouseCount = 0;
+                List<House> houseList = houseUtil.findOwnHouseList();
+
+                if(houseList != null && !houseList.isEmpty()){
+                    ownHouseCount = houseList.size();
+
+                    for(House house : houseList){
+                        Long pubLandPrice = house.getPubLandPrice();
+
+                        // 보유주택 정보에 공시가격이 존재하지 않는 경우 공시가격 DB에서 조회하여 세팅
+                        if(pubLandPrice == null || pubLandPrice == 0){
+                            String detailAdr = house.getDetailAdr();
+                            String[] detailAdrArr = detailAdr.split(SPACE);
+
+                            String dong = EMPTY;
+                            String ho = EMPTY;
+
+                            for(String part : detailAdrArr) {
+                                if(part.endsWith("동")){
+                                    dong = part.replace("동", EMPTY);
+                                }else if (part.endsWith("호")){
+                                    ho = part.replace("호", EMPTY);
+                                }
+                            }
+
+                            pubLandPrice = vworldService.getPubLandPriceAtDBForCalculation(
+                                            PubLandPriceAndAreaRequest.builder()
+                                                    .legalDstCode(house.getAdmCd())
+                                                    .roadAddr(house.getRoadAddr())
+                                                    .complexName(house.getHouseName())
+                                                    .dongName(dong)
+                                                    .hoName(ho)
+                                                    .build());
+                        }
+                        
+                        // 보유주택이 1채 이상이고, 공시가격이 1억원 이하인 경우 보유주택 수에 포함하지 않음
+                        if(ownHouseCount >= 1 && pubLandPrice != null && pubLandPrice <= 100000000){
+                            ownHouseCount--;
+                        }
+                    }
+                }
+
+                return ownHouseCount;
             }
         }
 
