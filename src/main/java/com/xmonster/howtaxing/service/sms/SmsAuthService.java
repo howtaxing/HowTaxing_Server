@@ -7,6 +7,7 @@ import com.xmonster.howtaxing.dto.sms.*;
 import com.xmonster.howtaxing.dto.sms.SmsMessageBodyRequest.Message;
 import com.xmonster.howtaxing.feign.sms.SmsSendApi;
 import com.xmonster.howtaxing.model.SmsAuthInfo;
+import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.sms.SmsAuthRepository;
 import com.xmonster.howtaxing.type.AuthType;
 import com.xmonster.howtaxing.type.ErrorCode;
@@ -74,7 +75,17 @@ public class SmsAuthService {
             id = userUtil.findUserSocialIdByPhoneNumber(phoneNumber);
 
             if(StringUtils.isBlank(id)){
-                throw new CustomException(ErrorCode.SMS_AUTH_INPUT_ERROR, "가입된 회원의 휴대폰번호가 아닙니다.");
+                throw new CustomException(ErrorCode.ID_FIND_PHONE_ERROR);   // 입력한 휴대폰 번호로 가입된 아이디를 찾을 수 없어요.
+            }
+        }else if(AuthType.RESET_PW.equals(authType)){
+            User findUser = userUtil.findUserBySocialId(id);
+
+            if(findUser == null){
+                throw new CustomException(ErrorCode.PW_RESET_ID_ERROR);     // 가입된 아이디가 아니에요.
+            }
+
+            if(!phoneNumber.equals(findUser.getPhoneNumber())){
+                throw new CustomException(ErrorCode.PW_RESET_PHONE_ERROR);  // 입력한 아이디에 등록된 휴대폰 번호가 아니에요.
             }
         }
 
