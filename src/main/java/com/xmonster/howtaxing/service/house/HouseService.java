@@ -537,39 +537,38 @@ public class HouseService {
         String calcType = StringUtils.defaultString(houseSaveAllRequest.getCalcType());
         List<HouseSaveRequest> houseSaveRequestList = houseSaveAllRequest.getHouseSaveRequestList();
 
-        if(calcType == null){
+        if(StringUtils.isBlank(calcType)){
             throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "보유주택 일괄등록을 위한 계산 유형 값이 입력되지 않았습니다.");
         }
 
-        if(houseSaveRequestList == null || houseSaveRequestList.isEmpty()){
-            throw new CustomException(ErrorCode.HOUSE_REGIST_ERROR, "보유주택 일괄등록을 위한 등록할 주택이 입력되지 않았습니다.");
-        }
-
-        for(HouseSaveRequest houseSaveRequest : houseSaveRequestList){
-            houseRepository.saveAndFlush(
-                    House.builder()
-                            .userId(userId)
-                            .houseType(houseSaveRequest.getHouseType())
-                            .houseName(houseSaveRequest.getHouseName())
-                            .detailAdr(houseSaveRequest.getDetailAdr())
-                            .contractDate(houseSaveRequest.getContractDate())
-                            .balanceDate(houseSaveRequest.getBalanceDate())
-                            .buyDate(houseSaveRequest.getBuyDate())
-                            .buyPrice(houseSaveRequest.getBuyPrice())
-                            .pubLandPrice(houseSaveRequest.getPubLandPrice())
-                            .jibunAddr(houseSaveRequest.getJibunAddr())
-                            .roadAddr(houseSaveRequest.getRoadAddr())
-                            .roadAddrRef(houseSaveRequest.getRoadAddrRef())
-                            .bdMgtSn(houseSaveRequest.getBdMgtSn())
-                            .admCd(houseSaveRequest.getAdmCd())
-                            .rnMgtSn(houseSaveRequest.getRnMgtSn())
-                            .area(houseSaveRequest.getArea())
-                            .ownerCnt(1)
-                            .userProportion(100)
-                            .isMoveInRight(false)
-                            .isDestruction(false)
-                            .sourceType(ONE)
-                            .build());
+        // 요청 주택 목록을 보유주택 테이블(DB)에 저장
+        if(houseSaveRequestList != null && !houseSaveRequestList.isEmpty()){
+            for(HouseSaveRequest houseSaveRequest : houseSaveRequestList){
+                houseRepository.saveAndFlush(
+                        House.builder()
+                                .userId(userId)
+                                .houseType(houseSaveRequest.getHouseType())
+                                .houseName(houseSaveRequest.getHouseName())
+                                .detailAdr(houseSaveRequest.getDetailAdr())
+                                .contractDate(houseSaveRequest.getContractDate())
+                                .balanceDate(houseSaveRequest.getBalanceDate())
+                                .buyDate(houseSaveRequest.getBuyDate())
+                                .buyPrice(houseSaveRequest.getBuyPrice())
+                                .pubLandPrice(houseSaveRequest.getPubLandPrice())
+                                .jibunAddr(houseSaveRequest.getJibunAddr())
+                                .roadAddr(houseSaveRequest.getRoadAddr())
+                                .roadAddrRef(houseSaveRequest.getRoadAddrRef())
+                                .bdMgtSn(houseSaveRequest.getBdMgtSn())
+                                .admCd(houseSaveRequest.getAdmCd())
+                                .rnMgtSn(houseSaveRequest.getRnMgtSn())
+                                .area(houseSaveRequest.getArea())
+                                .ownerCnt(1)
+                                .userProportion(100)
+                                .isMoveInRight(false)
+                                .isDestruction(false)
+                                .sourceType(ONE)
+                                .build());
+            }
         }
 
         // DB에 보유한 주택목록을 가져와서 응답값으로 세팅
