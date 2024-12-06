@@ -97,6 +97,8 @@ public class CalculationSellService {
         LocalDate sellDate = calculationSellResultRequest.getSellDate();
         Long sellPrice = calculationSellResultRequest.getSellPrice();
         Long necExpensePrice = calculationSellResultRequest.getNecExpensePrice();
+        Integer ownerCnt = calculationSellResultRequest.getOwnerCnt();
+        Integer userProportion = calculationSellResultRequest.getUserProportion();
 
         if(houseId == null){
             throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 주택ID 정보가 입력되지 않았습니다.");
@@ -116,6 +118,14 @@ public class CalculationSellService {
 
         if(necExpensePrice == null){
             throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 필요경비금액 정보가 입력되지 않았습니다.");
+        }
+
+        if(ownerCnt == null){
+            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 소유자수 정보가 입력되지 않았습니다.");
+        }
+
+        if(userProportion == null){
+            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 본인지분비율 정보가 입력되지 않았습니다.");
         }
     }
 
@@ -2627,9 +2637,19 @@ public class CalculationSellService {
             // 비과세 여부
             boolean isNonTaxRate = false;
 
-            int ownerCount = house.getOwnerCnt();                               // (양도주택)소유자 수
-            double userProportion = (double)house.getUserProportion() / 100;    // (양도주택)보유주택비율(소유자1)
-            double restProPortion = 1 - userProportion;                         // (양도주택)보유주택비율(소유자2)
+            int ownerCount = calculationSellResultRequest.getOwnerCnt();            // (양도주택)소유자 수
+            int userProportionPercentage = calculationSellResultRequest.getUserProportion();
+
+            // 소유자수와 보유주택비율이 보유주택의 DB정보와 사용자의 입력값이 다른 경우, 사용자의 입력값으로 DB 업데이트 처리
+            if(ownerCount != house.getOwnerCnt() || userProportionPercentage != house.getUserProportion()){
+                house.setOwnerCnt(ownerCount);
+                house.setUserProportion(userProportionPercentage);
+
+                houseRepository.saveAndFlush(house);
+            }
+
+            double userProportion = (double)userProportionPercentage / 100;         // (양도주택)보유주택비율(소유자1)
+            double restProPortion = 1 - userProportion;                             // (양도주택)보유주택비율(소유자2)
 
             log.info("- 보유주택 수 : " + houseUtil.countOwnHouse());
 
