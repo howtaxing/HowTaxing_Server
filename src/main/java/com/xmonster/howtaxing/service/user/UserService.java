@@ -93,7 +93,7 @@ public class UserService {
 
             // 이미 가입된 계정의 휴대폰 번호
             if(userUtil.findUserByPhoneNumber(phoneNumber) != null){
-                throw new CustomException(ErrorCode.JOIN_PHONENUMBER_DUPLICATE);
+                throw new CustomException(ErrorCode.JOIN_DUPLICATE_PHONENUMBER_ERROR);
             }
 
             User createdUser = User.builder()
@@ -134,7 +134,7 @@ public class UserService {
         else{
             // 이미 가입된 계정의 휴대폰 번호
             if(userUtil.findUserByPhoneNumber(phoneNumber) != null){
-                throw new CustomException(ErrorCode.JOIN_PHONENUMBER_DUPLICATE);
+                throw new CustomException(ErrorCode.JOIN_DUPLICATE_PHONENUMBER_ERROR);
             }
 
             User findUser = userUtil.findUserBySocialId(id);

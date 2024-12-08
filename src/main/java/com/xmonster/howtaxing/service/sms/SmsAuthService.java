@@ -11,6 +11,7 @@ import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.sms.SmsAuthRepository;
 import com.xmonster.howtaxing.type.AuthType;
 import com.xmonster.howtaxing.type.ErrorCode;
+import com.xmonster.howtaxing.type.SocialType;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,13 +72,24 @@ public class SmsAuthService {
         AuthType authType = AuthType.valueOf(smsSendAuthCodeRequest.getAuthType());
         String id = smsSendAuthCodeRequest.getId();
 
+        // 아이디 찾기
         if(AuthType.FIND_ID.equals(authType)){
-            id = userUtil.findUserSocialIdByPhoneNumber(phoneNumber);
+            User findUser = userUtil.findUserByPhoneNumber(phoneNumber);
 
-            if(StringUtils.isBlank(id)){
+            if(findUser == null || StringUtils.isBlank(findUser.getSocialId())){
                 throw new CustomException(ErrorCode.ID_FIND_PHONE_ERROR);   // 입력한 휴대폰 번호로 가입된 아이디를 찾을 수 없어요.
             }
-        }else if(AuthType.RESET_PW.equals(authType)){
+
+            SocialType socialType = findUser.getSocialType();
+
+            if(SocialType.KAKAO.equals(socialType)){
+                throw new CustomException(ErrorCode.ID_FIND_KAKAO_ERROR);   // 회원님은 카카오로 가입되어 있어 아이디 찾기가 불가해요.
+            }else if(SocialType.NAVER.equals(socialType)){
+                throw new CustomException(ErrorCode.ID_FIND_NAVER_ERROR);   // 회원님은 네이버로 가입되어 있어 아이디 찾기가 불가해요.
+            }
+        }
+        // 비밀번호 재설정
+        else if(AuthType.RESET_PW.equals(authType)){
             User findUser = userUtil.findUserBySocialId(id);
 
             if(findUser == null){
@@ -86,6 +98,30 @@ public class SmsAuthService {
 
             if(!phoneNumber.equals(findUser.getPhoneNumber())){
                 throw new CustomException(ErrorCode.PW_RESET_PHONE_ERROR);  // 입력한 아이디에 등록된 휴대폰 번호가 아니에요.
+            }
+
+            SocialType socialType = findUser.getSocialType();
+
+            if(SocialType.KAKAO.equals(socialType)){
+                throw new CustomException(ErrorCode.PW_RESET_KAKAO_ERROR);   // 회원님은 카카오로 가입되어 있어 비밀번호 재설정이 불가해요.
+            }else if(SocialType.NAVER.equals(socialType)){
+                throw new CustomException(ErrorCode.PW_RESET_NAVER_ERROR);   // 회원님은 네이버로 가입되어 있어 비밀번호 재설정이 불가해요.
+            }
+        }
+        // 회원 가입
+        else if(AuthType.JOIN.equals(authType)){
+            User findUser = userUtil.findUserBySocialId(id);
+
+            if(findUser != null){
+                SocialType socialType = findUser.getSocialType();
+
+                if(SocialType.KAKAO.equals(socialType)){
+                    throw new CustomException(ErrorCode.JOIN_DUPLICATE_KAKAO_ERROR);   // 해당 휴대폰 번호는 이미 카카오를 통해 가입된 계정에서 사용 중이에요.
+                }else if(SocialType.NAVER.equals(socialType)){
+                    throw new CustomException(ErrorCode.JOIN_DUPLICATE_NAVER_ERROR);   // 해당 휴대폰 번호는 이미 네이버를 통해 가입된 계정에서 사용 중이에요.
+                }else if(SocialType.IDPASS.equals(socialType)){
+                    throw new CustomException(ErrorCode.JOIN_DUPLICATE_IDPASS_ERROR);   // 해당 휴대폰 번호는 이미 가입된 계정에서 사용 중이에요.
+                }
             }
         }
 

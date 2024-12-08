@@ -22,8 +22,11 @@ public enum ErrorCode {
     JOIN_USER_INPUT_ERROR(1, HttpStatus.OK, "JOIN-001", "회원가입을 위한 입력값이 올바르지 않습니다."),
     JOIN_USER_OUTPUT_ERROR(1, HttpStatus.OK, "JOIN-002", "회원가입 중 오류가 발생했습니다."),
     JOIN_USER_AUTH_ERROR(1, HttpStatus.OK, "JOIN-003", "회원가입을 위한 인증키 검증에 실패했어요."),
-    JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-003", "이미 존재하는 아이디 입니다."),
-    JOIN_PHONENUMBER_DUPLICATE(1, HttpStatus.OK, "JOIN-004", "이미 사용 중인 휴대폰 번호에요."),
+    JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-004", "이미 존재하는 아이디 입니다."),
+    JOIN_DUPLICATE_KAKAO_ERROR(1, HttpStatus.OK, "JOIN-005", "해당 휴대폰 번호는 이미 카카오를 통해 가입된 계정에서 사용 중이에요."),
+    JOIN_DUPLICATE_NAVER_ERROR(1, HttpStatus.OK, "JOIN-006", "해당 휴대폰 번호는 이미 네이버를 통해 가입된 계정에서 사용 중이에요."),
+    JOIN_DUPLICATE_IDPASS_ERROR(1, HttpStatus.OK, "JOIN-007", "해당 휴대폰 번호는 이미 가입된 계정에서 사용 중이에요."),
+    JOIN_DUPLICATE_PHONENUMBER_ERROR(1, HttpStatus.OK, "JOIN-007", "이미 사용 중인 휴대폰 번호에요."),
 
     /* 아이디 중복체크 관련 */
     ID_CHECK_INPUT_ERROR(1, HttpStatus.OK, "IDCHECK-001", "아이디 중복체크를 위한 입력값이 올바르지 않습니다."),
@@ -34,6 +37,8 @@ public enum ErrorCode {
     ID_FIND_INPUT_ERROR(1, HttpStatus.OK, "FIND-002", "아이디 찾기를 위한 요청 값이 올바르지 않아요."),
     ID_FIND_MESSAGE_ERROR(1, HttpStatus.OK, "FIND-003", "아이디 정보를 전달할 메시지 발송에 실패했어요."),
     ID_FIND_PHONE_ERROR(1, HttpStatus.OK, "FIND-004", "입력한 휴대폰 번호로 가입된 아이디를 찾을 수 없어요."),
+    ID_FIND_KAKAO_ERROR(1, HttpStatus.OK, "FIND-005", "회원님은 카카오로 가입되어 있어 아이디 찾기가 불가해요."),
+    ID_FIND_NAVER_ERROR(1, HttpStatus.OK, "FIND-006", "회원님은 네이버로 가입되어 있어 아이디 찾기가 불가해요."),
 
     /* 비밀번호 재설정 관련 */
     PW_RESET_AUTH_ERROR(1, HttpStatus.OK, "RESET-001", "비밀번호 재설정 위한 인증키 검증에 실패했어요."),
@@ -41,6 +46,8 @@ public enum ErrorCode {
     PW_RESET_FAIL_ERROR(1, HttpStatus.OK, "RESET-003", "비밀번호 재설정에 실패했어요"),
     PW_RESET_ID_ERROR(1, HttpStatus.OK, "RESET-004", "가입된 아이디가 아니에요."),
     PW_RESET_PHONE_ERROR(1, HttpStatus.OK, "RESET-005", "입력한 아이디에 등록된 휴대폰 번호가 아니에요."),
+    PW_RESET_KAKAO_ERROR(1, HttpStatus.OK, "RESET-005", "회원님은 카카오로 가입되어 있어 비밀번호 재설정이 불가해요."),
+    PW_RESET_NAVER_ERROR(1, HttpStatus.OK, "RESET-005", "회원님은 네이버로 가입되어 있어 비밀번호 재설정이 불가해요."),
 
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),
