@@ -23,9 +23,9 @@ public enum ErrorCode {
     JOIN_USER_OUTPUT_ERROR(1, HttpStatus.OK, "JOIN-002", "회원가입 중 오류가 발생했습니다."),
     JOIN_USER_AUTH_ERROR(1, HttpStatus.OK, "JOIN-003", "회원가입을 위한 인증키 검증에 실패했어요."),
     JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-004", "이미 존재하는 아이디 입니다."),
-    JOIN_DUPLICATE_KAKAO_ERROR(1, HttpStatus.OK, "JOIN-005", "해당 휴대폰 번호는 이미 카카오를 통해 가입된 계정에서 사용 중이에요."),
-    JOIN_DUPLICATE_NAVER_ERROR(1, HttpStatus.OK, "JOIN-006", "해당 휴대폰 번호는 이미 네이버를 통해 가입된 계정에서 사용 중이에요."),
-    JOIN_DUPLICATE_IDPASS_ERROR(1, HttpStatus.OK, "JOIN-007", "해당 휴대폰 번호는 이미 가입된 계정에서 사용 중이에요."),
+    JOIN_DUPLICATE_KAKAO_ERROR(1, HttpStatus.OK, "JOIN-005", "해당 휴대폰 번호는 이미 카카오로 가입되었어요."),
+    JOIN_DUPLICATE_NAVER_ERROR(1, HttpStatus.OK, "JOIN-006", "해당 휴대폰 번호는 이미 네이버로 가입되었어요."),
+    JOIN_DUPLICATE_IDPASS_ERROR(1, HttpStatus.OK, "JOIN-007", "해당 휴대폰 번호는 이미 아이디/비밀번호로 가입되었어요."),
     JOIN_DUPLICATE_PHONENUMBER_ERROR(1, HttpStatus.OK, "JOIN-007", "이미 사용 중인 휴대폰 번호에요."),
 
     /* 아이디 중복체크 관련 */
