@@ -9,9 +9,7 @@ import com.xmonster.howtaxing.feign.sms.SmsSendApi;
 import com.xmonster.howtaxing.model.SmsAuthInfo;
 import com.xmonster.howtaxing.model.User;
 import com.xmonster.howtaxing.repository.sms.SmsAuthRepository;
-import com.xmonster.howtaxing.type.AuthType;
-import com.xmonster.howtaxing.type.ErrorCode;
-import com.xmonster.howtaxing.type.SocialType;
+import com.xmonster.howtaxing.type.*;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -112,7 +110,7 @@ public class SmsAuthService {
         else if(AuthType.JOIN.equals(authType)){
             User findUser = userUtil.findUserBySocialId(id);
 
-            if(findUser != null){
+            if(findUser != null && Role.USER.equals(findUser.getRole())){
                 SocialType socialType = findUser.getSocialType();
 
                 if(SocialType.KAKAO.equals(socialType)){
