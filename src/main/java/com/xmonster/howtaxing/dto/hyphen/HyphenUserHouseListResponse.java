@@ -13,9 +13,9 @@ import java.util.List;
 @AllArgsConstructor
 public class HyphenUserHouseListResponse {
     @JsonProperty("common")
-    private HyphenCommon hyphenCommon;
+    private HyphenCommon hyphenCommon;      // 공통부
     @JsonProperty("data")
-    private HyphenData hyphenData;
+    private HyphenData hyphenData;          // 개별부
 
     @Data
     @NoArgsConstructor
