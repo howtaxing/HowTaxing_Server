@@ -108,6 +108,19 @@ public class SmsAuthService {
         }
         // 회원 가입
         else if(AuthType.JOIN.equals(authType)){
+            User findUser = userUtil.findUserByPhoneNumber(phoneNumber);
+            if(findUser != null){
+                SocialType socialType = findUser.getSocialType();
+
+                if(SocialType.KAKAO.equals(socialType)){
+                    throw new CustomException(ErrorCode.JOIN_DUPLICATE_KAKAO_ERROR);   // 해당 휴대폰 번호는 이미 카카오로 가입되었어요.
+                }else if(SocialType.NAVER.equals(socialType)){
+                    throw new CustomException(ErrorCode.JOIN_DUPLICATE_NAVER_ERROR);   // 해당 휴대폰 번호는 이미 네이버로 가입되었어요.
+                }else if(SocialType.IDPASS.equals(socialType)){
+                    throw new CustomException(ErrorCode.JOIN_DUPLICATE_IDPASS_ERROR);   // 해당 휴대폰 번호는 이미 아이디/비밀번호로 가입되었어요.
+                }
+            }
+            /*
             // 소셜 회원가입(id 입력값이 없으면 소셜 회원가입)
             if(StringUtils.isBlank(id)){
                 User findUser = userUtil.findUserByPhoneNumber(phoneNumber);
@@ -143,6 +156,7 @@ public class SmsAuthService {
                     }
                 }
             }
+            */
         }
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
