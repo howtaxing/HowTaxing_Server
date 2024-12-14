@@ -120,43 +120,6 @@ public class SmsAuthService {
                     throw new CustomException(ErrorCode.JOIN_DUPLICATE_IDPASS_ERROR);   // 해당 휴대폰 번호는 이미 아이디/비밀번호로 가입되었어요.
                 }
             }
-            /*
-            // 소셜 회원가입(id 입력값이 없으면 소셜 회원가입)
-            if(StringUtils.isBlank(id)){
-                User findUser = userUtil.findUserByPhoneNumber(phoneNumber);
-                if(findUser != null && Role.USER.equals(findUser.getRole())){
-                    SocialType socialType = findUser.getSocialType();
-
-                    if(SocialType.KAKAO.equals(socialType)){
-                        throw new CustomException(ErrorCode.JOIN_DUPLICATE_KAKAO_ERROR);   // 해당 휴대폰 번호는 이미 카카오로 가입되었어요.
-                    }else if(SocialType.NAVER.equals(socialType)){
-                        throw new CustomException(ErrorCode.JOIN_DUPLICATE_NAVER_ERROR);   // 해당 휴대폰 번호는 이미 네이버로 가입되었어요.
-                    }else if(SocialType.IDPASS.equals(socialType)){
-                        throw new CustomException(ErrorCode.JOIN_DUPLICATE_IDPASS_ERROR);   // 해당 휴대폰 번호는 이미 아이디/비밀번호로 가입되었어요.
-                    }
-                }
-            }
-            // 일반 회원가입(id 입력값이 있으면 일반 회원가입)
-            else{
-                // 입력한 아이디가 이미 사용되고 있는 경우
-                if(userUtil.findUserBySocialId(id) != null){
-                    throw new CustomException(ErrorCode.JOIN_DUPLICATE_IDPASS_ERROR);   // 해당 휴대폰 번호는 이미 아이디/비밀번호로 가입되었어요.
-                }
-                // 입력한 아이디가 사용되지 않는 경우
-                else{
-                    User findUser = userUtil.findUserByPhoneNumber(phoneNumber);
-                    if(findUser != null && Role.USER.equals(findUser.getRole())){
-                        SocialType socialType = findUser.getSocialType();
-
-                        if(SocialType.KAKAO.equals(socialType)){
-                            throw new CustomException(ErrorCode.JOIN_DUPLICATE_KAKAO_ERROR);   // 해당 휴대폰 번호는 이미 카카오로 가입되었어요.
-                        }else if(SocialType.NAVER.equals(socialType)){
-                            throw new CustomException(ErrorCode.JOIN_DUPLICATE_NAVER_ERROR);   // 해당 휴대폰 번호는 이미 네이버로 가입되었어요.
-                        }
-                    }
-                }
-            }
-            */
         }
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();

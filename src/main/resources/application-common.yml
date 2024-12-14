@@ -25,7 +25,7 @@ ncloud:
   secret-key: ncp_iam_BPKMKRQtK5PXemzBhIHaJOPXM5ZbpGilYa
   sms:
     service-id: ncp:sms:kr:320009612043:howtaxing
-    sender-number: 01084781689
+    sender-number: 07042336134
 
 social:
   kakao:
