@@ -3,11 +3,13 @@ package com.xmonster.howtaxing.handler.exception;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.model.ErrorResponseEntity;
 import com.xmonster.howtaxing.type.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
+@Slf4j
 public class CustomExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
@@ -16,6 +18,8 @@ public class CustomExceptionHandler {
         ErrorCode errorCode = e.getErrorCode();
         String errorMessage = e.getErrorMessage();
         String errorMessageDetail = e.getErrorMessageDetail();
+
+        log.error("ERROR LOG(errorCode : " + errorCode + ", errorMessage : " + errorMessage + ", errorMessageDetail : " + errorMessageDetail + ")");
 
         if(errorCode != null){
             if(errorMessageDetail != null){

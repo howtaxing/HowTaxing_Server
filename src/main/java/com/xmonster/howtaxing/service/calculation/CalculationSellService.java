@@ -97,6 +97,8 @@ public class CalculationSellService {
         LocalDate sellDate = calculationSellResultRequest.getSellDate();
         Long sellPrice = calculationSellResultRequest.getSellPrice();
         Long necExpensePrice = calculationSellResultRequest.getNecExpensePrice();
+        Integer ownerCnt = calculationSellResultRequest.getOwnerCnt();
+        Integer userProportion = calculationSellResultRequest.getUserProportion();
 
         if(houseId == null){
             throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 주택ID 정보가 입력되지 않았습니다.");
@@ -116,6 +118,14 @@ public class CalculationSellService {
 
         if(necExpensePrice == null){
             throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 필요경비금액 정보가 입력되지 않았습니다.");
+        }
+
+        if(ownerCnt == null){
+            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 소유자수 정보가 입력되지 않았습니다.");
+        }
+
+        if(userProportion == null){
+            throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도주택의 본인지분비율 정보가 입력되지 않았습니다.");
         }
     }
 
@@ -2627,9 +2637,19 @@ public class CalculationSellService {
             // 비과세 여부
             boolean isNonTaxRate = false;
 
-            int ownerCount = house.getOwnerCnt();                               // (양도주택)소유자 수
-            double userProportion = (double)house.getUserProportion() / 100;    // (양도주택)보유주택비율(소유자1)
-            double restProPortion = 1 - userProportion;                         // (양도주택)보유주택비율(소유자2)
+            int ownerCount = calculationSellResultRequest.getOwnerCnt();            // (양도주택)소유자 수
+            int userProportionPercentage = calculationSellResultRequest.getUserProportion();
+
+            // 소유자수와 보유주택비율이 보유주택의 DB정보와 사용자의 입력값이 다른 경우, 사용자의 입력값으로 DB 업데이트 처리
+            if(ownerCount != house.getOwnerCnt() || userProportionPercentage != house.getUserProportion()){
+                house.setOwnerCnt(ownerCount);
+                house.setUserProportion(userProportionPercentage);
+
+                houseRepository.saveAndFlush(house);
+            }
+
+            double userProportion = (double)userProportionPercentage / 100;         // (양도주택)보유주택비율(소유자1)
+            double restProPortion = 1 - userProportion;                             // (양도주택)보유주택비율(소유자2)
 
             log.info("- 보유주택 수 : " + houseUtil.countOwnHouse());
 
@@ -2667,18 +2687,19 @@ public class CalculationSellService {
 
                 double dedRate = 0;             // 공제율
 
-                long buyPrice = (long)(house.getBuyPrice() * proportion);                               // 취득가액
-                LocalDate buyDate = house.getBuyDate();                                                 // 취득일자
-                long sellPrice = (long)(calculationSellResultRequest.getSellPrice() * proportion);      // 양도가액
-                LocalDate sellDate = calculationSellResultRequest.getSellDate();                        // 양도일자
-                long necExpensePrice = calculationSellResultRequest.getNecExpensePrice();               // 필요경비금액
-                sellProfitPrice = sellPrice - (buyPrice + necExpensePrice);                             // 양도차익금액(양도가액 - (취득가액 + 필요경비))
+                long buyPrice = (long)(house.getBuyPrice() * proportion);                       // 취득가액
+                LocalDate buyDate = house.getBuyDate();                                         // 취득일자
+                long totalSellPrice = calculationSellResultRequest.getSellPrice();              // 전체 양도가액
+                long sellPrice = (long)(totalSellPrice * proportion);                           // 양도가액
+                LocalDate sellDate = calculationSellResultRequest.getSellDate();                // 양도일자
+                long necExpensePrice = calculationSellResultRequest.getNecExpensePrice();       // 필요경비금액
+                sellProfitPrice = sellPrice - (buyPrice + necExpensePrice);                     // 양도차익금액(양도가액 - (취득가액 + 필요경비))
 
                 // 양도차익금액이 0보다 작으면 0으로 세팅
                 if(sellProfitPrice < 0) sellProfitPrice = 0;
 
-                retentionPeriodDay = ChronoUnit.DAYS.between(buyDate, sellDate);                        // 보유기간(일)
-                retentionPeriodYear = ChronoUnit.YEARS.between(buyDate, sellDate);                      // 보유기간(년)
+                retentionPeriodDay = ChronoUnit.DAYS.between(buyDate, sellDate);                // 보유기간(일)
+                retentionPeriodYear = ChronoUnit.YEARS.between(buyDate, sellDate);              // 보유기간(년)
 
                 log.info("----------------------------------");
                 log.info("- 취득가액 : " + buyPrice);
@@ -2730,9 +2751,8 @@ public class CalculationSellService {
                             if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
                                 // 기준금액(12억)
                                 if(taxRateInfo.getBasePrice() != null){
-                                    //nonTaxablePrice = (taxRateInfo.getBasePrice() * sellProfitPrice) / sellPrice;
-                                    // 과세대상양도차익 = 양도차익 x (양도가액 - 12억) / 양도가액
-                                    taxablePrice = sellProfitPrice * (sellPrice - taxRateInfo.getBasePrice()) / sellPrice;
+                                    // 과세대상양도차익 = 양도차익 x (전체양도가액 - 12억) / 전체양도가액
+                                    taxablePrice = sellProfitPrice * (totalSellPrice - taxRateInfo.getBasePrice()) / totalSellPrice;
                                 }
 
                                 // 비과세대상양도차익금액 = 양도차익 - 과세대상양도차익
@@ -2899,6 +2919,8 @@ public class CalculationSellService {
                 log.info("- 총납부세액 : " + totalTaxPrice);
                 log.info("----------------------------------");
 
+                String proportionRateStr = String.format("%.0f", proportion*100);
+
                 String buyPriceStr = Long.toString(buyPrice);
                 String buyDateStr = buyDate.toString();
                 String sellPriceStr = Long.toString(sellPrice);
@@ -2924,6 +2946,7 @@ public class CalculationSellService {
 
                 calculationSellResultOneList.add(
                         CalculationSellOneResult.builder()
+                                .userProportion(proportionRateStr)
                                 .buyPrice(buyPriceStr)
                                 .buyDate(buyDateStr)
                                 .sellPrice(sellPriceStr)
@@ -3028,6 +3051,7 @@ public class CalculationSellService {
                                                         .calcHistoryId(calcHistoryId)
                                                         .detailHistorySeq(calculationSellResponseHistorySeq)
                                                         .build())
+                                        .userProportion(calculationSellOneResult.getUserProportion())
                                         .buyPrice(calculationSellOneResult.getBuyPrice())
                                         .buyDate(calculationSellOneResult.getBuyDate())
                                         .sellPrice(calculationSellOneResult.getSellPrice())

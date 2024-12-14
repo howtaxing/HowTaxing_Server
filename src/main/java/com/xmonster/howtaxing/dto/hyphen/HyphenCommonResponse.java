@@ -25,6 +25,8 @@ public class HyphenCommonResponse {
         private String hyphenTrNo;
         @JsonProperty("errYn")
         private String errYn;
+        @JsonProperty("errCd")
+        private String errCd;
         @JsonProperty("errMsg")
         private String errMsg;
     }

@@ -22,4 +22,26 @@ public class UserUtil {
     public Long findCurrentUserId() {
         return findCurrentUser().getId();
     }
+
+    public String findCurrentUserSocialId(){
+        return findCurrentUser().getSocialId();
+    }
+
+    public User findUserBySocialId(String socialId) {
+        return userRepository.findBySocialId(socialId).orElse(null);
+    }
+
+    public User findUserByPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber);
+    }
+
+    public String findUserSocialIdByPhoneNumber(String phoneNumber) {
+        User findUser = findUserByPhoneNumber(phoneNumber);
+
+        if(findUser == null){
+            throw new CustomException(ErrorCode.USER_NOT_FOUND, "가입된 회원의 휴대폰번호가 아닙니다.");
+        }
+
+        return findUser.getSocialId();
+    }
 }

@@ -21,32 +21,53 @@ public enum ErrorCode {
     /* 회원가입 관련 */
     JOIN_USER_INPUT_ERROR(1, HttpStatus.OK, "JOIN-001", "회원가입을 위한 입력값이 올바르지 않습니다."),
     JOIN_USER_OUTPUT_ERROR(1, HttpStatus.OK, "JOIN-002", "회원가입 중 오류가 발생했습니다."),
-    JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-003", "이미 존재하는 아이디 입니다."),
-    JOIN_PHONENUMBER_DUPLICATE(1, HttpStatus.OK, "JOIN-004", "이미 사용 중인 휴대폰 번호에요."),
+    JOIN_USER_AUTH_ERROR(1, HttpStatus.OK, "JOIN-003", "회원가입을 위한 인증키 검증에 실패했어요."),
+    JOIN_USER_ID_EXIST(1, HttpStatus.OK, "JOIN-004", "이미 존재하는 아이디 입니다."),
+    JOIN_DUPLICATE_KAKAO_ERROR(1, HttpStatus.OK, "JOIN-005", "해당 휴대폰 번호는 이미 카카오로 가입되었어요."),
+    JOIN_DUPLICATE_NAVER_ERROR(1, HttpStatus.OK, "JOIN-006", "해당 휴대폰 번호는 이미 네이버로 가입되었어요."),
+    JOIN_DUPLICATE_IDPASS_ERROR(1, HttpStatus.OK, "JOIN-007", "해당 휴대폰 번호는 이미 아이디/비밀번호로 가입되었어요."),
+    JOIN_DUPLICATE_PHONENUMBER_ERROR(1, HttpStatus.OK, "JOIN-007", "이미 사용 중인 휴대폰 번호에요."),
 
     /* 아이디 중복체크 관련 */
     ID_CHECK_INPUT_ERROR(1, HttpStatus.OK, "IDCHECK-001", "아이디 중복체크를 위한 입력값이 올바르지 않습니다."),
     ID_CHECK_ALREADY_EXIST(1, HttpStatus.OK, "IDCHECK-002", "이미 존재하는 아이디 입니다."),
 
+    /* 아이디 찾기 관련 */
+    ID_FIND_AUTH_ERROR(1, HttpStatus.OK, "FIND-001", "아이디 찾기를 위한 인증키 검증에 실패했어요."),
+    ID_FIND_INPUT_ERROR(1, HttpStatus.OK, "FIND-002", "아이디 찾기를 위한 요청 값이 올바르지 않아요."),
+    ID_FIND_MESSAGE_ERROR(1, HttpStatus.OK, "FIND-003", "아이디 정보를 전달할 메시지 발송에 실패했어요."),
+    ID_FIND_PHONE_ERROR(1, HttpStatus.OK, "FIND-004", "입력한 휴대폰 번호로 가입된 아이디를 찾을 수 없어요."),
+    ID_FIND_KAKAO_ERROR(1, HttpStatus.OK, "FIND-005", "회원님은 카카오로 가입되어 있어 아이디 찾기가 불가해요."),
+    ID_FIND_NAVER_ERROR(1, HttpStatus.OK, "FIND-006", "회원님은 네이버로 가입되어 있어 아이디 찾기가 불가해요."),
+
+    /* 비밀번호 재설정 관련 */
+    PW_RESET_AUTH_ERROR(1, HttpStatus.OK, "RESET-001", "비밀번호 재설정 위한 인증키 검증에 실패했어요."),
+    PW_RESET_INPUT_ERROR(1, HttpStatus.OK, "RESET-002", "비밀번호 재설정을 위한 요청 값이 올바르지 않아요."),
+    PW_RESET_FAIL_ERROR(1, HttpStatus.OK, "RESET-003", "비밀번호 재설정에 실패했어요"),
+    PW_RESET_ID_ERROR(1, HttpStatus.OK, "RESET-004", "가입된 아이디가 아니에요."),
+    PW_RESET_PHONE_ERROR(1, HttpStatus.OK, "RESET-005", "입력한 아이디에 등록된 휴대폰 번호가 아니에요."),
+    PW_RESET_KAKAO_ERROR(1, HttpStatus.OK, "RESET-005", "회원님은 카카오로 가입되어 있어 비밀번호 재설정이 불가해요."),
+    PW_RESET_NAVER_ERROR(1, HttpStatus.OK, "RESET-005", "회원님은 네이버로 가입되어 있어 비밀번호 재설정이 불가해요."),
+
     /* 주택(취득주택 조회) 관련 */
     HOUSE_JUSOGOV_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-001", "주택 정보 조회를 위한 요청값이 올바르지 않습니다."),
     HOUSE_JUSOGOV_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-002", "공공기관에서 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),
-    HOUSE_JUSOGOV_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-003", "공공기관의 시스템에 문제가 발생하여 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_JUSOGOV_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-003", "공공기관의 시스템에 문제가 발생하여 검색한 주택 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 주택(보유주택 조회) 관련 */
     HOUSE_HYPHEN_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-004", "보유주택 정보 조회를 위한 간편인증 입력값이 올바르지 않습니다."),
-    HOUSE_HYPHEN_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-005", "공공기관에서 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
-    HOUSE_HYPHEN_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-006", "공공기관의 시스템에 문제가 발생하여 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_HYPHEN_OUTPUT_ERROR(2, HttpStatus.OK, "HOUSE-005", "공공기관에서 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_HYPHEN_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-006", "공공기관의 시스템에 문제가 발생하여 보유주택 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 주택(양도주택 거주기간 조회) 관련 */
     HYPHEN_STAY_PERIOD_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-007", "주택 거주기간 조회를 위한 입력값이 올바르지 않습니다."),
-    HYPHEN_STAY_PERIOD_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-008", "공공기관에서 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
-    HYPHEN_STAY_PERIOD_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-009", "공공기관의 시스템에 문제가 발생하여 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
+    HYPHEN_STAY_PERIOD_OUTPUT_ERROR(2, HttpStatus.OK, "HOUSE-008", "공공기관에서 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
+    HYPHEN_STAY_PERIOD_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-009", "공공기관의 시스템에 문제가 발생하여 거주기간 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 공시가격 및 전용면적 관련 */
     HOUSE_VWORLD_INPUT_ERROR(1, HttpStatus.OK, "HOUSE-010", "공시가격 및 전용면적 조회를 위한 요청값이 올바르지 않습니다."),
-    HOUSE_VWORLD_OUTPUT_ERROR(1, HttpStatus.OK, "HOUSE-011", "공공기관에서 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
-    HOUSE_VWORLD_SYSTEM_ERROR(1, HttpStatus.OK, "HOUSE-012", "공공기관의 시스템에 문제가 발생하여 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_VWORLD_OUTPUT_ERROR(2, HttpStatus.OK, "HOUSE-011", "공공기관에서 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
+    HOUSE_VWORLD_SYSTEM_ERROR(2, HttpStatus.OK, "HOUSE-012", "공공기관의 시스템에 문제가 발생하여 공시가격 및 전용면적 정보를 가져오는 중 오류가 발생했습니다."),
 
     /* 주택(내부 데이터) 관련 */
     HOUSE_NOT_FOUND_ERROR(1, HttpStatus.OK, "HOUSE-013", "해당 주택 정보를 찾을 수 없습니다."),
@@ -57,14 +78,14 @@ public enum ErrorCode {
 
     /* 주택(청약홈 로드 데이터) 관련 */
     HOUSE_GET_INFO_ERROR(1, HttpStatus.OK, "HOUSE-018", "보유주택 정보 조회를 위한 필수 입력값이 올바르지 않습니다."),
-    HOUSE_GET_INFO_NOT_FOUND(1, HttpStatus.OK, "HOUSE-019", "보유주택 정보 조회에 실패하였습니다."),
+    HOUSE_GET_INFO_NOT_FOUND(2, HttpStatus.OK, "HOUSE-019", "보유주택 정보 조회에 실패하였습니다."),
 
     /* 주택(보유주택 조회) 관련 */
-    HOUSE_HYPHEN_RLNO_ERROR(1, HttpStatus.OK, "HOUSE-020", "청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다."),
-    HOUSE_HYPHEN_ACCOUNT_ERROR(1, HttpStatus.OK, "HOUSE-021", "해당 간편인증 회원이 아니거나 아이디 또는 패스워드가 틀려 청약홈 인증에 실패했습니다."),
+    HOUSE_HYPHEN_RLNO_ERROR(2, HttpStatus.OK, "HOUSE-020", "청약통장이 없거나 주민등록번호가 잘못 입력되어 청약홈 인증에 실패하였습니다."),
+    HOUSE_HYPHEN_ACCOUNT_ERROR(2, HttpStatus.OK, "HOUSE-021", "해당 간편인증 회원이 아니거나 아이디 또는 패스워드가 틀려 청약홈 인증에 실패했습니다."),
 
     /* 주소 관련 오류 */
-    ADDRESS_SEPARATE_ERROR(1, HttpStatus.OK, "ADDRESS-001", "주소 데이터 프로세스 중 오류가 발생했습니다."),
+    ADDRESS_SEPARATE_ERROR(2, HttpStatus.OK, "ADDRESS-001", "주소 데이터 프로세스 중 오류가 발생했습니다."),
     
     /* 추가질의 항목 조회 관련 */
     QUESTION_INPUT_ERROR(1, HttpStatus.OK, "QUESTION-001", "추가질의항목 조회를 위한 입력값이 올바르지 않습니다."),
@@ -72,8 +93,8 @@ public enum ErrorCode {
     QUESTION_OUTPUT_ERROR(1, HttpStatus.OK, "QUESTION-003", "추가질의항목 조회 중 오류가 발생했습니다."),
 
     /* 계산 관련 */
-    CALCULATION_BUY_TAX_FAILED(2, HttpStatus.OK, "CALCULATION-001", "취득세 계산 중 오류가 발생했습니다."),
-    CALCULATION_SELL_TAX_FAILED(2, HttpStatus.OK, "CALCULATION-002", "양도소득세 계산 중 오류가 발생했습니다."),
+    CALCULATION_BUY_TAX_FAILED(3, HttpStatus.OK, "CALCULATION-001", "취득세 계산 중 오류가 발생했습니다."),
+    CALCULATION_SELL_TAX_FAILED(3, HttpStatus.OK, "CALCULATION-002", "양도소득세 계산 중 오류가 발생했습니다."),
 
     /* 상담 관련 */
     CONSULTING_SCHEDULE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-001", "상담가능일정 조회를 위한 입력값이 올바르지 않습니다."),
@@ -95,13 +116,24 @@ public enum ErrorCode {
     /* 리뷰 관련 */
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),
 
+    /* 메시지 관련 */
+    SMS_AUTH_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-001", "인증번호 발송 입력값이 올바르지 않아요."),
+    SMS_AUTH_COUNT_ERROR(1, HttpStatus.OK, "MESSAGE-002", "인증번호는 하루에 10회까지만 발송할 수 있어요."),
+    SMS_AUTH_SEND_ERROR(1, HttpStatus.OK, "MESSAGE-003", "인증번호 발송에 실패했어요."),
+    SMS_AUTH_CHECK_ERROR(1, HttpStatus.OK, "MESSAGE-004", "인증번호 검증에 실패했어요."),
+    SMS_AUTH_MATCH_ERROR(1, HttpStatus.OK, "MESSAGE-005", "인증번호가 정확하지 않아요."),
+    SMS_AUTH_TIME_ERROR(1, HttpStatus.OK, "MESSAGE-006", "인증시간이 만료되었어요."),
+    SMS_MSG_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-007", "SMS 발송을 위한 입력값이 올바르지 않아요."),
+    SMS_MSG_OUTPUT_ERROR(1, HttpStatus.OK, "MESSAGE-008", "SMS 발송 중 오류가 발생했어요."),
+    SMS_MSG_SYSTEM_ERROR(1, HttpStatus.OK, "MESSAGE-009", "SMS 시스템에 오류가 발생하여 메시지를 발송할 수 없어요."),
+
     /* 시스템 관련 */
     SYSTEM_UNKNOWN_ERROR(2, HttpStatus.OK, "SYSTEM-001", "알 수 없는 오류가 발생했습니다."),
 
     /* 기타 */
     ETC_ERROR(2, HttpStatus.OK, "ETC-001", "오류가 발생했습니다.");
 
-    private final int type;                 // (오류)유형 (1:단순 오류 메시지, 2:상담 연결 메시지)
+    private final int type;                 // (오류)유형 (1:단순 오류 메시지, 2:카카오톡 연결 메시지, 3:상담 연결 메시지)
     private final HttpStatus httpStatus;	// HttpStatus (400, 404, 500...)
     private final String code;				// (오류)코드 ("ACCOUNT-001")
     private final String message;			// (오류)설명 ("사용자를 찾을 수 없습니다.")

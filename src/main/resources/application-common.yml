@@ -20,6 +20,13 @@ jusogov:
     road_addr_detail : U01TX0FVVEgyMDI0MDcyMDIzNDkwNTExNDk0Mzk=
 vworld:
   key: E3422A28-9B67-3BCF-912F-5B7BBE6C8318
+ncloud:
+  access-key: ncp_iam_BPAMKR5zEQh9xkdLuEnK
+  secret-key: ncp_iam_BPKMKRQtK5PXemzBhIHaJOPXM5ZbpGilYa
+  sms:
+    service-id: ncp:sms:kr:320009612043:howtaxing
+    sender-number: 07042336134
+
 social:
   kakao:
     admin-key: 10e662095af367398e3a520930d32cfd

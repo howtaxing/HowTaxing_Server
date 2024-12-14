@@ -20,6 +20,7 @@ public class CalculationSellResponseHistory implements Serializable {
     @EmbeddedId
     private CalculationHistoryId calculationHistoryId;
 
+    private String userProportion;      // 본인지분비율
     private String buyPrice;            // 취득가액
     private String buyDate;             // 취득일자
     private String sellPrice;           // 양도가액

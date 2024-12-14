@@ -71,6 +71,8 @@ public class HyphenService {
 
         if(houseListSearchRequest == null) throw new CustomException(ErrorCode.HOUSE_HYPHEN_INPUT_ERROR);
 
+        log.info(houseListSearchRequest.toString());
+
         ResponseEntity<?> response = null;
         try{
             response = hyphenUserOwnHouseApi.getUserOwnHouseInfo(

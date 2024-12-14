@@ -13,22 +13,24 @@ import java.util.List;
 @AllArgsConstructor
 public class HyphenUserHouseListResponse {
     @JsonProperty("common")
-    private HyphenCommon hyphenCommon;
+    private HyphenCommon hyphenCommon;      // 공통부
     @JsonProperty("data")
-    private HyphenData hyphenData;
+    private HyphenData hyphenData;          // 개별부
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class HyphenCommon {
         @JsonProperty("userTrNo")
-        private String userTrNo;
+        private String userTrNo;            // 사용자 거래고유번호(사용자 생성)
         @JsonProperty("hyphenTrNo")
-        private String hyphenTrNo;
+        private String hyphenTrNo;          // 하이픈 고유거래번호(하이픈 생성)
         @JsonProperty("errYn")
-        private String errYn;
+        private String errYn;               // 오류여부(Y:오류, N:정상)
+        @JsonProperty("errCd")
+        private String errCd;               // 에러코드
         @JsonProperty("errMsg")
-        private String errMsg;
+        private String errMsg;              // 응답메세지
     }
 
     @Data

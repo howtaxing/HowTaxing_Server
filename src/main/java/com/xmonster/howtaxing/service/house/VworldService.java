@@ -219,7 +219,7 @@ public class VworldService {
 
         String legalDstCode = pubLandPriceAndAreaRequest.getLegalDstCode();
         String roadAddr = pubLandPriceAndAreaRequest.getRoadAddr();
-        String complexName = pubLandPriceAndAreaRequest.getComplexName().replace(" ", "");
+        String complexName = pubLandPriceAndAreaRequest.getComplexName().replace(SPACE, EMPTY);
         String dongName = pubLandPriceAndAreaRequest.getDongName();
         String hoName = pubLandPriceAndAreaRequest.getHoName();
 
@@ -257,6 +257,53 @@ public class VworldService {
         } catch (Exception e) {
             log.error("DB조회결과 없음: {}", e.getMessage());
             throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "DB조회 결과가 없습니다.");
+        }
+    }
+
+    // 계산을 위한 (취득)주택 공시가격 DB조회
+    public Long getPubLandPriceAtDBForCalculation(PubLandPriceAndAreaRequest pubLandPriceAndAreaRequest){
+        log.info(">> [Service]VworldService getPubLandPridAndAreaAtDBForCalculation - 계산을 위한 (취득)주택 공시가격 DB조회");
+
+        String legalDstCode = pubLandPriceAndAreaRequest.getLegalDstCode();
+        String roadAddr = pubLandPriceAndAreaRequest.getRoadAddr();
+        String complexName = pubLandPriceAndAreaRequest.getComplexName().replace(SPACE, EMPTY);
+        String dongName = pubLandPriceAndAreaRequest.getDongName();
+        String hoName = pubLandPriceAndAreaRequest.getHoName();
+
+        if(EMPTY.equals(legalDstCode)){
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "법정동코드를 입력하세요.");
+        }
+        if(EMPTY.equals(hoName)){
+            throw new CustomException(ErrorCode.HOUSE_VWORLD_INPUT_ERROR, "호를 입력하세요.");
+        }
+
+        List<HousePubLandPriceInfo> pubLandPriceAndAreaList = null;
+        Long pubLandPrice = null;
+
+        try {
+            // 기존 API와의 호환을 위해 도로명주소로 먼저 검색
+            pubLandPriceAndAreaList = housePubLandPriceInfoRepository.findByConditions(legalDstCode, roadAddr, dongName, hoName);
+            if (pubLandPriceAndAreaList.isEmpty()) {
+                // 검색결과 없을 시 건물명으로 검색
+                pubLandPriceAndAreaList = housePubLandPriceInfoRepository.findByConditionsWithoutRoadAddr(legalDstCode, complexName, dongName, hoName);
+            }
+
+            if(pubLandPriceAndAreaList == null || pubLandPriceAndAreaList.isEmpty()){
+                log.info("공시가격 확인 불가합니다.(조회 결과가 0건)");
+            }else{
+                if(pubLandPriceAndAreaList.size() == 1){
+                    log.info("공시가격 확인 가능합니다.(조회 결과가 1건)");
+                    HousePubLandPriceInfo housePubLandPriceInfo = pubLandPriceAndAreaList.get(0);
+                    pubLandPrice = housePubLandPriceInfo.getPubLandPrice();
+                }else{
+                    log.info("공시가격 확인 가능합니다.(조회 결과가 1건 초과)");
+                }
+            }
+
+            return pubLandPrice;
+
+        } catch (Exception e) {
+            return pubLandPrice;
         }
     }
 }

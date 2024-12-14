@@ -17,6 +17,8 @@ public class CalculationSellResultRequest {
     private LocalDate sellDate;                     // [필수] 양도일자
     private Long sellPrice;                         // [필수] 양도금액
     private Long necExpensePrice;                   // [필수] 필요경비금액
+    private Integer ownerCnt;                       // [필수] 소유자수
+    private Integer userProportion;                 // [필수] 본인지분비율
     
     // 추가질의답변리스트
     private List<CalculationAdditionalAnswerRequest> additionalAnswerList;

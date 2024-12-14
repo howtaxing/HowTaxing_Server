@@ -2,8 +2,8 @@ package com.xmonster.howtaxing.controller.user;
 
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
-import com.xmonster.howtaxing.dto.user.UserLoginDto;
-import com.xmonster.howtaxing.dto.user.UserSignUpDto;
+import com.xmonster.howtaxing.dto.sms.SmsCheckAuthCodeRequest;
+import com.xmonster.howtaxing.dto.user.*;
 import com.xmonster.howtaxing.service.user.UserService;
 import com.xmonster.howtaxing.type.ErrorCode;
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
@@ -60,6 +60,13 @@ public class UserController {
     public Object logout() throws Exception {
         log.info(">> [Controller]UserController logout - 로그아웃");
         return userService.logout();
+    }
+
+    // 로그인(아이디/비밀번호)
+    @PostMapping("/user/socialLogin")
+    public Object socialLogin(@RequestBody SocialLoginRequest socialLoginRequest) throws Exception {
+        log.info(">> [Controller]UserController socialLogin - 소셜로그인");
+        return userService.socialLogin(socialLoginRequest);
     }
 
     /*@GetMapping("/oauth2/loginSuccess2")
@@ -186,6 +193,20 @@ public class UserController {
         }else{
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
         }
+    }
+
+    // 아이디 찾기(일반로그인)
+    @PostMapping("/user/findUserId")
+    public Object findUserId(@RequestBody UserFindIdRequest userFindIdRequest) throws Exception {
+        log.info(">> [Controller]UserController findUserId - 아이디 찾기(일반로그인)");
+        return userService.findUserId(userFindIdRequest);
+    }
+
+    // 비밀번호 재설정(일반로그인)
+    @PostMapping("/user/resetPassword")
+    public Object resetPassword(@RequestBody UserResetPasswordRequest userResetPasswordRequest) throws Exception {
+        log.info(">> [Controller]UserController resetPassword - 비밀번호 재설정(일반로그인)");
+        return userService.resetPassword(userResetPasswordRequest);
     }
 
     @GetMapping("/user/callback")

@@ -75,9 +75,12 @@ public class SecurityConfig {
                 // 기본 페이지, css, image, js 하위 폴더에 있는 자료들은 모두 접근 가능, h2-console에 접근 가능
                 .antMatchers("/","/css/**","/images/**","/js/**","/favicon.ico","/h2-console/**").permitAll()
                 .antMatchers("/user/signUp", "/user/idCheck").permitAll()                           // '회원가입', '아이디 중복체크' 접근 허용
+                .antMatchers("/user/socialLogin").permitAll()                                          // '소셜로그인(카카오, 네이버)' 접근 허용
+                .antMatchers("/user/findUserId", "/user/resetPassword").permitAll()                 // '아이디 찾기', '비밀번호 재설정' 접근 허용
                 .antMatchers("/login/oauth2/code/kakao", "/login/oauth2/code/naver").permitAll()    // '소셜로그인(카카오, 네이버)' 접근 허용
                 .antMatchers("/oauth2/loginSuccess", "/oauth2/loginFail").permitAll()               // '소셜로그인 완료' 접근 허용
                 .antMatchers("/login/loginSuccess", "/login/loginFail").permitAll()                 // '일반로그인 완료' 접근 허용
+                .antMatchers("/sms/sendAuthCode", "/sms/checkAuthCode").permitAll()                 // '인증번호 발송', '인증번호 검증' 접근 허용
                 .antMatchers("/", "/user/availability/**").permitAll()
                 .anyRequest().authenticated() // 위의 경로 이외에는 모두 인증된 사용자만 접근 가능
                 .and()
