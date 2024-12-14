@@ -295,7 +295,7 @@ public class PaymentService {
     }
 
     // 결제 취소(Not For API)
-    public void cancelPayment(Long consultingReservationId, String cancelReason) throws Exception {
+    /*public void cancelPayment(Long consultingReservationId, String cancelReason) throws Exception {
         log.info(">> [Service]PaymentService cancelPayment - 결제 취소(Not For API)");
 
         PaymentHistory paymentHistory = paymentUtil.findPaymentHistoryByConsultingReservationId(consultingReservationId);
@@ -357,17 +357,7 @@ public class PaymentService {
         }catch(Exception e){
             throw new CustomException(ErrorCode.PAYMENT_CONFIRM_INPUT_ERROR, "결제취소 이후 결제상태 변경 중 오류 발생했어요.");
         }
-
-        // 상담 상태 변경(결제완료 또는 상담대기 -> 상담취소)
-        /*ConsultingReservationInfo consultingReservationInfo = consultingReservationUtil.findConsultingReservationInfo(consultingReservationId);
-        consultingReservationInfo.setConsultingStatus(ConsultingStatus.CANCEL);
-
-        try{
-            consultingReservationInfoRepository.saveAndFlush(consultingReservationInfo);
-        }catch(Exception e){
-            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_INPUT_ERROR, "결제취소 이후 상담상태 변경 중 오류 발생했어요.");
-        }*/
-    }
+    }*/
 
     // 결제요청정보 임시저장 유효성 검증
     private void validationCheckForSaveTempPaymentRequestInfo(TempPaymentRequestInfoRequest tempPaymentRequestInfoRequest) {

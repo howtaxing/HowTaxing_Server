@@ -1,5 +1,6 @@
 package com.xmonster.howtaxing.service.consulting;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
@@ -10,33 +11,40 @@ import com.xmonster.howtaxing.dto.consulting.*;
 import com.xmonster.howtaxing.dto.consulting.ConsultingAvailableScheduleSearchResponse.ConsultingAvailableDateResponse;
 import com.xmonster.howtaxing.dto.consulting.ConsultingAvailableScheduleSearchResponse.ConsultingAvailableTimeResponse;
 import com.xmonster.howtaxing.dto.consulting.ConsultingReservationListResponse.ConsultingReservationSimpleResponse;
+import com.xmonster.howtaxing.dto.payment.TossPaymentsCancelRequest;
+import com.xmonster.howtaxing.dto.payment.TossPaymentsCommonResponse;
+import com.xmonster.howtaxing.dto.payment.TossPaymentsConfirmResponse;
+import com.xmonster.howtaxing.feign.tosspayments.PaymentsConfirmApi;
 import com.xmonster.howtaxing.model.*;
 import com.xmonster.howtaxing.repository.calculation.*;
 import com.xmonster.howtaxing.repository.consulting.ConsultantInfoRepository;
 import com.xmonster.howtaxing.repository.consulting.ConsultingReservationInfoRepository;
 import com.xmonster.howtaxing.repository.consulting.ConsultingScheduleManagementRepository;
+import com.xmonster.howtaxing.repository.payment.PaymentHistoryRepository;
 import com.xmonster.howtaxing.service.payment.PaymentService;
 import com.xmonster.howtaxing.type.ConsultingStatus;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.type.LastModifierType;
+import com.xmonster.howtaxing.type.PaymentStatus;
 import com.xmonster.howtaxing.utils.ConsultantUtil;
 import com.xmonster.howtaxing.utils.ConsultingReservationUtil;
+import com.xmonster.howtaxing.utils.PaymentUtil;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -52,12 +60,14 @@ public class ConsultingService {
     private final CalculationBuyResponseHistoryRepository calculationBuyResponseHistoryRepository;
     private final CalculationSellResponseHistoryRepository calculationSellResponseHistoryRepository;
     private final CalculationCommentaryResponseHistoryRepository calculationCommentaryResponseHistoryRepository;
-
-    private final PaymentService paymentService;
+    private final PaymentHistoryRepository paymentHistoryRepository;
 
     private final UserUtil userUtil;
     private final ConsultingReservationUtil consultingReservationUtil;
     private final ConsultantUtil consultantUtil;
+    private final PaymentUtil paymentUtil;
+
+    private final PaymentsConfirmApi paymentsConfirmApi;
 
     // 상담자 정보 목록 조회
     public Object getConsultantInfoList() throws Exception {
@@ -384,6 +394,68 @@ public class ConsultingService {
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 취소할 수 없습니다.");
         }
 
+        //paymentService.cancelPayment(consultingReservationId, cancelReason);    // 결제 취소
+
+        PaymentHistory paymentHistory = paymentUtil.findPaymentHistoryByConsultingReservationId(consultingReservationId);
+        String paymentKey = paymentHistory.getPaymentKey();
+
+        if(StringUtils.isBlank(paymentKey)){
+            throw new CustomException(ErrorCode.PAYMENT_CANCEL_INPUT_ERROR, "해당 상담예약에 사용된 결제정보를 찾지 못했어요.");
+        }
+
+        // 토스페이먼츠 API는 시크릿 키를 사용자 ID로 사용하고, 비밀번호는 사용하지 않습니다.
+        // 비밀번호가 없다는 것을 알리기 위해 시크릿 키 뒤에 콜론을 추가합니다.
+        String widgetSecretKey = "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6";
+        Base64.Encoder encoder = Base64.getEncoder();
+        byte[] encodedBytes = encoder.encode((widgetSecretKey + ":").getBytes(StandardCharsets.UTF_8));
+        String authorizations = "Basic " + new String(encodedBytes);
+
+        Map<String, Object> headerMap = new HashMap<>();
+        headerMap.put("Authorization", authorizations);
+
+        ResponseEntity<?> response = null;
+
+        try{
+            response = paymentsConfirmApi.cancelPayment(
+                    paymentKey,
+                    headerMap,
+                    TossPaymentsCancelRequest.builder()
+                            .cancelReason(cancelReason)
+                            .build());
+        }catch(Exception e){
+            log.error("결제 취소 오류 내용 : " + e.getMessage());
+            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR, e.getMessage());
+        }
+
+        log.info("confirm payment response");
+        log.info(response.toString());
+
+        String jsonString = EMPTY;
+        if(response.getBody() != null)  jsonString = response.getBody().toString();
+        System.out.println("jsonString : " + jsonString);
+
+        TossPaymentsCommonResponse tossPaymentsCommonResponse = (TossPaymentsCommonResponse) convertJsonToData(jsonString);
+        System.out.println("tossPaymentsCommonResponse : " + tossPaymentsCommonResponse);
+
+        if(tossPaymentsCommonResponse == null){
+            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR);
+        }
+
+        PaymentStatus paymentStatus = PaymentStatus.valueOf(tossPaymentsCommonResponse.getStatus());
+
+        // 결제승인 실패
+        if(!PaymentStatus.CANCELED.equals(paymentStatus)){
+            throw new CustomException(ErrorCode.PAYMENT_CANCEL_OUTPUT_ERROR, "결제가 취소되지 않았어요.");
+        }
+
+        paymentHistory.setStatus(paymentStatus);
+
+        try{
+            paymentHistoryRepository.save(paymentHistory);
+        }catch(Exception e){
+            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_INPUT_ERROR, "결제취소 이후 결제상태 변경 중 오류 발생했어요.");
+        }
+
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
         String reservationStartTime = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
         String reservationEndTime = consultingReservationInfo.getReservationEndTime().format(timeFormatter);
@@ -393,7 +465,6 @@ public class ConsultingService {
         consultingReservationInfo.setLastModifier(LastModifierType.USER);
 
         try{
-            paymentService.cancelPayment(consultingReservationId, cancelReason);    // 결제 취소
             consultingReservationInfoRepository.save(consultingReservationInfo);    // 상담예약 취소 정보 업데이트
         }catch (Exception e){
             log.error("상담 예약 취소 중 오류가 발생했습니다.");
@@ -408,6 +479,16 @@ public class ConsultingService {
                         .reservationStartTime(reservationStartTime)
                         .reservationEndTime(reservationEndTime)
                         .build());
+    }
+
+    private Object convertJsonToData(String jsonString) {
+        try{
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(jsonString, TossPaymentsCommonResponse.class);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR);
+        }
     }
 
     // 상담 예약 목록 조회

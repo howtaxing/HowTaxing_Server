@@ -1,6 +1,7 @@
 package com.xmonster.howtaxing.controller.consulting;
 
 import com.xmonster.howtaxing.dto.consulting.ConsultingReservationApplyRequest;
+import com.xmonster.howtaxing.dto.consulting.ConsultingReservationCancelRequest;
 import com.xmonster.howtaxing.dto.consulting.ConsultingReservationModifyRequest;
 import com.xmonster.howtaxing.service.consulting.ConsultingService;
 import lombok.RequiredArgsConstructor;
@@ -48,11 +49,11 @@ public class ConsultingController {
         return consultingService.modifyConsultingReservation(consultingReservationModifyRequest);
     }
 
-    // 상담 예약 취소(API 추후 확인)
-    @DeleteMapping("/consulting/reservationCancel")
-    public Object cancelConsultingReservation(@RequestParam Long consultingReservationId) throws Exception {
+    // 상담 예약 취소
+    @PostMapping("/consulting/reservationCancel")
+    public Object cancelConsultingReservation(@RequestBody ConsultingReservationCancelRequest consultingReservationCancelRequest) throws Exception {
         log.info(">> [Controller]ConsultingController cancelConsultingReservation - 상담 예약 취소");
-        return consultingService.cancelConsultingReservation(consultingReservationId);
+        return consultingService.cancelConsultingReservation(consultingReservationCancelRequest);
     }
 
     // 상담 예약 목록 조회
