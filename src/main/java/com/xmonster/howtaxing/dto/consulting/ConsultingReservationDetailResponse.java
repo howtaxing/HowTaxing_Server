@@ -19,8 +19,9 @@ public class ConsultingReservationDetailResponse {
     private LocalDate reservationDate;          // 예약일자
     private String reservationStartTime;        // 예약시작시간
     private String reservationEndTime;          // 예약종료시간
-    private ConsultingStatus consultingStatus;  // 상담진행상태(0:WAITING 1:CANCEL 2:PROGRESS 3:FINISH)
+    private ConsultingStatus consultingStatus;  // 상담진행상태(PAYMENT_COMPLETE:결제완료, WAITING:상담대기, CANCEL:상담취소, PROGRESS:상담중, FINISH:상담종료)
     private String consultingInflowPath;        // 상담유입경로(00:일반 01:취득세계산 02:양도소득세계산)
+    private Long paymentPrice;                  // 결제금액
     private String consultingRequestContent;    // 상담요청내용
 
     private CalculationBuyResultResponse calculationBuyResultResponse;      // 취득세 계산결과

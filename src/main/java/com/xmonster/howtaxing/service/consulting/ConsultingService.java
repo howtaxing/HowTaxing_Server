@@ -43,7 +43,6 @@ import static com.xmonster.howtaxing.constant.CommonConstant.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ConsultingService {
-
     private final ConsultingScheduleManagementRepository consultingScheduleManagementRepository;
     private final ConsultingReservationInfoRepository consultingReservationInfoRepository;
     private final ConsultantInfoRepository consultantInfoRepository;
