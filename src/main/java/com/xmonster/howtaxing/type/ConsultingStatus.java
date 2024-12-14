@@ -1,6 +1,7 @@
 package com.xmonster.howtaxing.type;
 
 public enum ConsultingStatus {
+    PAYMENT_READY,          // 결제대기
     PAYMENT_COMPLETED,      // 결제완료
     WAITING,                // 상담대기
     CANCEL,                 // 상담취소

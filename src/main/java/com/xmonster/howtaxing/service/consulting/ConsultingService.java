@@ -15,10 +15,12 @@ import com.xmonster.howtaxing.repository.calculation.*;
 import com.xmonster.howtaxing.repository.consulting.ConsultantInfoRepository;
 import com.xmonster.howtaxing.repository.consulting.ConsultingReservationInfoRepository;
 import com.xmonster.howtaxing.repository.consulting.ConsultingScheduleManagementRepository;
+import com.xmonster.howtaxing.service.payment.PaymentService;
 import com.xmonster.howtaxing.type.ConsultingStatus;
 import com.xmonster.howtaxing.type.ErrorCode;
 import com.xmonster.howtaxing.type.LastModifierType;
-import com.xmonster.howtaxing.utils.HouseUtil;
+import com.xmonster.howtaxing.utils.ConsultantUtil;
+import com.xmonster.howtaxing.utils.ConsultingReservationUtil;
 import com.xmonster.howtaxing.utils.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,8 +53,11 @@ public class ConsultingService {
     private final CalculationSellResponseHistoryRepository calculationSellResponseHistoryRepository;
     private final CalculationCommentaryResponseHistoryRepository calculationCommentaryResponseHistoryRepository;
 
+    private final PaymentService paymentService;
+
     private final UserUtil userUtil;
-    private final HouseUtil houseUtil;
+    private final ConsultingReservationUtil consultingReservationUtil;
+    private final ConsultantUtil consultantUtil;
 
     // 상담자 정보 목록 조회
     public Object getConsultantInfoList() throws Exception {
@@ -180,30 +185,25 @@ public class ConsultingService {
                         .build());
     }
 
-    // 상담 예약 신청
-    public Object applyConsultingReservation(ConsultingReservationApplyRequest consultingReservationApplyRequest) throws Exception {
-        log.info(">> [Service]ConsultingService applyConsultingReservation - 상담 예약 신청");
+    // 상담예약 생성(결제 시점, Not for API)
+    public Long createConsultingReservation(ConsultingReservationCreateRequest consultingReservationCreateRequest) throws Exception {
+        log.info(">> [Service]ConsultingService createConsultingReservationInfo - 상담예약정보 생성");
 
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
 
-        validationCheckForApplyConsultingReservation(consultingReservationApplyRequest);
+        validationCheckForCreateConsultingReservation(consultingReservationCreateRequest);
 
-        log.info("상담 예약 신청 요청 : " + consultingReservationApplyRequest);
+        log.info("상담예약 정보 생성 요청 : " + consultingReservationCreateRequest);
 
-        Long consultantId = consultingReservationApplyRequest.getConsultantId();
-        String customerName = consultingReservationApplyRequest.getCustomerName();
-        String customerPhone = consultingReservationApplyRequest.getCustomerPhone();
-        LocalDate reservationDate = consultingReservationApplyRequest.getReservationDate();
-        String reservationTime = consultingReservationApplyRequest.getReservationTime();
-        String consultingType = consultingReservationApplyRequest.getConsultingType();
-        String consultingInflowPath = consultingReservationApplyRequest.getConsultingInflowPath();
-        Long calcHistoryId = consultingReservationApplyRequest.getCalcHistoryId();
-        String consultingRequestContent = consultingReservationApplyRequest.getConsultingRequestContent();
-
-        ConsultantInfo consultantInfo = consultantInfoRepository.findByConsultantId(consultantId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "존재하지 않는 상담자ID 입니다."));
-        String consultantName = consultantInfo.getConsultantName();
+        Long consultantId = consultingReservationCreateRequest.getConsultantId();
+        String customerName = consultingReservationCreateRequest.getCustomerName();
+        String customerPhone = consultingReservationCreateRequest.getCustomerPhone();
+        LocalDate reservationDate = consultingReservationCreateRequest.getReservationDate();
+        String reservationTime = consultingReservationCreateRequest.getReservationTime();
+        String consultingType = consultingReservationCreateRequest.getConsultingType();
+        String consultingInflowPath = consultingReservationCreateRequest.getConsultingInflowPath();
+        Long calcHistoryId = consultingReservationCreateRequest.getCalcHistoryId();
 
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
         LocalTime reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
@@ -224,8 +224,10 @@ public class ConsultingService {
 
         // TODO. 고객전화번호 데이터 포맷 검증 필요
 
+        ConsultingReservationInfo consultingReservationInfo = null;
+
         try{
-            consultingReservationInfoRepository.saveAndFlush(
+            consultingReservationInfo = consultingReservationInfoRepository.saveAndFlush(
                     ConsultingReservationInfo.builder()
                             .consultantId(consultantId)
                             .userId(findUser.getId())
@@ -237,23 +239,56 @@ public class ConsultingService {
                             .customerName(customerName)
                             .customerPhone(customerPhone)
                             .consultingInflowPath(consultingInflowPath)
-                            .consultingRequestContent(consultingRequestContent)
-                            .consultingStatus(ConsultingStatus.WAITING)
+                            .consultingStatus(ConsultingStatus.PAYMENT_READY)
                             .isCanceled(false)
-                            .consultingRequestDatetime(LocalDateTime.now())
                             .lastModifier(LastModifierType.USER)
                             .build());
         }catch(Exception e){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_OUTPUT_ERROR, "상담예약정보 데이터 저장 중 오류 발생했어요.");
+        }
+
+        return consultingReservationInfo.getConsultingReservationId();
+    }
+
+    // 상담 예약 신청
+    public Object applyConsultingReservation(ConsultingReservationApplyRequest consultingReservationApplyRequest) throws Exception {
+        log.info(">> [Service]ConsultingService applyConsultingReservation - 상담 예약 신청");
+
+        // 호출 사용자 조회
+        User findUser = userUtil.findCurrentUser();
+
+        validationCheckForApplyConsultingReservation(consultingReservationApplyRequest);
+
+        log.info("상담 예약 신청 요청 : " + consultingReservationApplyRequest);
+
+        Long consultingReservationId = consultingReservationApplyRequest.getConsultingReservationId();
+        String consultingType = consultingReservationApplyRequest.getConsultingType();
+        String consultingRequestContent = consultingReservationApplyRequest.getConsultingRequestContent();
+
+        ConsultingReservationInfo consultingReservationInfo = consultingReservationUtil.findConsultingReservationInfo(consultingReservationId);
+        Long consultantId = consultingReservationInfo.getConsultantId();
+        String consultantName = consultantUtil.findConsultantName(consultantId);
+
+        consultingReservationInfo.setConsultingType(consultingType);
+        consultingReservationInfo.setConsultingRequestContent(consultingRequestContent);
+        consultingReservationInfo.setConsultingStatus(ConsultingStatus.WAITING);
+        consultingReservationInfo.setConsultingRequestDatetime(LocalDateTime.now());
+
+        try{
+            consultingReservationInfoRepository.saveAndFlush(consultingReservationInfo);
+        }catch(Exception e){
             throw new CustomException(ErrorCode.CONSULTING_APPLY_OUTPUT_ERROR);
         }
+
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
         return ApiResponse.success(
                 ConsultingReservationApplyResponse.builder()
                         .isApplyComplete(true)
                         .consultantName(consultantName)
-                        .reservationDate(reservationDate)
-                        .reservationStartTime(reservationStartTime.format(timeFormatter))
-                        .reservationEndTime(reservationEndTime.format(timeFormatter))
+                        .reservationDate(consultingReservationInfo.getReservationDate())
+                        .reservationStartTime(consultingReservationInfo.getReservationStartTime().format(timeFormatter))
+                        .reservationEndTime(consultingReservationInfo.getReservationEndTime().format(timeFormatter))
                         .build());
     }
 
@@ -331,23 +366,20 @@ public class ConsultingService {
     }
 
     // 상담 예약 취소
-    public Object cancelConsultingReservation(Long consultingReservationId) throws Exception {
+    public Object cancelConsultingReservation(ConsultingReservationCancelRequest consultingReservationCancelRequest) throws Exception {
         log.info(">> [Service]ConsultingService cancelConsultingReservation - 상담 예약 취소");
 
-        if(consultingReservationId == null){
-            throw new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR, "상담 예약 취소를 위한 상담예약ID가 입력되지 않았습니다.");
-        }
+        // 상담 예약 취소 유효성 검증
+        validationCheckForCancelConsultingReservation(consultingReservationCancelRequest);
+
+        Long consultingReservationId = consultingReservationCancelRequest.getConsultingReservationId();
+        String cancelReason = consultingReservationCancelRequest.getCancelReason();
+
+        ConsultingReservationInfo consultingReservationInfo = consultingReservationUtil.findConsultingReservationInfo(consultingReservationId);
+        String consultantName = consultantUtil.findConsultantName(consultingReservationInfo.getConsultantId());
 
         // 호출 사용자 조회
         User findUser = userUtil.findCurrentUser();
-
-        ConsultingReservationInfo consultingReservationInfo = consultingReservationInfoRepository.findByConsultingReservationId(consultingReservationId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR, "존재하지 않는 상담예약ID 입니다."));
-
-        ConsultantInfo consultantInfo = consultantInfoRepository.findByConsultantId(consultingReservationInfo.getConsultantId())
-                .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR, "존재하지 않는 상담자ID 입니다."));
-        String consultantName = consultantInfo.getConsultantName();
-
         if(!findUser.getId().equals(consultingReservationInfo.getUserId())){
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 취소할 수 없습니다.");
         }
@@ -361,10 +393,11 @@ public class ConsultingService {
         consultingReservationInfo.setLastModifier(LastModifierType.USER);
 
         try{
-            consultingReservationInfoRepository.saveAndFlush(consultingReservationInfo);
+            paymentService.cancelPayment(consultingReservationId, cancelReason);    // 결제 취소
+            consultingReservationInfoRepository.save(consultingReservationInfo);    // 상담예약 취소 정보 업데이트
         }catch (Exception e){
-            log.error("상담 예약 update 중 오류가 발생했습니다.");
-            throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR);
+            log.error("상담 예약 취소 중 오류가 발생했습니다.");
+            throw new CustomException(ErrorCode.CONSULTING_CANCEL_OUTPUT_ERROR);
         }
 
         return ApiResponse.success(
@@ -433,6 +466,7 @@ public class ConsultingService {
         ConsultantInfo consultantInfo = consultantInfoRepository.findByConsultantId(consultingReservationInfo.getConsultantId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR, "존재하지 않는 상담자ID 입니다."));
         String consultantName = consultantInfo.getConsultantName();
+        String thumbImageUrl = consultantInfo.getThumbImageUrl();
 
         if(!findUser.getId().equals(consultingReservationInfo.getUserId())){
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 취소할 수 없습니다.");
@@ -441,6 +475,12 @@ public class ConsultingService {
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
         String reservationStartTime = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
         String reservationEndTime = consultingReservationInfo.getReservationEndTime().format(timeFormatter);
+
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss");
+        String paymentCompleteDatetime = consultingReservationInfo.getPaymentCompleteDatetime().format(dateTimeFormatter);
+        String consultingCancelDatetime = consultingReservationInfo.getConsultingCancelDatetime().format(dateTimeFormatter);
+        String consultingStartDatetime = consultingReservationInfo.getConsultingStartDatetime().format(dateTimeFormatter);
+        String consultingEndDatetime = consultingReservationInfo.getConsultingEndDatetime().format(dateTimeFormatter);
 
         CalculationBuyResultResponse calculationBuyResultResponse = null;
         CalculationSellResultResponse calculationSellResultResponse = null;
@@ -557,6 +597,7 @@ public class ConsultingService {
                 ConsultingReservationDetailResponse.builder()
                         .consultingReservationId(consultingReservationId)
                         .consultantName(consultantName)
+                        .thumbImageUrl(thumbImageUrl)
                         .consultingType(consultingReservationInfo.getConsultingType())
                         .reservationDate(consultingReservationInfo.getReservationDate())
                         .reservationStartTime(reservationStartTime)
@@ -564,11 +605,16 @@ public class ConsultingService {
                         .consultingStatus(consultingReservationInfo.getConsultingStatus())
                         .consultingInflowPath(consultingReservationInfo.getConsultingInflowPath())
                         .consultingRequestContent(consultingReservationInfo.getConsultingRequestContent())
+                        .paymentCompleteDatetime(paymentCompleteDatetime)
+                        .consultingCancelDatetime(consultingCancelDatetime)
+                        .consultingStartDatetime(consultingStartDatetime)
+                        .consultingEndDatetime(consultingEndDatetime)
                         .calculationBuyResultResponse(calculationBuyResultResponse)
                         .calculationSellResultResponse(calculationSellResultResponse)
                         .build());
     }
 
+    // 상담가능일정 조회 유효성 검증
     private void validationCheckForGetConsultingAvailableSchedule(Long consultantId, String searchType, String searchDate){
         if(StringUtils.isBlank(searchType)){
             throw new CustomException(ErrorCode.CONSULTING_SCHEDULE_INPUT_ERROR, "상담가능일정 조회를 위한 조회구분이 입력되지 않았습니다.");
@@ -585,43 +631,68 @@ public class ConsultingService {
         }
     }
 
-    private void validationCheckForApplyConsultingReservation(ConsultingReservationApplyRequest consultingReservationApplyRequest){
-        if(consultingReservationApplyRequest == null) throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR);
+    // 상담예약생성(결제 시점) 유효성 검증
+    private void validationCheckForCreateConsultingReservation(ConsultingReservationCreateRequest consultingReservationCreateRequest){
+        if(consultingReservationCreateRequest == null) throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR);
 
-        Long consultantId = consultingReservationApplyRequest.getConsultantId();
-        String customerName = consultingReservationApplyRequest.getCustomerName();
-        String customerPhone = consultingReservationApplyRequest.getCustomerPhone();
-        LocalDate reservationDate = consultingReservationApplyRequest.getReservationDate();
-        String reservationTime = consultingReservationApplyRequest.getReservationTime();
-        String consultingInflowPath = consultingReservationApplyRequest.getConsultingInflowPath();
-        String consultingTypeStr = consultingReservationApplyRequest.getConsultingType();
+        Long consultantId = consultingReservationCreateRequest.getConsultantId();
+        String customerName = consultingReservationCreateRequest.getCustomerName();
+        String customerPhone = consultingReservationCreateRequest.getCustomerPhone();
+        LocalDate reservationDate = consultingReservationCreateRequest.getReservationDate();
+        String reservationTime = consultingReservationCreateRequest.getReservationTime();
+        String consultingInflowPath = consultingReservationCreateRequest.getConsultingInflowPath();
+        String consultingTypeStr = consultingReservationCreateRequest.getConsultingType();
 
         if(consultantId == null){
-            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 상담자ID가 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 상담자ID가 입력되지 않았습니다.");
         }
 
         if(StringUtils.isBlank(customerName)){
-            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 고객명이 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 고객명이 입력되지 않았습니다.");
         }
 
         if(StringUtils.isBlank(customerPhone)){
-            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 고객전화번호가 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 고객전화번호가 입력되지 않았습니다.");
         }
 
         if(reservationDate == null){
-            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 예약일자가 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 예약일자가 입력되지 않았습니다.");
         }
 
         if(StringUtils.isBlank(reservationTime)){
-            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 예약시간이 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 예약시간이 입력되지 않았습니다.");
         }
 
         if(StringUtils.isBlank(consultingInflowPath)){
-            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 상담유입경로가 입력되지 않았습니다.");
+            throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 상담유입경로가 입력되지 않았습니다.");
         }else{
             if(!CONSULTING_TYPE_GEN.equals(consultingInflowPath) && !CONSULTING_TYPE_BUY.equals(consultingInflowPath) && !CONSULTING_TYPE_SELL.equals(consultingInflowPath)){
-                throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 상담유입경로 값이 올바르지 않습니다. (00:일반, 01:취득세 계산, 02:양도소득세 계산)");
+                throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 상담유입경로 값이 올바르지 않습니다. (00:일반, 01:취득세 계산, 02:양도소득세 계산)");
             }
+        }
+
+        if(!StringUtils.isBlank(consultingTypeStr)){
+            String[] consultingTypeArr = consultingTypeStr.split(COMMA);
+            for (String consultingType : consultingTypeArr) {
+                if (!CONSULTING_TYPE_BUY.equals(consultingType) && !CONSULTING_TYPE_SELL.equals(consultingType) && !CONSULTING_TYPE_INHERIT.equals(consultingType) && !CONSULTING_TYPE_PROPERTY.equals(consultingType)) {
+                    throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR, "상담예약정보 생성을 위한 상담유형 값이 올바르지 않습니다. (01:취득세, 02:양도소득세, 03:상속세, 04:재산세)");
+                }
+            }
+        }
+    }
+
+    // 상담 예약 신청 유효성 검증
+    private void validationCheckForApplyConsultingReservation(ConsultingReservationApplyRequest consultingReservationApplyRequest){
+        if(consultingReservationApplyRequest == null){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR);
+        }
+
+        Long consultingReservationId = consultingReservationApplyRequest.getConsultingReservationId();
+        String consultingTypeStr = consultingReservationApplyRequest.getConsultingType();
+        String consultingRequestContent = consultingReservationApplyRequest.getConsultingRequestContent();
+
+        if(consultingReservationId == null){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 상담예약 ID가 입력되지 않았습니다.");
         }
 
         if(!StringUtils.isBlank(consultingTypeStr)){
@@ -632,8 +703,13 @@ public class ConsultingService {
                 }
             }
         }
+
+        if(StringUtils.isBlank(consultingRequestContent)){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 상담요청내용이 입력되지 않았습니다.");
+        }
     }
 
+    // 상담 예약 변경 유효성 검증
     private void validationCheckForModifyConsultingReservation(ConsultingReservationModifyRequest consultingReservationModifyRequest){
         if(consultingReservationModifyRequest == null) throw new CustomException(ErrorCode.CONSULTING_MODIFY_INPUT_ERROR);
 
@@ -651,6 +727,24 @@ public class ConsultingService {
                     throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 변경을 위한 상담유형 값이 올바르지 않습니다. (01:취득세, 02:양도소득세, 03:상속세, 04:재산세)");
                 }
             }
+        }
+    }
+
+    // 상담 예약 취소 유효성 검증
+    private void validationCheckForCancelConsultingReservation(ConsultingReservationCancelRequest consultingReservationCancelRequest){
+        if(consultingReservationCancelRequest == null){
+            throw new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR);
+        }
+
+        Long consultingReservationId = consultingReservationCancelRequest.getConsultingReservationId();
+        String cancelReason = consultingReservationCancelRequest.getCancelReason();
+
+        if(consultingReservationId == null){
+            throw new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR, "상담 취소를 위한 상담예약ID가 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(cancelReason)){
+            throw new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR, "상담 취소를 위한 취소 사유가 입력되지 않았습니다.");
         }
     }
 
