@@ -557,11 +557,16 @@ public class ConsultingService {
         String reservationStartTime = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
         String reservationEndTime = consultingReservationInfo.getReservationEndTime().format(timeFormatter);
 
+        LocalDateTime paymentCompleteDatetime = consultingReservationInfo.getPaymentCompleteDatetime();
+        LocalDateTime consultingCancelDatetime = consultingReservationInfo.getConsultingCancelDatetime();
+        LocalDateTime consultingStartDatetime = consultingReservationInfo.getConsultingStartDatetime();
+        LocalDateTime consultingEndDatetime = consultingReservationInfo.getConsultingEndDatetime();
+
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss");
-        String paymentCompleteDatetime = consultingReservationInfo.getPaymentCompleteDatetime().format(dateTimeFormatter);
-        String consultingCancelDatetime = consultingReservationInfo.getConsultingCancelDatetime().format(dateTimeFormatter);
-        String consultingStartDatetime = consultingReservationInfo.getConsultingStartDatetime().format(dateTimeFormatter);
-        String consultingEndDatetime = consultingReservationInfo.getConsultingEndDatetime().format(dateTimeFormatter);
+        String paymentCompleteDatetimeStr = (paymentCompleteDatetime != null) ? paymentCompleteDatetime.format(dateTimeFormatter) : null;
+        String consultingCancelDatetimeStr = (consultingCancelDatetime != null) ? consultingReservationInfo.getConsultingCancelDatetime().format(dateTimeFormatter) : null;
+        String consultingStartDatetimeStr = (consultingStartDatetime != null) ? consultingReservationInfo.getConsultingStartDatetime().format(dateTimeFormatter) : null;
+        String consultingEndDatetimeStr = (consultingEndDatetime != null) ? consultingReservationInfo.getConsultingEndDatetime().format(dateTimeFormatter) : null;
 
         CalculationBuyResultResponse calculationBuyResultResponse = null;
         CalculationSellResultResponse calculationSellResultResponse = null;
@@ -686,10 +691,10 @@ public class ConsultingService {
                         .consultingStatus(consultingReservationInfo.getConsultingStatus())
                         .consultingInflowPath(consultingReservationInfo.getConsultingInflowPath())
                         .consultingRequestContent(consultingReservationInfo.getConsultingRequestContent())
-                        .paymentCompleteDatetime(paymentCompleteDatetime)
-                        .consultingCancelDatetime(consultingCancelDatetime)
-                        .consultingStartDatetime(consultingStartDatetime)
-                        .consultingEndDatetime(consultingEndDatetime)
+                        .paymentCompleteDatetime(paymentCompleteDatetimeStr)
+                        .consultingCancelDatetime(consultingCancelDatetimeStr)
+                        .consultingStartDatetime(consultingStartDatetimeStr)
+                        .consultingEndDatetime(consultingEndDatetimeStr)
                         .calculationBuyResultResponse(calculationBuyResultResponse)
                         .calculationSellResultResponse(calculationSellResultResponse)
                         .build());
