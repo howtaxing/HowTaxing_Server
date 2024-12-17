@@ -47,5 +47,7 @@ public class ConsultingReservationInfo extends DateEntity implements Serializabl
     private LocalDateTime consultingCancelDatetime;         // 상담취소일시
     private LocalDateTime consultingStartDatetime;          // 상담시작일시
     private LocalDateTime consultingEndDatetime;            // 상담종료일시
-    private LastModifierType lastModifier;                  // 최종변경자
+
+    @Enumerated(EnumType.STRING)
+    private LastModifierType lastModifier;                  // 최종변경자(ADMINISTARTOR:관리자, CONSULTANT:상담자, USER:사용자)
 }
