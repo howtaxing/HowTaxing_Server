@@ -672,7 +672,7 @@ public class ConsultingService {
 
         LocalTime compareTime = reservationAvailableStartTime;
 
-        while(compareTime.isBefore(reservationAvailableEndTime)){
+        while(compareTime.isBefore(reservationAvailableEndTime.plusMinutes(reservationTimeUnit))){
             String compareTimeStr = compareTime.format(timeFormatter);
             String reservationStatus = ONE;         // 예약대기
 
