@@ -129,7 +129,7 @@ spring:
     job:
       enabled: false
   redis:
-    host: 172.18.0.2
+    host: 172.21.0.2
     port: 6379
     password: Xmonster11@@
   mvc:
