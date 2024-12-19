@@ -17,8 +17,9 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class CalculationBuyRequestHistory implements Serializable {
-    @EmbeddedId
-    private CalculationHistoryId calculationHistoryId;
+    @Id
+    @Column
+    private Long calcHistoryId;                 // 상담자ID
 
     private String houseType;                   // 주택유형
     private String houseName;                   // 주택명

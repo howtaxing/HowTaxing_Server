@@ -1,6 +1,8 @@
 package com.xmonster.howtaxing.dto.consulting;
 
+import com.xmonster.howtaxing.dto.calculation.CalculationBuyHouseResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
+import com.xmonster.howtaxing.dto.calculation.CalculationSellHouseResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
 import com.xmonster.howtaxing.type.ConsultingStatus;
 import lombok.*;
@@ -32,6 +34,9 @@ public class ConsultingReservationDetailResponse {
     private String consultingCancelDatetime;        // 상담취소일시
     private String consultingStartDatetime;         // 상담시작일시
     private String consultingEndDatetime;           // 상담종료일시
+
+    private CalculationBuyHouseResponse calculationBuyHouseResponse;        // (취득세 계산대상)취득주택 정보
+    private CalculationSellHouseResponse calculationSellHouseResponse;      // (양도소득세 계산대상)양도주택 정보
 
     private CalculationBuyResultResponse calculationBuyResultResponse;      // 취득세 계산결과
     private CalculationSellResultResponse calculationSellResultResponse;    // 양도소득세 계산결과

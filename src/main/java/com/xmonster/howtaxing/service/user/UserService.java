@@ -221,8 +221,8 @@ public class UserService {
         SocialType socialType = findUser.getSocialType();
 
         if(logoutAndUnlinkSocialAccount(ONE, findUser, socialType)){
-            // 리프레시 토큰 초기화
-            findUser.setRefreshToken(EMPTY);
+            findUser.setRefreshToken(null);         // 하우택싱 RefreshToken 초기화
+            findUser.setSocialAccessToken(null);    // 소셜로그인 AccessToken 초기화
             userRepository.save(findUser);
         }else{
             throw new CustomException(ErrorCode.USER_LOGOUT_ERROR);
@@ -680,11 +680,12 @@ public class UserService {
                                     .build());
                 }else if(SocialType.NAVER.equals(socialType)){
                     log.info("소셜로그인(네이버) 계정 로그아웃");
-                    log.info("네이버는 로그아웃 기능이 없습니다.");
+                    log.info("네이버 소셜 로그아웃 기능 없음");
+                }else if(SocialType.APPLE.equals(socialType)){
+                    log.info("소셜로그인(애플) 계정 로그아웃");
+                    log.info("애플 소셜 로그아웃 기능 없음");
                 }else{
-                    // TODO : Apple 로그아웃 구현
-                    // google, apple..
-                    throw new CustomException(ErrorCode.USER_LOGOUT_ERROR, "Google과 Apple의 로그아웃 기능은 준비 중입니다.");
+                    throw new CustomException(ErrorCode.USER_LOGOUT_ERROR, "SocialType이 올바르지 않아요.");
                 }
             }
             // 회원탈퇴
@@ -703,9 +704,11 @@ public class UserService {
                     log.info("소셜로그인(네이버) 계정 회원탈퇴");
                     // 네이버 회원탈퇴는 getAccessToken과 동일(grantType만 delete로 세팅)
                     response = naverAuthApi.getAccessToken("delete", naverAppKey, naverAppSecret, null, null, socialAccessToken);
+                }else if(SocialType.APPLE.equals(socialType)){
+                    log.info("소셜로그인(애플) 계정 회원탈퇴");
+                    log.info("애플 소셜 회원탈퇴 기능 없음");
                 }else{
-                    // google, apple..
-                    throw new CustomException(ErrorCode.USER_WITHDRAW_ERROR, "Google과 Apple의 회원탈퇴 기능은 준비 중입니다.");
+                    throw new CustomException(ErrorCode.USER_WITHDRAW_ERROR, "SocialType이 올바르지 않아요.");
                 }
             }
             // 그 외(오류)
@@ -749,6 +752,9 @@ public class UserService {
                     }
                 }
             }
+        }else{
+            // SocialType : Apple
+            resultFlag = true;
         }
 
         return resultFlag;

@@ -2,8 +2,10 @@ package com.xmonster.howtaxing.service.consulting;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xmonster.howtaxing.CustomException;
+import com.xmonster.howtaxing.dto.calculation.CalculationBuyHouseResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationBuyResultResponse.CalculationBuyOneResult;
+import com.xmonster.howtaxing.dto.calculation.CalculationSellHouseResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse;
 import com.xmonster.howtaxing.dto.calculation.CalculationSellResultResponse.CalculationSellOneResult;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
@@ -57,9 +59,13 @@ public class ConsultingService {
     private final ConsultingReservationInfoRepository consultingReservationInfoRepository;
     private final ConsultantInfoRepository consultantInfoRepository;
     private final CalculationHistoryRepository calculationHistoryRepository;
+    private final CalculationBuyRequestHistoryRepository calculationBuyRequestHistoryRepository;
     private final CalculationBuyResponseHistoryRepository calculationBuyResponseHistoryRepository;
+    private final CalculationSellRequestHistoryRepository calculationSellRequestHistoryRepository;
     private final CalculationSellResponseHistoryRepository calculationSellResponseHistoryRepository;
     private final CalculationCommentaryResponseHistoryRepository calculationCommentaryResponseHistoryRepository;
+    private final CalculationOwnHouseHistoryRepository calculationOwnHouseHistoryRepository;
+    private final CalculationOwnHouseHistoryDetailRepository calculationOwnHouseHistoryDetailRepository;
     private final PaymentHistoryRepository paymentHistoryRepository;
 
     private final UserUtil userUtil;
@@ -568,6 +574,9 @@ public class ConsultingService {
         String consultingStartDatetimeStr = (consultingStartDatetime != null) ? consultingReservationInfo.getConsultingStartDatetime().format(dateTimeFormatter) : null;
         String consultingEndDatetimeStr = (consultingEndDatetime != null) ? consultingReservationInfo.getConsultingEndDatetime().format(dateTimeFormatter) : null;
 
+        CalculationBuyHouseResponse calculationBuyHouseResponse = null;
+        CalculationSellHouseResponse calculationSellHouseResponse = null;
+
         CalculationBuyResultResponse calculationBuyResultResponse = null;
         CalculationSellResultResponse calculationSellResultResponse = null;
 
@@ -601,11 +610,33 @@ public class ConsultingService {
                     }
                 }
 
-
                 // 취득세 계산
                 if(CALC_TYPE_BUY.equals(calcType)){
                     List<CalculationBuyOneResult> list = new ArrayList<>();
+                    CalculationBuyRequestHistory calculationBuyRequestHistory = calculationBuyRequestHistoryRepository.findByCalcHistoryId(calcHistoryId);
                     List<CalculationBuyResponseHistory> calculationBuyResponseHistoryList = calculationBuyResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
+
+                    if(calculationBuyRequestHistory != null){
+                        calculationBuyHouseResponse =
+                                CalculationBuyHouseResponse.builder()
+                                        .houseType(calculationBuyRequestHistory.getHouseType())
+                                        .houseName(calculationBuyRequestHistory.getHouseName())
+                                        .detailAdr(calculationBuyRequestHistory.getDetailAdr())
+                                        .contractDate(calculationBuyRequestHistory.getContractDate())
+                                        .balanceDate(calculationBuyRequestHistory.getBalanceDate())
+                                        .buyDate(calculationBuyRequestHistory.getBuyDate())
+                                        .buyPrice(calculationBuyRequestHistory.getBuyPrice())
+                                        .pubLandPrice(calculationBuyRequestHistory.getPubLandPrice())
+                                        .isPubLandPriceOver100Mil(calculationBuyRequestHistory.getIsPubLandPriceOver100Mil())
+                                        .roadAddr(calculationBuyRequestHistory.getRoadAddr())
+                                        .area(calculationBuyRequestHistory.getArea())
+                                        .isAreaOver85(calculationBuyRequestHistory.getIsAreaOver85())
+                                        .isDestruction(calculationBuyRequestHistory.getIsDestruction())
+                                        .ownerCnt(calculationBuyRequestHistory.getOwnerCnt())
+                                        .userProportion(calculationBuyRequestHistory.getUserProportion())
+                                        .isMoveInRight(calculationBuyRequestHistory.getIsMoveInRight())
+                                        .build();
+                    }
 
                     if(calculationBuyResponseHistoryList != null){
                         listCnt = calculationBuyResponseHistoryList.size();
@@ -636,7 +667,42 @@ public class ConsultingService {
                 }
                 else if(CALC_TYPE_SELL.equals(calcType)){
                     List<CalculationSellOneResult> list = new ArrayList<>();
+                    CalculationSellRequestHistory calculationSellRequestHistory = calculationSellRequestHistoryRepository.findByCalcHistoryId(calcHistoryId);
                     List<CalculationSellResponseHistory> calculationSellResponseHistoryList = calculationSellResponseHistoryRepository.findByCalcHistoryId(calcHistoryId);
+
+                    if(calculationSellRequestHistory != null){
+                        List<CalculationOwnHouseHistory> calculationOwnHouseHistoryList = calculationOwnHouseHistoryRepository.findByCalcHistoryId(calcHistoryId);
+                        if(calculationOwnHouseHistoryList != null && !calculationOwnHouseHistoryList.isEmpty()){
+                            long ownHouseHistoryId = calculationOwnHouseHistoryList.get(0).getOwnHouseHistoryId();
+                            long sellHouseId = calculationSellRequestHistory.getSellHouseId();
+                            List<CalculationOwnHouseHistoryDetail> calculationOwnHouseHistoryDetailList = calculationOwnHouseHistoryDetailRepository.findByOwnHouseHistoryIdAndHouseId(ownHouseHistoryId, sellHouseId);
+
+                            if(calculationOwnHouseHistoryDetailList != null && !calculationOwnHouseHistoryDetailList.isEmpty()){
+                                CalculationOwnHouseHistoryDetail calculationOwnHouseHistoryDetail = calculationOwnHouseHistoryDetailList.get(0);
+                                boolean isPubLandPriceOver100Mil = calculationOwnHouseHistoryDetail.getPubLandPrice() > ONE_HND_MIL;
+                                boolean isAreaOver85 = calculationOwnHouseHistoryDetail.getArea().doubleValue() > AREA_85;
+
+                                calculationSellHouseResponse =
+                                        CalculationSellHouseResponse.builder()
+                                                .houseType(calculationOwnHouseHistoryDetail.getHouseType())
+                                                .houseName(calculationOwnHouseHistoryDetail.getHouseName())
+                                                .detailAdr(calculationOwnHouseHistoryDetail.getDetailAdr())
+                                                .contractDate(calculationOwnHouseHistoryDetail.getContractDate())
+                                                .buyDate(calculationOwnHouseHistoryDetail.getBuyDate())
+                                                .buyPrice(calculationOwnHouseHistoryDetail.getBuyPrice())
+                                                .pubLandPrice(calculationOwnHouseHistoryDetail.getPubLandPrice())
+                                                .isPubLandPriceOver100Mil(isPubLandPriceOver100Mil)
+                                                .roadAddr(calculationOwnHouseHistoryDetail.getRoadAddr())
+                                                .area(calculationOwnHouseHistoryDetail.getArea().doubleValue())
+                                                .isAreaOver85(isAreaOver85)
+                                                .isDestruction(calculationOwnHouseHistoryDetail.getIsDestruction())
+                                                .ownerCnt(calculationOwnHouseHistoryDetail.getOwnerCnt())
+                                                .userProportion(calculationOwnHouseHistoryDetail.getUserProportion())
+                                                .isMoveInRight(calculationOwnHouseHistoryDetail.getIsMoveInRight())
+                                                .build();
+                            }
+                        }
+                    }
 
                     if(calculationSellResponseHistoryList != null){
                         listCnt = calculationSellResponseHistoryList.size();
@@ -695,6 +761,8 @@ public class ConsultingService {
                         .consultingCancelDatetime(consultingCancelDatetimeStr)
                         .consultingStartDatetime(consultingStartDatetimeStr)
                         .consultingEndDatetime(consultingEndDatetimeStr)
+                        .calculationBuyHouseResponse(calculationBuyHouseResponse)
+                        .calculationSellHouseResponse(calculationSellHouseResponse)
                         .calculationBuyResultResponse(calculationBuyResultResponse)
                         .calculationSellResultResponse(calculationSellResultResponse)
                         .build());

@@ -2,8 +2,10 @@ package com.xmonster.howtaxing.model;
 
 import lombok.*;
 
+import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.Id;
 import java.io.Serializable;
 import java.time.LocalDate;
 
@@ -18,8 +20,9 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class CalculationSellRequestHistory implements Serializable {
-    @EmbeddedId
-    private CalculationHistoryId calculationHistoryId;
+    @Id
+    @Column
+    private Long calcHistoryId;                 // 상담자ID
 
     private Long sellHouseId;                   // 양도주택ID
     private LocalDate sellContractDate;         // 양도계약일자
