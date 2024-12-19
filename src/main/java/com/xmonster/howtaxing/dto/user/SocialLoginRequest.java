@@ -11,6 +11,7 @@ import javax.validation.constraints.NotNull;
 @Builder
 @ToString
 public class SocialLoginRequest {
-    private SocialType socialType;
-    private String accessToken;
+    private SocialType socialType;      // [필수] 소셜로그인 유형
+    private String accessToken;         // [선택] AccessToken(카카오, 네이버 로그인 시 사용)
+    private String identityToken;       // [선택] IdentityToken(애플 로그인 시 사용)
 }
