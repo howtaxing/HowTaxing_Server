@@ -745,7 +745,7 @@ public class ConsultingService {
             }
         }
 
-        return ApiResponse.success(
+        ConsultingReservationDetailResponse consultingReservationDetailResponse =
                 ConsultingReservationDetailResponse.builder()
                         .consultingReservationId(consultingReservationId)
                         .consultantName(consultantName)
@@ -765,7 +765,11 @@ public class ConsultingService {
                         .calculationSellHouseResponse(calculationSellHouseResponse)
                         .calculationBuyResultResponse(calculationBuyResultResponse)
                         .calculationSellResultResponse(calculationSellResultResponse)
-                        .build());
+                        .build();
+
+        log.info("consultingReservationDetailResponse : " + consultingReservationDetailResponse);
+
+        return ApiResponse.success(consultingReservationDetailResponse);
     }
 
     // 상담가능일정 조회 유효성 검증
