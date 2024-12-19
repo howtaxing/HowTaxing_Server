@@ -2022,11 +2022,7 @@ public class CalculationBuyService {
                     // 계산취득세요청이력 저장
                     calculationBuyRequestHistoryRepository.saveAndFlush(
                             CalculationBuyRequestHistory.builder()
-                                    .calculationHistoryId(
-                                            CalculationHistoryId.builder()
-                                                    .calcHistoryId(calcHistoryId)
-                                                    .detailHistorySeq(1)
-                                                    .build())
+                                    .calcHistoryId(calcHistoryId)
                                     .houseType(calculationBuyResultRequest.getHouseType())
                                     .houseName(calculationBuyResultRequest.getHouseName())
                                     .detailAdr(calculationBuyResultRequest.getDetailAdr())
@@ -2128,6 +2124,7 @@ public class CalculationBuyService {
                                                         .ownHouseHistoryId(ownHouseHistoryId)
                                                         .detailHistorySeq(calculationOwnHouseHistoryDetail)
                                                         .build())
+                                        .houseId(house.getHouseId())
                                         .houseType(house.getHouseType())
                                         .houseName(house.getHouseName())
                                         .detailAdr(house.getDetailAdr())

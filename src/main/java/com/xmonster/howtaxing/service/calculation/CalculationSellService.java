@@ -3011,11 +3011,7 @@ public class CalculationSellService {
                     // 계산양도소득세요청이력 저장
                     calculationSellRequestHistoryRepository.saveAndFlush(
                             CalculationSellRequestHistory.builder()
-                                    .calculationHistoryId(
-                                            CalculationHistoryId.builder()
-                                                    .calcHistoryId(calcHistoryId)
-                                                    .detailHistorySeq(1)
-                                                    .build())
+                                    .calcHistoryId(calcHistoryId)
                                     .sellHouseId(calculationSellResultRequest.getHouseId())
                                     .sellContractDate(calculationSellResultRequest.getSellContractDate())
                                     .sellDate(calculationSellResultRequest.getSellDate())
@@ -3112,6 +3108,7 @@ public class CalculationSellService {
                                                         .ownHouseHistoryId(ownHouseHistoryId)
                                                         .detailHistorySeq(calculationOwnHouseHistoryDetail)
                                                         .build())
+                                        .houseId(house.getHouseId())
                                         .houseType(house.getHouseType())
                                         .houseName(house.getHouseName())
                                         .detailAdr(house.getDetailAdr())
