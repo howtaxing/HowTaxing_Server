@@ -674,25 +674,46 @@ public class ConsultingService {
 
         while(compareTime.isBefore(reservationAvailableEndTime.plusMinutes(reservationTimeUnit))){
             String compareTimeStr = compareTime.format(timeFormatter);
-            String reservationStatus = ONE;         // 예약대기
+            String reservationStatus = null;
 
-            if(!reservationUnavailableTimeList.isEmpty()){
-                for(String unavailableTime : reservationUnavailableTimeList){
-                    if(compareTimeStr.equals(unavailableTime)){
-                        reservationStatus = THREE;  // 예약불가
-                        break;
+            // 현재일시 이전의 예약일시는 모두 예약불가 처리
+            if(reservationDate.isEqual(LocalDate.now())){
+                if(compareTime.isBefore(LocalTime.now())){
+                    reservationStatus = THREE;
+                }
+            }else if(reservationDate.isBefore(LocalDate.now())){
+                reservationStatus = THREE;
+            }
+
+
+            // 예약 불가시간 목록을 가져와 해당 시간에 예약불가 처리
+            if(StringUtils.isBlank(reservationStatus)){
+                if(!reservationUnavailableTimeList.isEmpty()){
+                    for(String unavailableTime : reservationUnavailableTimeList){
+                        if(compareTimeStr.equals(unavailableTime)){
+                            reservationStatus = THREE;  // 예약불가
+                            break;
+                        }
                     }
                 }
             }
 
-            if(consultingReservationInfoList != null && !consultingReservationInfoList.isEmpty()){
-                for(ConsultingReservationInfo consultingReservationInfo : consultingReservationInfoList){
-                    String reservedTimeStr = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
-                    if(compareTimeStr.equals(reservedTimeStr)){
-                        reservationStatus = TWO;    // 예약완료
-                        break;
+            // 예약 목록을 가져와 해당 시간에 예약완료 처리
+            if(StringUtils.isBlank(reservationStatus)){
+                if(consultingReservationInfoList != null && !consultingReservationInfoList.isEmpty()){
+                    for(ConsultingReservationInfo consultingReservationInfo : consultingReservationInfoList){
+                        String reservedTimeStr = consultingReservationInfo.getReservationStartTime().format(timeFormatter);
+                        if(compareTimeStr.equals(reservedTimeStr)){
+                            reservationStatus = TWO;    // 예약완료
+                            break;
+                        }
                     }
                 }
+            }
+
+            // 어떤 조건에도 해당되지 않은 시간은 예약대기 처리
+            if(StringUtils.isBlank(reservationStatus)){
+                reservationStatus = ONE;                // 예약대기
             }
 
             timeList.add(
