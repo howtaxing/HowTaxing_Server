@@ -928,10 +928,15 @@ public class ConsultingService {
             String compareTimeStr = compareTime.format(timeFormatter);
             String reservationStatus = null;
 
-            // 현재 시간보다 이전의 예약시간은 모두 예약불가 처리
-            if(compareTime.isBefore(LocalTime.now())){
+            // 현재일시 이전의 예약일시는 모두 예약불가 처리
+            if(reservationDate.isEqual(LocalDate.now())){
+                if(compareTime.isBefore(LocalTime.now())){
+                    reservationStatus = THREE;
+                }
+            }else if(reservationDate.isBefore(LocalDate.now())){
                 reservationStatus = THREE;
             }
+
 
             // 예약 불가시간 목록을 가져와 해당 시간에 예약불가 처리
             if(StringUtils.isBlank(reservationStatus)){
