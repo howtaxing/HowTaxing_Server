@@ -1,6 +1,7 @@
 package com.xmonster.howtaxing.controller.consulting;
 
 import com.xmonster.howtaxing.dto.consulting.ConsultingReservationApplyRequest;
+import com.xmonster.howtaxing.dto.consulting.ConsultingReservationAvailableRequest;
 import com.xmonster.howtaxing.dto.consulting.ConsultingReservationCancelRequest;
 import com.xmonster.howtaxing.dto.consulting.ConsultingReservationModifyRequest;
 import com.xmonster.howtaxing.service.consulting.ConsultingService;
@@ -68,5 +69,12 @@ public class ConsultingController {
     public Object getConsultingReservationDetail(@RequestParam Long consultingReservationId) throws Exception {
         log.info(">> [Controller]ConsultingController getConsultingReservationList - 상담 예약 상세 조회");
         return consultingService.getConsultingReservationDetail(consultingReservationId);
+    }
+
+    // 상담 예약 가능여부 조회
+    @PostMapping("/consulting/reservationAvailable")
+    public Object getIsReservationAvailable(@RequestBody ConsultingReservationAvailableRequest consultingReservationAvailableRequest) throws Exception {
+        log.info(">> [Controller]ConsultingController getIsReservationAvailable - 상담 예약 가능여부 조회");
+        return consultingService.getIsReservationAvailable(consultingReservationAvailableRequest);
     }
 }

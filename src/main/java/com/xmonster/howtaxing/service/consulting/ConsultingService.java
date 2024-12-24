@@ -202,6 +202,24 @@ public class ConsultingService {
                         .build());
     }
 
+    // 상담 예약 가능여부 조회
+    public Object getIsReservationAvailable(ConsultingReservationAvailableRequest consultingReservationAvailableRequest) throws Exception {
+        log.info(">> [Service]ConsultingService getIsReservationAvailable - 상담 예약 가능여부 조회");
+
+        validationCheckForGetIsReservationAvailable(consultingReservationAvailableRequest);
+
+        Long consultantId = consultingReservationAvailableRequest.getConsultantId();
+        LocalDate reservationDate = consultingReservationAvailableRequest.getReservationDate();
+        String reservationTime = consultingReservationAvailableRequest.getReservationTime();
+
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        LocalTime reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
+
+        checkReservationAvailable(consultantId, reservationDate, reservationStartTime);
+
+        return ApiResponse.success(Map.of("result", "선택한 날짜와 시간으로 상담 예약이 가능해요."));
+    }
+
     // 상담예약 생성(결제 시점, Not for API)
     public Long createConsultingReservation(ConsultingReservationCreateRequest consultingReservationCreateRequest) throws Exception {
         log.info(">> [Service]ConsultingService createConsultingReservationInfo - 상담예약정보 생성");
@@ -227,6 +245,9 @@ public class ConsultingService {
         // TODO. 단위를 가져와서 작업 필요
         LocalTime reservationEndTime = reservationStartTime.plusMinutes(30);
 
+        checkReservationAvailable(consultantId, reservationDate, reservationStartTime);
+
+        /*
         // 본인이 당일 기존 예약 신청한 건이 존재하는지 검증
         long alreadyReservationCheck = consultingReservationInfoRepository.countByUserIdAndReservationDate(findUser.getId(), reservationDate);
         if(alreadyReservationCheck > 0){
@@ -238,6 +259,7 @@ public class ConsultingService {
         if(duplicateCheck > 0){
             throw new CustomException(ErrorCode.CONSULTING_RESERVATION_DUPLICATED_ERROR);
         }
+        */
 
         // TODO. 고객전화번호 데이터 포맷 검증 필요
 
@@ -788,6 +810,29 @@ public class ConsultingService {
         }
     }
 
+    // 상담 예약 가능여부 조회 유효성 검증
+    private void validationCheckForGetIsReservationAvailable(ConsultingReservationAvailableRequest consultingReservationAvailableRequest){
+        if(consultingReservationAvailableRequest == null){
+            throw new CustomException(ErrorCode.CONSULTING_AVAILABLE_INPUT_ERROR);
+        }
+
+        Long consultantId = consultingReservationAvailableRequest.getConsultantId();
+        LocalDate reservationDate = consultingReservationAvailableRequest.getReservationDate();
+        String reservationTime = consultingReservationAvailableRequest.getReservationTime();
+
+        if(consultantId == null){
+            throw new CustomException(ErrorCode.CONSULTING_AVAILABLE_INPUT_ERROR, "상담 예약 가능여부 조회를 위한 상담자ID가 입력되지 않았습니다.");
+        }
+
+        if(reservationDate == null){
+            throw new CustomException(ErrorCode.CONSULTING_AVAILABLE_INPUT_ERROR, "상담 예약 가능여부 조회를 위한 예약일자가 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(reservationTime)){
+            throw new CustomException(ErrorCode.CONSULTING_AVAILABLE_INPUT_ERROR, "상담 예약 가능여부 조회를 위한 예약시간이 입력되지 않았습니다.");
+        }
+    }
+
     // 상담예약생성(결제 시점) 유효성 검증
     private void validationCheckForCreateConsultingReservation(ConsultingReservationCreateRequest consultingReservationCreateRequest){
         if(consultingReservationCreateRequest == null) throw new CustomException(ErrorCode.CONSULTING_CREATE_INPUT_ERROR);
@@ -978,5 +1023,20 @@ public class ConsultingService {
         }
 
         return timeList;
+    }
+
+    // 상담 예약 가능 여부 체크
+    private void checkReservationAvailable(long consultantId, LocalDate reservationDate, LocalTime reservationStartTime){
+        // 본인이 당일 기존 예약 신청한 건이 존재하는지 검증
+        long alreadyReservationCheck = consultingReservationInfoRepository.countByUserIdAndReservationDate(userUtil.findCurrentUserId(), reservationDate);
+        if(alreadyReservationCheck > 0){
+            throw new CustomException(ErrorCode.CONSULTING_RESERVATION_ALREADY_ERROR);
+        }
+
+        // 요청한 예약일자, 예약시간에 기존 신청된 건이 존재하는지 검증
+        long duplicateCheck = consultingReservationInfoRepository.countByReservationDateAndReservationStartTime(consultantId, reservationDate, reservationStartTime);
+        if(duplicateCheck > 0){
+            throw new CustomException(ErrorCode.CONSULTING_RESERVATION_DUPLICATED_ERROR);
+        }
     }
 }

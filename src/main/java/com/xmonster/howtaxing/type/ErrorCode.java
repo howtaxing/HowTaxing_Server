@@ -116,6 +116,8 @@ public enum ErrorCode {
     CONSULTING_RESERVATION_NOT_FOUND(1, HttpStatus.OK, "CONSULTING-017", "해당 상담예약이 존재하지 않아요."),
     CONSULTING_CREATE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-018", "상담 예약 정보 생성을 위한 입력값이 올바르지 않습니다."),
     CONSULTING_CREATE_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-019", "상담 예약 정보 생성 중 오류가 발생했습니다."),
+    CONSULTING_AVAILABLE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-020", "상담 예약 가능여부 조회를 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_AVAILABLE_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-021", "상담 예약 가능여부 조회 중 오류가 발생했습니다."),
 
     /* 리뷰 관련 */
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),
