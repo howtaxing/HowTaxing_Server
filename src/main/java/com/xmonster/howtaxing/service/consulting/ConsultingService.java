@@ -502,12 +502,10 @@ public class ConsultingService {
     public Object getConsultingReservationList() throws Exception {
         log.info(">> [Service]ConsultingService getConsultingReservationList - 상담 예약 목록 조회");
 
-        // 호출 사용자 조회
-        User findUser = userUtil.findCurrentUser();
-
         List<ConsultingReservationSimpleResponse> consultingReservationSimpleResponseList = new ArrayList<>();
 
-        List<ConsultingReservationInfo> consultingReservationInfoList = consultingReservationInfoRepository.findByUserIdOrderByReservationDateDescReservationStartTimeDesc(findUser.getId());
+        //List<ConsultingReservationInfo> consultingReservationInfoList = consultingReservationInfoRepository.findByUserIdOrderByReservationDateDescReservationStartTimeDesc(userUtil.findCurrentUserId());
+        List<ConsultingReservationInfo> consultingReservationInfoList = consultingReservationInfoRepository.findUserReservationInfoList(userUtil.findCurrentUserId());
 
         if(consultingReservationInfoList != null && !consultingReservationInfoList.isEmpty()){
             for(ConsultingReservationInfo consultingReservationInfo : consultingReservationInfoList){
