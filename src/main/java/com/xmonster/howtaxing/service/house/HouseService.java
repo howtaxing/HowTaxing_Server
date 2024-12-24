@@ -1429,92 +1429,103 @@ public class HouseService {
         // 3. 거래유형 [매수] 중 보유주택 주소와 유사한 경우 세팅
 
         HyphenUserHouseResultInfo hyphenUserHouseResultInfo = new HyphenUserHouseResultInfo();
-        
-        // 부동산거래내역
-        for (int i = 0; i < list2.size(); i++) {
-            DataDetail2 dataDetail2 = list2.get(i);
 
-            String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
-            String buyPrice = ZERO;
-            String myHouseAddress = EMPTY;
+        if(list2 != null && !list2.isEmpty()){
+            // 부동산거래내역
+            for (int i = 0; i < list2.size(); i++) {
+                DataDetail2 dataDetail2 = list2.get(i);
 
-            if (list2.size() == 1) {
-                buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
+                String tradeType = this.getTradeTypeFromSellBuyClassification(StringUtils.defaultString(dataDetail2.getSellBuyClassification()));
+                String buyPrice = ZERO;
+                String myHouseAddress = EMPTY;
 
-                hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
-                hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                if (list2.size() == 1) {
+                    buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
 
-                if (houseList.get(0).getBuyPrice() == null) {
-                    houseList.get(0).setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
-                }
-                if (houseList.get(0).getContractDate() == null) {
-                    houseList.get(0).setContractDate(hyphenUserHouseResultInfo.getContractDate());
-                }
-            } else {
-                // 거래유형이 매수인 경우 보유주택과 비교
-                if(ONE.equals(tradeType)) {
-                    HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail2.getAddress());
-                    log.info("{}개 거래내역 중 {}번째 매수 주택: {}", list2.size(), i+1, houseAddressDto.getSearchAddress().get(0));
+                    hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
+                    hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
 
-                    for (House house : houseList) {
-                        if (houseAddressDto.getAddressType() == 1) {
-                            log.info("보유주택 지번주소: {}", house.getJibunAddr());
-                            myHouseAddress = house.getJibunAddr();
-                        } else {
-                            log.info("보유주택 도로명주소: {}", house.getRoadAddr());
-                            myHouseAddress = house.getRoadAddr();
+                    if(houseList != null && !houseList.isEmpty()){
+                        if (houseList.get(0).getBuyPrice() == null) {
+                            houseList.get(0).setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
                         }
-                        
-                        // 부동산거래내역의 주소가 보유주택 주소와 일부 일치하는 경우 [취득금액]과 [계약일자] 세팅
-                        if (houseAddressService.compareAddress(houseAddressDto, house)) {
-                        //if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
-                            log.debug("주소의 일부가 일치함!", myHouseAddress);
-                            buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
 
-                            hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
-                            hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                        if (houseList.get(0).getContractDate() == null) {
+                            houseList.get(0).setContractDate(hyphenUserHouseResultInfo.getContractDate());
+                        }
+                    }
+                } else {
+                    // 거래유형이 매수인 경우 보유주택과 비교
+                    if(ONE.equals(tradeType)) {
+                        HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail2.getAddress());
+                        log.info("{}개 거래내역 중 {}번째 매수 주택: {}", list2.size(), i+1, houseAddressDto.getSearchAddress().get(0));
 
-                            if (house.getBuyPrice() == null) {
-                                house.setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
+                        if(houseList != null && !houseList.isEmpty()){
+                            for (House house : houseList) {
+                                if (houseAddressDto.getAddressType() == 1) {
+                                    log.info("보유주택 지번주소: {}", house.getJibunAddr());
+                                    myHouseAddress = house.getJibunAddr();
+                                } else {
+                                    log.info("보유주택 도로명주소: {}", house.getRoadAddr());
+                                    myHouseAddress = house.getRoadAddr();
+                                }
+
+                                // 부동산거래내역의 주소가 보유주택 주소와 일부 일치하는 경우 [취득금액]과 [계약일자] 세팅
+                                if (houseAddressService.compareAddress(houseAddressDto, house)) {
+                                    //if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                                    log.debug("주소의 일부가 일치함!", myHouseAddress);
+                                    buyPrice = StringUtils.defaultString(dataDetail2.getTradingPrice(), ZERO);
+
+                                    hyphenUserHouseResultInfo.setBuyPrice(Long.parseLong(buyPrice));
+                                    hyphenUserHouseResultInfo.setContractDate(LocalDate.parse(dataDetail2.getContractDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+
+                                    if (house.getBuyPrice() == null) {
+                                        house.setBuyPrice(hyphenUserHouseResultInfo.getBuyPrice());
+                                    }
+
+                                    if (house.getContractDate() == null) {
+                                        house.setContractDate(hyphenUserHouseResultInfo.getContractDate());
+                                    }
+
+                                    break;
+                                }
                             }
-                            if (house.getContractDate() == null) {
-                                house.setContractDate(hyphenUserHouseResultInfo.getContractDate());
-                            }
-
-                            break;
                         }
                     }
                 }
             }
         }
-        // 재산세정보
-        for (int i = 0; i < list3.size(); i++) {
-            DataDetail3 dataDetail3 = list3.get(i);
-            String myHouseAddress = EMPTY;
 
-            HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail3.getAddress());
-            log.info("{}개 재산세정보 중 {}번째 정보: {}", list3.size(), i+1, houseAddressDto.getSearchAddress().get(0));
+        if(list3 != null && !list3.isEmpty()){
+            // 재산세정보
+            for (int i = 0; i < list3.size(); i++) {
+                DataDetail3 dataDetail3 = list3.get(i);
+                String myHouseAddress = EMPTY;
 
-            for (House house : houseList) {
-                if (houseAddressDto.getAddressType() == 1) {
-                    log.info("보유주택 지번주소: {}", house.getJibunAddr());
-                    myHouseAddress = house.getJibunAddr();
-                } else {
-                    log.info("보유주택 도로명주소: {}", house.getRoadAddr());
-                    myHouseAddress = house.getRoadAddr();
-                }
-                
-                if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
-                    hyphenUserHouseResultInfo.setDetailAdr(houseAddressDto.getDetailAddress());
-                    hyphenUserHouseResultInfo.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                HouseAddressDto houseAddressDto = houseAddressService.separateAddress(dataDetail3.getAddress());
+                log.info("{}개 재산세정보 중 {}번째 정보: {}", list3.size(), i+1, houseAddressDto.getSearchAddress().get(0));
 
-                    if (house.getDetailAdr() == null) {
-                        house.setDetailAdr(hyphenUserHouseResultInfo.getDetailAdr());
+                for (House house : houseList) {
+                    if (houseAddressDto.getAddressType() == 1) {
+                        log.info("보유주택 지번주소: {}", house.getJibunAddr());
+                        myHouseAddress = house.getJibunAddr();
+                    } else {
+                        log.info("보유주택 도로명주소: {}", house.getRoadAddr());
+                        myHouseAddress = house.getRoadAddr();
                     }
-                    if (house.getBuyDate() == null) {
-                        house.setBuyDate(hyphenUserHouseResultInfo.getBuyDate());
+
+                    if (myHouseAddress.contains(houseAddressDto.getSearchAddress().get(0))) {
+                        hyphenUserHouseResultInfo.setDetailAdr(houseAddressDto.getDetailAddress());
+                        hyphenUserHouseResultInfo.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+
+                        if (house.getDetailAdr() == null) {
+                            house.setDetailAdr(hyphenUserHouseResultInfo.getDetailAdr());
+                        }
+                        if (house.getBuyDate() == null) {
+                            house.setBuyDate(hyphenUserHouseResultInfo.getBuyDate());
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -1530,23 +1541,25 @@ public class HouseService {
         Set<String> sellAddresses = new HashSet<>();            // 매도 거래 세트
         List<DataDetail2> buyTransactions = new ArrayList<>();  // 매수 거래 리스트
 
-        for (DataDetail2 dataDetail2 : list2) {
-            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
-            String address = houseAddressDto.formatAddress();
-            String tradeType = getTradeTypeFromSellBuyClassification(dataDetail2.getSellBuyClassification());
-            LocalDate balancePaymentDate = LocalDate.parse(dataDetail2.getBalancePaymentDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+        if(list2 != null && !list2.isEmpty()){
+            for (DataDetail2 dataDetail2 : list2) {
+                HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
+                String address = houseAddressDto.formatAddress();
+                String tradeType = getTradeTypeFromSellBuyClassification(dataDetail2.getSellBuyClassification());
+                LocalDate balancePaymentDate = LocalDate.parse(dataDetail2.getBalancePaymentDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-            if (TWO.equals(tradeType)) {
-                // 매도 거래 주소를 세트에 추가
-                sellAddresses.add(address);
-            } else if (ONE.equals(tradeType)) {
-                // 매수 거래인 경우 매도 거래 주소 목록에 포함되지 않은 경우에 매수 거래 리스트에 추가
-                if (!sellAddresses.contains(address)) {
-                    // 잔금일자가 오늘보다 미래인 경우 매수주택에 포함하지 않음
-                    if (balancePaymentDate.isBefore(LocalDate.now())) {
-                        buyTransactions.add(dataDetail2);
-                    } else {
-                        log.debug("잔금일자가 도래하지 않은 매수거래내역 (매수일자: {})", balancePaymentDate);
+                if (TWO.equals(tradeType)) {
+                    // 매도 거래 주소를 세트에 추가
+                    sellAddresses.add(address);
+                } else if (ONE.equals(tradeType)) {
+                    // 매수 거래인 경우 매도 거래 주소 목록에 포함되지 않은 경우에 매수 거래 리스트에 추가
+                    if (!sellAddresses.contains(address)) {
+                        // 잔금일자가 오늘보다 미래인 경우 매수주택에 포함하지 않음
+                        if (balancePaymentDate.isBefore(LocalDate.now())) {
+                            buyTransactions.add(dataDetail2);
+                        } else {
+                            log.debug("잔금일자가 도래하지 않은 매수거래내역 (매수일자: {})", balancePaymentDate);
+                        }
                     }
                 }
             }
@@ -1564,6 +1577,10 @@ public class HouseService {
     * ##########################################
     */
     public Object getHouseInfoForType(HyphenUserSessionRequest hyphenUserSessionRequest) {
+        if(hyphenUserSessionRequest == null){
+            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "세션에 저장된 주택정보를 불러오는 중 오류가 발생했습니다.");
+        }
+
         if (EMPTY.equals(hyphenUserSessionRequest.getArea().trim())) {
             return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "면적이 입력되지 않았습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
         }
@@ -1624,36 +1641,44 @@ public class HouseService {
 
         return ApiResponse.success(null);
     }
+
     private ApiResponse<?> getMatchingResponse(String type, Map<Object, Object> redisData) {
-        if (BUILDING.equals(type)) {
-            // 건축물대장 DTO생성 및 데이터 세팅
-            DataDetail1 dataDetail1 = new DataDetail1();
-            dataDetail1.setAddress(redisData.get("address").toString());
-            dataDetail1.setArea(redisData.get("area").toString());
-            dataDetail1.setApprovalDate(redisData.get("approvalDate").toString());
-            dataDetail1.setReasonChangeOwnership(redisData.get("reasonChangeOwnership").toString());
-            dataDetail1.setOwnershipChangeDate(redisData.get("ownershipChangeDate").toString());
-            dataDetail1.setBaseDate(redisData.get("baseDate").toString());
-            dataDetail1.setPublicationBaseDate(redisData.get("publicationBaseDate").toString());
-            dataDetail1.setPublishedPrice(redisData.get("publishedPrice").toString());
+        if(redisData != null && !redisData.isEmpty()){
+            if (BUILDING.equals(type)) {
+                // 건축물대장 DTO생성 및 데이터 세팅
+                DataDetail1 dataDetail1 = new DataDetail1();
+                dataDetail1.setAddress(redisData.get("address").toString());
+                dataDetail1.setArea(redisData.get("area").toString());
+                dataDetail1.setApprovalDate(redisData.get("approvalDate").toString());
+                dataDetail1.setReasonChangeOwnership(redisData.get("reasonChangeOwnership").toString());
+                dataDetail1.setOwnershipChangeDate(redisData.get("ownershipChangeDate").toString());
+                dataDetail1.setBaseDate(redisData.get("baseDate").toString());
+                dataDetail1.setPublicationBaseDate(redisData.get("publicationBaseDate").toString());
+                dataDetail1.setPublishedPrice(redisData.get("publishedPrice").toString());
 
-            return ApiResponse.success(dataDetail1);
-            // return dataDetail1;
-        } else if (PROPERTY.equals(type)) {
-            // 재산세내역 DTO생성 및 데이터 세팅
-            DataDetail3 dataDetail3 = new DataDetail3();
-            dataDetail3.setAddress(redisData.get("address").toString());
-            dataDetail3.setArea(redisData.get("area").toString());
-            dataDetail3.setAcquisitionDate(redisData.get("acquisitionDate").toString());
-            dataDetail3.setBaseDate(redisData.get("baseDate").toString());
+                return ApiResponse.success(dataDetail1);
+                // return dataDetail1;
+            } else if (PROPERTY.equals(type)) {
+                // 재산세내역 DTO생성 및 데이터 세팅
+                DataDetail3 dataDetail3 = new DataDetail3();
+                dataDetail3.setAddress(redisData.get("address").toString());
+                dataDetail3.setArea(redisData.get("area").toString());
+                dataDetail3.setAcquisitionDate(redisData.get("acquisitionDate").toString());
+                dataDetail3.setBaseDate(redisData.get("baseDate").toString());
 
-            return ApiResponse.success(dataDetail3);
+                return ApiResponse.success(dataDetail3);
+            }
         }
+
         return ApiResponse.error(ErrorCode.HOUSE_GET_INFO_ERROR.getMessage(), "조회타입 입력이 잘못되었습니다.", ErrorCode.HOUSE_GET_INFO_ERROR.getCode());
     }
 
     // 재산세, 건축물대장 한번에 조회
     public Object getHouseInfo(HyphenUserSessionRequest hyphenUserSessionRequest) {
+        if(hyphenUserSessionRequest == null){
+            throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "세션에 저장된 주택정보를 불러오는 중 오류가 발생했습니다.");
+        }
+
         Map<String, Object> combinedInfo = new LinkedHashMap<>();
         log.info("조회할 주소: {}", hyphenUserSessionRequest.getRoadAddress());
 
@@ -1686,18 +1711,20 @@ public class HouseService {
     public void saveBuildingInfo(Long userId, List<DataDetail1> list) {
         redisService.deleteHashMap(userId, BUILDING);  // 기존 세션값 초기화
 
-        for (int i = 0; i < list.size(); i++) {
-            Map<String, String> propertyInfo = new HashMap<>();
-            propertyInfo.put("address", list.get(i).getAddress());
-            propertyInfo.put("area", list.get(i).getArea());
-            propertyInfo.put("approvalDate", list.get(i).getApprovalDate());
-            propertyInfo.put("reasonChangeOwnership", list.get(i).getReasonChangeOwnership());
-            propertyInfo.put("ownershipChangeDate", list.get(i).getOwnershipChangeDate());
-            propertyInfo.put("publicationBaseDate", list.get(i).getPublicationBaseDate());
-            propertyInfo.put("publishedPrice", list.get(i).getPublishedPrice());
-            propertyInfo.put("baseDate", list.get(i).getBaseDate());
+        if(list != null){
+            for (int i = 0; i < list.size(); i++) {
+                Map<String, String> propertyInfo = new HashMap<>();
+                propertyInfo.put("address", list.get(i).getAddress());
+                propertyInfo.put("area", list.get(i).getArea());
+                propertyInfo.put("approvalDate", list.get(i).getApprovalDate());
+                propertyInfo.put("reasonChangeOwnership", list.get(i).getReasonChangeOwnership());
+                propertyInfo.put("ownershipChangeDate", list.get(i).getOwnershipChangeDate());
+                propertyInfo.put("publicationBaseDate", list.get(i).getPublicationBaseDate());
+                propertyInfo.put("publishedPrice", list.get(i).getPublishedPrice());
+                propertyInfo.put("baseDate", list.get(i).getBaseDate());
 
-            redisService.saveHashMap(userId, BUILDING, String.valueOf(i + 1), propertyInfo);
+                redisService.saveHashMap(userId, BUILDING, String.valueOf(i + 1), propertyInfo);
+            }
         }
     }
 
@@ -1705,18 +1732,20 @@ public class HouseService {
     public void saveTradingInfo(Long userId, List<DataDetail2> list) {
         redisService.deleteHashMap(userId, TRADE);  // 기존 세션값 초기화
 
-        for (int i = 0; i < list.size(); i++) {
-            Map<String, String> propertyInfo = new HashMap<>();
-            propertyInfo.put("address", list.get(i).getAddress());
-            propertyInfo.put("sellBuyClassification", list.get(i).getSellBuyClassification());
-            propertyInfo.put("area", list.get(i).getArea());
-            propertyInfo.put("tradingPrice", list.get(i).getTradingPrice());
-            propertyInfo.put("balancePaymentDate", list.get(i).getBalancePaymentDate());
-            propertyInfo.put("contractDate", list.get(i).getContractDate());
-            propertyInfo.put("startDate", list.get(i).getStartDate());
-            propertyInfo.put("endDate", list.get(i).getEndDate());
+        if(list != null){
+            for (int i = 0; i < list.size(); i++) {
+                Map<String, String> propertyInfo = new HashMap<>();
+                propertyInfo.put("address", list.get(i).getAddress());
+                propertyInfo.put("sellBuyClassification", list.get(i).getSellBuyClassification());
+                propertyInfo.put("area", list.get(i).getArea());
+                propertyInfo.put("tradingPrice", list.get(i).getTradingPrice());
+                propertyInfo.put("balancePaymentDate", list.get(i).getBalancePaymentDate());
+                propertyInfo.put("contractDate", list.get(i).getContractDate());
+                propertyInfo.put("startDate", list.get(i).getStartDate());
+                propertyInfo.put("endDate", list.get(i).getEndDate());
 
-            redisService.saveHashMap(userId, TRADE, String.valueOf(i + 1), propertyInfo);
+                redisService.saveHashMap(userId, TRADE, String.valueOf(i + 1), propertyInfo);
+            }
         }
     }
 
@@ -1724,31 +1753,35 @@ public class HouseService {
     public void savePropertyInfo(Long userId, List<DataDetail3> list) {
         redisService.deleteHashMap(userId, PROPERTY);  // 기존 세션값 초기화
 
-        for (int i = 0; i < list.size(); i++) {
-            Map<String, String> propertyInfo = new HashMap<>();
-            propertyInfo.put("address", list.get(i).getAddress());
-            propertyInfo.put("area", list.get(i).getArea());
-            propertyInfo.put("acquisitionDate", list.get(i).getAcquisitionDate());
-            propertyInfo.put("baseDate", list.get(i).getBaseDate());
+        if(list != null){
+            for (int i = 0; i < list.size(); i++) {
+                Map<String, String> propertyInfo = new HashMap<>();
+                propertyInfo.put("address", list.get(i).getAddress());
+                propertyInfo.put("area", list.get(i).getArea());
+                propertyInfo.put("acquisitionDate", list.get(i).getAcquisitionDate());
+                propertyInfo.put("baseDate", list.get(i).getBaseDate());
 
-            redisService.saveHashMap(userId, PROPERTY, String.valueOf(i + 1), propertyInfo);
+                redisService.saveHashMap(userId, PROPERTY, String.valueOf(i + 1), propertyInfo);
+            }
         }
     }
 
     // 보유주택정보 redis 저장
     public void saveHouseInfo(Long userId, House house) {
-        Map<String, String> houseInfo = new HashMap<>();
-        houseInfo.put("bdMgtSn", house.getBdMgtSn());
-        houseInfo.put("houseName", house.getHouseName());
-        houseInfo.put("jibunAddr", house.getJibunAddr());
-        houseInfo.put("roadAddr", house.getRoadAddr());
-        houseInfo.put("contractDate", house.getContractDate().toString());
-        houseInfo.put("balbanceDate", house.getBalanceDate().toString());
-        houseInfo.put("buyPriace", house.getBuyPrice().toString());
-        houseInfo.put("area", house.getArea().toString());
+        if(house != null){
+            Map<String, String> houseInfo = new HashMap<>();
+            houseInfo.put("bdMgtSn", house.getBdMgtSn());
+            houseInfo.put("houseName", house.getHouseName());
+            houseInfo.put("jibunAddr", house.getJibunAddr());
+            houseInfo.put("roadAddr", house.getRoadAddr());
+            houseInfo.put("contractDate", house.getContractDate().toString());
+            houseInfo.put("balbanceDate", house.getBalanceDate().toString());
+            houseInfo.put("buyPriace", house.getBuyPrice().toString());
+            houseInfo.put("area", house.getArea().toString());
 
-        // 건물관리번호가 key인데 동일 주택 2채 보유의 경우 고려 필요할듯
-        redisService.saveHashMap(userId, "house", house.getBdMgtSn(), houseInfo);
+            // 건물관리번호가 key인데 동일 주택 2채 보유의 경우 고려 필요할듯
+            redisService.saveHashMap(userId, "house", house.getBdMgtSn(), houseInfo);
+        }
     }
 
     // 건축물대장 기준 매매 외 취득주택 추출
