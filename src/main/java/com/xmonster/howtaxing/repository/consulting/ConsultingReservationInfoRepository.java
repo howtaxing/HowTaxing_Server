@@ -38,7 +38,8 @@ public interface ConsultingReservationInfoRepository extends JpaRepository<Consu
                     "FROM consulting_reservation_info c " +
                     "WHERE (c.user_id = :userId " +
                     "AND c.consulting_status != 'PAYMENT_READY' " +
-                    "AND c.is_canceled = false)", nativeQuery = true)
+                    "AND c.is_canceled = false) " +
+                    "ORDER BY c.reservation_date DESC, c.reservation_start_time DESC", nativeQuery = true)
     List<ConsultingReservationInfo> findUserReservationInfoList(Long userId);
 
     //List<ConsultingReservationInfo> findByReservationDate(LocalDate reservationDate);
