@@ -69,6 +69,7 @@ public class PaymentService {
                         .customerName(tempPaymentRequestInfoRequest.getCustomerName())
                         .customerPhone(tempPaymentRequestInfoRequest.getCustomerPhone())
                         .reservationDate(tempPaymentRequestInfoRequest.getReservationDate())
+                        .reservationTime(tempPaymentRequestInfoRequest.getReservationTime())
                         .consultingType(tempPaymentRequestInfoRequest.getConsultingType())
                         .consultingInflowPath(tempPaymentRequestInfoRequest.getConsultingInflowPath())
                         .calcHistoryId(tempPaymentRequestInfoRequest.getCalcHistoryId())
