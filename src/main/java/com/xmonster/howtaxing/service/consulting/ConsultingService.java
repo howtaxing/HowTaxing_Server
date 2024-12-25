@@ -208,6 +208,8 @@ public class ConsultingService {
 
         validationCheckForGetIsReservationAvailable(consultingReservationAvailableRequest);
 
+        log.info("consultingReservationAvailableRequest : " + consultingReservationAvailableRequest);
+
         Long consultantId = consultingReservationAvailableRequest.getConsultantId();
         LocalDate reservationDate = consultingReservationAvailableRequest.getReservationDate();
         String reservationTime = consultingReservationAvailableRequest.getReservationTime();
@@ -217,6 +219,7 @@ public class ConsultingService {
 
         checkReservationAvailable(consultantId, reservationDate, reservationStartTime);
 
+        log.info("상담 예약 가능 확인");
         return ApiResponse.success(Map.of("result", "선택한 날짜와 시간으로 상담 예약이 가능해요."));
     }
 
