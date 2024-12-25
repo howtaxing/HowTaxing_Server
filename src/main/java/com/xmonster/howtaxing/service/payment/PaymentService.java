@@ -228,10 +228,10 @@ public class PaymentService {
 
             for(PaymentHistory paymentHistory : paymentHistoryList){
                 Long paymentHistoryId = null;
-                String approvedDatetime = EMPTY;
+                String approvedDatetime = null;
                 Long paymentAmount = null;
-                String consultantName = EMPTY;
-                String thumbImageUrl = EMPTY;
+                String consultantName = null;
+                String thumbImageUrl = null;
 
                 ConsultingReservationInfo consultingReservationInfo = consultingReservationUtil.findConsultingReservationInfo(paymentHistory.getConsultingReservationId());
                 if(consultingReservationInfo != null){
@@ -268,8 +268,8 @@ public class PaymentService {
             throw new CustomException(ErrorCode.PAYMENT_DETAIL_INPUT_ERROR);
         }
 
-        String consultantName = EMPTY;
-        String thumbImageUrl = EMPTY;
+        String consultantName = null;
+        String profileImageUrl = null;
 
         PaymentHistory paymentHistory = paymentUtil.findPaymentHistory(paymentHistoryId);
 
@@ -278,7 +278,7 @@ public class PaymentService {
             ConsultantInfo consultantInfo = consultantUtil.findSelectedConsultantInfo(consultingReservationInfo.getConsultantId());
             if(consultantInfo != null){
                 consultantName = consultantInfo.getConsultantName();
-                thumbImageUrl = consultantInfo.getThumbImageUrl();
+                profileImageUrl = consultantInfo.getProfileImageUrl();
             }
         }
 
@@ -286,7 +286,7 @@ public class PaymentService {
                 PaymentDetailResponse.builder()
                         .paymentHistoryId(paymentHistoryId)
                         .consultantName(consultantName)
-                        .thumbImageUrl(thumbImageUrl)
+                        .profileImageUrl(profileImageUrl)
                         .approvedDatetime(paymentHistory.getApprovedAt().format(DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss")))
                         .productPrice(paymentHistory.getProductPrice())
                         .productDiscountPrice(paymentHistory.getProductDiscountPrice())

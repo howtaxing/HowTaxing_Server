@@ -534,16 +534,19 @@ public class ConsultingService {
 
         if(consultingReservationInfoList != null && !consultingReservationInfoList.isEmpty()){
             for(ConsultingReservationInfo consultingReservationInfo : consultingReservationInfoList){
-                String consultantName = EMPTY;
+                String consultantName = null;
+                String thumbImageUrl = null;
                 ConsultantInfo consultantInfo = consultantInfoRepository.findByConsultantId(consultingReservationInfo.getConsultantId()).orElse(null);
                 if(consultantInfo != null){
                     consultantName = consultantInfo.getConsultantName();
+                    thumbImageUrl = consultantInfo.getThumbImageUrl();
                 }
 
                 consultingReservationSimpleResponseList.add(
                         ConsultingReservationSimpleResponse.builder()
                                 .consultingReservationId(consultingReservationInfo.getConsultingReservationId())
                                 .consultantName(consultantName)
+                                .thumbImageUrl(thumbImageUrl)
                                 .consultingType(consultingReservationInfo.getConsultingType())
                                 .reservationDate(consultingReservationInfo.getReservationDate())
                                 .reservationStartTime(consultingReservationInfo.getReservationStartTime().format(DateTimeFormatter.ofPattern("HH:mm")))
@@ -577,7 +580,7 @@ public class ConsultingService {
         ConsultantInfo consultantInfo = consultantInfoRepository.findByConsultantId(consultingReservationInfo.getConsultantId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CONSULTING_CANCEL_INPUT_ERROR, "존재하지 않는 상담자ID 입니다."));
         String consultantName = consultantInfo.getConsultantName();
-        String thumbImageUrl = consultantInfo.getThumbImageUrl();
+        String profileImageUrl = consultantInfo.getProfileImageUrl();
 
         if(!findUser.getId().equals(consultingReservationInfo.getUserId())){
             throw new CustomException(ErrorCode.CONSULTING_MODIFY_OUTPUT_ERROR, "본인의 상담 예약 신청 건이 아니기 때문에 취소할 수 없습니다.");
@@ -773,7 +776,7 @@ public class ConsultingService {
                 ConsultingReservationDetailResponse.builder()
                         .consultingReservationId(consultingReservationId)
                         .consultantName(consultantName)
-                        .thumbImageUrl(thumbImageUrl)
+                        .profileImageUrl(profileImageUrl)
                         .consultingType(consultingReservationInfo.getConsultingType())
                         .reservationDate(consultingReservationInfo.getReservationDate())
                         .reservationStartTime(reservationStartTime)

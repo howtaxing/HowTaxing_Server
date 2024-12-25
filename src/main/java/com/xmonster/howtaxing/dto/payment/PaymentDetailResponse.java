@@ -12,7 +12,7 @@ import lombok.*;
 public class PaymentDetailResponse {
     private Long paymentHistoryId;              // 결제이력ID
     private String consultantName;              // 상담자명
-    private String thumbImageUrl;               // (상담자)썸네일이미지URL
+    private String profileImageUrl;             // 상담자프로필이미지URL
     
     private String approvedDatetime;            // 결제승인일시
     private Long productPrice;                  // 상품가격
