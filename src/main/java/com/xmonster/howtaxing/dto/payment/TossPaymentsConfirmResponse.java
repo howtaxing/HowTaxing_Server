@@ -1,5 +1,6 @@
 package com.xmonster.howtaxing.dto.payment;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TossPaymentsConfirmResponse {
     private String version;                                 // Payment 객체의 응답 버전
     private String paymentKey;                              // 결제의 고유 키 값. 최대 길이는 200자이며, 결제 데이터 관리를 위해 반드시 저장해야 함
