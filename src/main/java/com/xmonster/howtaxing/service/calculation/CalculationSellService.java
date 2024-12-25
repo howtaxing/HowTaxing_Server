@@ -2618,6 +2618,9 @@ public class CalculationSellService {
             House house = houseRepository.findByHouseId(calculationSellResultRequest.getHouseId())
                     .orElseThrow(() -> new CustomException(ErrorCode.HOUSE_NOT_FOUND_ERROR));
 
+            // (양도주택)조정지역여부
+            boolean isAdjustmentTargetArea = checkAdjustmentTargetArea(StringUtils.defaultString(house.getJibunAddr()), house.getBuyDate());
+
             // 세율정보
             TaxRateInfo taxRateInfo = null;
             if(taxRateCode != null && !taxRateCode.isBlank()){
@@ -2985,13 +2988,15 @@ public class CalculationSellService {
                     .build();
 
             // 양도소득세 계산 결과 이력 저장
-            calculationSellResultResponse.setCalcHistoryId(saveCalculationSellHistory(calculationSellResultRequest, calculationSellResultResponse));
+            calculationSellResultResponse.setCalcHistoryId(saveCalculationSellHistory(calculationSellResultRequest, calculationSellResultResponse, isAdjustmentTargetArea));
 
             return calculationSellResultResponse;
         }
 
         // 양도소득세 계산 결과 이력 저장
-        private Long saveCalculationSellHistory(CalculationSellResultRequest calculationSellResultRequest, CalculationSellResultResponse calculationSellResultResponse){
+        private Long saveCalculationSellHistory(CalculationSellResultRequest calculationSellResultRequest,
+                                                CalculationSellResultResponse calculationSellResultResponse,
+                                                boolean isAdjustmentTargetArea){
             log.info(">>> CalculationBranch saveCalculationSellHistory - 양도소득세 계산 결과 이력 저장");
 
             // 계산이력ID
@@ -3067,6 +3072,7 @@ public class CalculationSellService {
                                         .sellTaxPrice(calculationSellOneResult.getSellTaxPrice())
                                         .localTaxPrice(calculationSellOneResult.getLocalTaxPrice())
                                         .totalTaxPrice(calculationSellOneResult.getTotalTaxPrice())
+                                        .isAdjustmentTargetArea(isAdjustmentTargetArea)
                                         .build());
                         calculationSellResponseHistorySeq++;
                     }

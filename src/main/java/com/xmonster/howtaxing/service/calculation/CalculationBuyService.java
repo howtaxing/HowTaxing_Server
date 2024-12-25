@@ -1996,13 +1996,15 @@ public class CalculationBuyService {
                     .build();
 
             // 취득세 계산 결과 이력 저장
-            calculationBuyResultResponse.setCalcHistoryId(saveCalculationBuyHistory(calculationBuyResultRequest, calculationBuyResultResponse));
+            calculationBuyResultResponse.setCalcHistoryId(saveCalculationBuyHistory(calculationBuyResultRequest, calculationBuyResultResponse, isAdjustmentTargetArea));
 
             return calculationBuyResultResponse;
         }
 
         // 취득세 계산 결과 이력 저장
-        private Long saveCalculationBuyHistory(CalculationBuyResultRequest calculationBuyResultRequest, CalculationBuyResultResponse calculationBuyResultResponse){
+        private Long saveCalculationBuyHistory(CalculationBuyResultRequest calculationBuyResultRequest,
+                                               CalculationBuyResultResponse calculationBuyResultResponse,
+                                               boolean isAdjustmentTargetArea){
             log.info(">>> CalculationBranch saveCalculationBuyHistory - 취득세 계산 결과 이력 저장");
 
             // 계산이력ID
@@ -2083,6 +2085,7 @@ public class CalculationBuyService {
                                         .agrTaxRate(calculationBuyOneResult.getAgrTaxRate())
                                         .agrTaxPrice(calculationBuyOneResult.getAgrTaxPrice())
                                         .totalTaxPrice(calculationBuyOneResult.getTotalTaxPrice())
+                                        .isAdjustmentTargetArea(isAdjustmentTargetArea)
                                         .build());
                         calculationBuyResponseHistorySeq++;
                     }
