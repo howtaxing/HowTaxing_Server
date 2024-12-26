@@ -44,8 +44,6 @@ public interface ConsultingReservationInfoRepository extends JpaRepository<Consu
                     "ORDER BY c.reservation_date DESC, c.reservation_start_time DESC", nativeQuery = true)
     List<ConsultingReservationInfo> findUserReservationInfoList(Long userId);
 
-    //List<ConsultingReservationInfo> findByReservationDate(LocalDate reservationDate);
-
     @Query(value = "SELECT * " +
                     "FROM consulting_reservation_info c " +
                     "WHERE (c.consultant_id = :consultantId " +

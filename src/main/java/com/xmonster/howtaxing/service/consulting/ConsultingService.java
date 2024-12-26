@@ -241,6 +241,7 @@ public class ConsultingService {
         String reservationTime = consultingReservationCreateRequest.getReservationTime();
         String consultingType = consultingReservationCreateRequest.getConsultingType();
         String consultingInflowPath = consultingReservationCreateRequest.getConsultingInflowPath();
+        Long paymentAmount = consultingReservationCreateRequest.getPaymentAmount();
         Long calcHistoryId = consultingReservationCreateRequest.getCalcHistoryId();
 
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
@@ -282,6 +283,7 @@ public class ConsultingService {
                             .customerPhone(customerPhone)
                             .consultingInflowPath(consultingInflowPath)
                             .consultingStatus(ConsultingStatus.PAYMENT_READY)
+                            .paymentAmount(paymentAmount)
                             .isCanceled(false)
                             .lastModifier(LastModifierType.USER)
                             .build());

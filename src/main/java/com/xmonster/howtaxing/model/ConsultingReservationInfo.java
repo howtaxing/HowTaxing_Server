@@ -38,7 +38,7 @@ public class ConsultingReservationInfo extends DateEntity implements Serializabl
     @Enumerated(EnumType.STRING)
     private ConsultingStatus consultingStatus;              // 상담진행상태
 
-    private Long paymentPrice;                              // 결제금액
+    private Long paymentAmount;                             // 결제금액
     private String consultingContent;                       // 상담내용
     private String remark;                                  // 비고
     private Boolean isCanceled;                             // 취소여부
