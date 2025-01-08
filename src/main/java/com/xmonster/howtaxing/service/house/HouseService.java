@@ -17,10 +17,8 @@ import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAdrResponse;
 import com.xmonster.howtaxing.dto.jusogov.JusoGovRoadAdrResponse.Results.JusoDetail;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse.HyphenCommon;
 import com.xmonster.howtaxing.dto.hyphen.HyphenUserHouseListResponse.HyphenData.*;
-import com.xmonster.howtaxing.model.House;
-import com.xmonster.howtaxing.model.LoadHouse;
-import com.xmonster.howtaxing.model.User;
-import com.xmonster.howtaxing.repository.house.HouseRepository;
+import com.xmonster.howtaxing.model.*;
+import com.xmonster.howtaxing.repository.house.*;
 import com.xmonster.howtaxing.service.redis.RedisService;
 import com.xmonster.howtaxing.type.ErrorCode;
 
@@ -39,6 +37,7 @@ import javax.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -58,6 +57,11 @@ public class HouseService {
     private final RedisService redisService;
 
     private final HouseRepository houseRepository;
+    private final HouseApplyHomeInfoRepository houseApplyHomeInfoRepository;
+    private final HouseBuildingRegisterInfoRepository houseBuildingRegisterInfoRepository;
+    private final HouseTradeHistoryInfoRepository houseTradeHistoryInfoRepository;
+    private final HousePropertyTaxInfoRepository housePropertyTaxInfoRepository;
+    private final HouseCombinationResultInfoRepository houseCombinationResultInfoRepository;
 
     private final UserUtil userUtil;
     private final HouseUtil houseUtil;
@@ -94,6 +98,89 @@ public class HouseService {
         List<DataDetail1> list1 = hyphenUserHouseListResponse.getHyphenData().getList1();
         List<DataDetail2> list2 = hyphenUserHouseListResponse.getHyphenData().getList2();
         List<DataDetail3> list3 = hyphenUserHouseListResponse.getHyphenData().getList3();
+
+        // GGMANYAR
+        if(hyphenCommon != null){
+            // 주택청약홈정보 DB 저장
+            HouseApplyHomeInfo houseApplyHomeInfo = houseApplyHomeInfoRepository.saveAndFlush(
+                    HouseApplyHomeInfo.builder()
+                            .userId(findUser.getId())
+                            .userTrNo(hyphenCommon.getUserTrNo())
+                            .hyphenTrNo(hyphenCommon.getHyphenTrNo())
+                            .errYn(hyphenCommon.getErrYn())
+                            .errCd(hyphenCommon.getErrCd())
+                            .errMsg(hyphenCommon.getErrMsg())
+                            .searchAt(LocalDateTime.now())
+                            .build());
+
+            Long searchId = houseApplyHomeInfo.getSearchId();
+
+            List<HouseBuildingRegisterInfo> houseBuildingRegisterInfoList = null;
+            List<HouseTradeHistoryInfo> houseTradeHistoryInfoList = null;
+            List<HousePropertyTaxInfo> housePropertyTaxInfoList = null;
+            List<HouseCombinationResultInfo> houseCombinationResultInfoList = null;
+
+            if(list1 != null && !list1.isEmpty()){
+                houseBuildingRegisterInfoList = new ArrayList<>();
+
+                for(DataDetail1 detail : list1){
+                    houseBuildingRegisterInfoList.add(
+                            HouseBuildingRegisterInfo.builder()
+                                    .searchId(searchId)
+                                    .name(detail.getName())
+                                    .address(detail.getAddress())
+                                    .area(detail.getArea())
+                                    .approvalDate(detail.getApprovalDate())
+                                    .reasonChangeOwnership(detail.getReasonChangeOwnership())
+                                    .ownershipChangeDate(detail.getOwnershipChangeDate())
+                                    .publicationBaseDate(detail.getPublicationBaseDate())
+                                    .publishedPrice(detail.getPublishedPrice())
+                                    .baseDate(detail.getBaseDate())
+                                    .build());
+                }
+
+                houseBuildingRegisterInfoRepository.saveAllAndFlush(houseBuildingRegisterInfoList);
+            }
+
+            if(list2 != null && !list2.isEmpty()){
+                houseTradeHistoryInfoList = new ArrayList<>();
+
+                for(DataDetail2 detail : list2){
+                    houseTradeHistoryInfoList.add(
+                            HouseTradeHistoryInfo.builder()
+                                    .searchId(searchId)
+                                    .name(detail.getName())
+                                    .address(detail.getAddress())
+                                    .sellBuyClassification(detail.getSellBuyClassification())
+                                    .area(detail.getArea())
+                                    .tradingPrice(detail.getTradingPrice())
+                                    .balancePaymentDate(detail.getBalancePaymentDate())
+                                    .contractDate(detail.getContractDate())
+                                    .startDate(detail.getStartDate())
+                                    .endDate(detail.getEndDate())
+                                    .build());
+                }
+
+                houseTradeHistoryInfoRepository.saveAllAndFlush(houseTradeHistoryInfoList);
+            }
+
+            if(list3 != null && !list3.isEmpty()){
+                housePropertyTaxInfoList = new ArrayList<>();
+
+                for(DataDetail3 detail : list3){
+                    housePropertyTaxInfoList.add(
+                            HousePropertyTaxInfo.builder()
+                                    .name(detail.getName())
+                                    .address(detail.getAddress())
+                                    .area(detail.getArea())
+                                    .acquisitionDate(detail.getAcquisitionDate())
+                                    .baseDate(detail.getBaseDate())
+                                    .build());
+                }
+
+                housePropertyTaxInfoRepository.saveAllAndFlush(housePropertyTaxInfoList);
+            }
+        }
 
         if(this.isSuccessHyphenUserHouseListResponse(hyphenCommon)){
             // 하이픈 보유주택조회 결과 List를 HouseList에 세팅(3->1->2 순서로 호출)
