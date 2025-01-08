@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class HyphenUserHouseListRequest {
-    private String loginMethod;     // (사용)로그인구분(CERT : 공동인증서, EASY : 간편로그인(네이버,kb인증서), FINCERT : 금융인증서)
-    private String loginOrgCd;      // (사용)간편로그인 기관 구분(kb : KB국민, naver : 네이버, toss : 토스) *제한시간:3분 / 간편로그인시 필수
+    private String loginMethod;     // (사용)로그인구분(CERT : 공동인증서, EASY : 간편로그인(카카오,네이버,kb인증서), FINCERT : 금융인증서)
+    private String loginOrgCd;      // (사용)간편로그인 기관 구분(kb:KB국민, naver:네이버, toss:토스, kakao:카카오) *제한시간:3분 / 간편로그인시 필수
     private String signCert;        // ----------인증서정보(인증서 PEM문자열)
     private String signPri;         // ----------개인키정보(개인키 PEM문자열)
     private String signPw;          // ----------인증서비밀번호
