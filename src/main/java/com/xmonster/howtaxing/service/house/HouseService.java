@@ -113,6 +113,9 @@ public class HouseService {
                             .searchAt(LocalDateTime.now())
                             .build());
 
+            log.info("[GGMANYAR]houseApplyHomeInfo save!");
+            log.info("[GGMANYAR]searchId : " + houseApplyHomeInfo.getSearchId());
+
             Long searchId = houseApplyHomeInfo.getSearchId();
 
             List<HouseBuildingRegisterInfo> houseBuildingRegisterInfoList = null;
@@ -170,6 +173,7 @@ public class HouseService {
                 for(DataDetail3 detail : list3){
                     housePropertyTaxInfoList.add(
                             HousePropertyTaxInfo.builder()
+                                    .searchId(searchId)
                                     .name(detail.getName())
                                     .address(detail.getAddress())
                                     .area(detail.getArea())
