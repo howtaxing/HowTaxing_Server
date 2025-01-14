@@ -608,13 +608,22 @@ public class UserService {
 
         // identityToken의 헤더에서 kid 추출
         String tokenKid = extractKidFromToken(identityToken);
+        log.info("[GGMANYAR]tokenKid : " + tokenKid);
 
         // 적합한 공개 키 찾기
         for (Map<String, String> keyData : keyArray) {
             String kid = keyData.get("kid");
+            log.info("[GGMANYAR]kid : " + kid);
 
             if (kid.equals(tokenKid)) {
                 PublicKey publicKey = getPublicKey(keyData);
+
+                log.info("[GGMANYAR]publicKey : " + publicKey);
+
+                if(publicKey == null){
+                    throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "Public Key is null");
+                }
+
                 return Jwts.parserBuilder()
                         .setSigningKey(publicKey)
                         .build()
