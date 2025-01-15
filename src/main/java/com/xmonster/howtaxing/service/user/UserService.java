@@ -23,6 +23,7 @@ import com.xmonster.howtaxing.utils.GsonLocalDateTimeAdapter;
 import com.xmonster.howtaxing.utils.UserUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwsHeader;
+import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.security.KeyFactory;
@@ -635,12 +636,21 @@ public class UserService {
         throw new IllegalArgumentException("Invalid identity token");
     }
 
-    private String extractKidFromToken(String identityToken) {
+    /*private String extractKidFromToken(String identityToken) {
         JwsHeader<?> header = Jwts.parserBuilder()
                 .build()
                 .parseClaimsJws(identityToken)
                 .getHeader();
 
+        return (String) header.get("kid");
+    }*/
+
+    private String extractKidFromToken(String identityToken) {
+        Jwt<?, ?> jwt = Jwts.parserBuilder()
+                .build()
+                .parse(identityToken);
+
+        JwsHeader<?> header = (JwsHeader<?>) jwt.getHeader();
         return (String) header.get("kid");
     }
 
