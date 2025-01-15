@@ -1,5 +1,6 @@
 package com.xmonster.howtaxing.service.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -645,13 +646,30 @@ public class UserService {
         return (String) header.get("kid");
     }*/
 
-    private String extractKidFromToken(String identityToken) {
+    /*private String extractKidFromToken(String identityToken) {
         Jwt<?, ?> jwt = Jwts.parserBuilder()
                 .build()
                 .parse(identityToken);
 
         JwsHeader<?> header = (JwsHeader<?>) jwt.getHeader();
         return (String) header.get("kid");
+    }*/
+
+    private String extractKidFromToken(String identityToken) throws Exception {
+        // JWT를 '.' 기준으로 나누어 헤더 부분 추출
+        String[] jwtParts = identityToken.split("\\.");
+        if(jwtParts.length != 3){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
+        }
+
+        // Base64 디코딩하여 JSON 형태의 헤더 추출
+        String headerJson = new String(Base64.getUrlDecoder().decode(jwtParts[0]));
+
+        // JSON 파싱하여 "kid" 값 가져오기
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> headerMap = objectMapper.readValue(headerJson, Map.class);
+
+        return (String) headerMap.get("kid");
     }
 
     private PublicKey getPublicKey(Map<String, String> keyData) throws Exception {
