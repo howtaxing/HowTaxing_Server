@@ -383,6 +383,7 @@ public class ConsultingService {
                             .consultingInflowPath(consultingInflowPath)
                             .consultingRequestContent(consultingRequestContent)
                             .consultingStatus(ConsultingStatus.WAITING)
+                            .consultingRequestDatetime(LocalDateTime.now())
                             .paymentAmount(0L)
                             .isCanceled(false)
                             .lastModifier(LastModifierType.USER)
@@ -565,6 +566,7 @@ public class ConsultingService {
 
         consultingReservationInfo.setIsCanceled(true);
         consultingReservationInfo.setConsultingStatus(ConsultingStatus.CANCEL);
+        consultingReservationInfo.setConsultingCancelDatetime(LocalDateTime.now());
         consultingReservationInfo.setLastModifier(LastModifierType.USER);
 
         try{
@@ -662,12 +664,14 @@ public class ConsultingService {
         String reservationEndTime = consultingReservationInfo.getReservationEndTime().format(timeFormatter);
 
         LocalDateTime paymentCompleteDatetime = consultingReservationInfo.getPaymentCompleteDatetime();
+        LocalDateTime consultingRequestDatetime = consultingReservationInfo.getConsultingRequestDatetime();
         LocalDateTime consultingCancelDatetime = consultingReservationInfo.getConsultingCancelDatetime();
         LocalDateTime consultingStartDatetime = consultingReservationInfo.getConsultingStartDatetime();
         LocalDateTime consultingEndDatetime = consultingReservationInfo.getConsultingEndDatetime();
 
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss");
         String paymentCompleteDatetimeStr = (paymentCompleteDatetime != null) ? paymentCompleteDatetime.format(dateTimeFormatter) : null;
+        String consultingRequestDatetimeStr = (consultingRequestDatetime != null) ? consultingRequestDatetime.format(dateTimeFormatter) : null;
         String consultingCancelDatetimeStr = (consultingCancelDatetime != null) ? consultingReservationInfo.getConsultingCancelDatetime().format(dateTimeFormatter) : null;
         String consultingStartDatetimeStr = (consultingStartDatetime != null) ? consultingReservationInfo.getConsultingStartDatetime().format(dateTimeFormatter) : null;
         String consultingEndDatetimeStr = (consultingEndDatetime != null) ? consultingReservationInfo.getConsultingEndDatetime().format(dateTimeFormatter) : null;
@@ -857,6 +861,7 @@ public class ConsultingService {
                         .paymentAmount(consultingReservationInfo.getPaymentAmount())
                         .consultingRequestContent(consultingReservationInfo.getConsultingRequestContent())
                         .paymentCompleteDatetime(paymentCompleteDatetimeStr)
+                        .consultingRequestDatetime(consultingRequestDatetimeStr)
                         .consultingCancelDatetime(consultingCancelDatetimeStr)
                         .consultingStartDatetime(consultingStartDatetimeStr)
                         .consultingEndDatetime(consultingEndDatetimeStr)

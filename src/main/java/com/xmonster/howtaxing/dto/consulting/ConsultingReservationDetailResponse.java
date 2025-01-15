@@ -31,6 +31,7 @@ public class ConsultingReservationDetailResponse {
     private String consultingRequestContent;        // 상담요청내용
 
     private String paymentCompleteDatetime;         // 결제완료일시
+    private String consultingRequestDatetime;       // 상담요청일시
     private String consultingCancelDatetime;        // 상담취소일시
     private String consultingStartDatetime;         // 상담시작일시
     private String consultingEndDatetime;           // 상담종료일시

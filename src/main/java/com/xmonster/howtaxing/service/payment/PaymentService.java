@@ -194,9 +194,10 @@ public class PaymentService {
             throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR, "결제가 승인되지 않았어요.");
         }
         
-        // 상담 상태 변경(결제대기 -> 결제완료)
+        // 상담 상태 변경(결제대기 -> 결제완료) 및 결제완료일시 등록
         ConsultingReservationInfo consultingReservationInfo = consultingReservationUtil.findConsultingReservationInfo(paymentHistory.getConsultingReservationId());
         consultingReservationInfo.setConsultingStatus(ConsultingStatus.PAYMENT_COMPLETED);
+        consultingReservationInfo.setPaymentCompleteDatetime(approvedAt);
 
         try{
             consultingReservationInfoRepository.saveAndFlush(consultingReservationInfo);
