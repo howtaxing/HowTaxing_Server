@@ -127,6 +127,10 @@ public enum ErrorCode {
     SMS_MSG_OUTPUT_ERROR(1, HttpStatus.OK, "MESSAGE-008", "SMS 발송 중 오류가 발생했어요."),
     SMS_MSG_SYSTEM_ERROR(1, HttpStatus.OK, "MESSAGE-009", "SMS 시스템에 오류가 발생하여 메시지를 발송할 수 없어요."),
 
+    /* 환급 상담 관련 */
+    REFUND_APPLY_INPUT_ERROR(1, HttpStatus.OK, "REFUND-001", "환급 상담 신청을 위한 입력값이 올바르지 않아요."),
+    REFUND_APPLY_OUTPUT_ERROR(1, HttpStatus.OK, "REFUND-002", "환급 상담 신청 중 오류가 발생했어요."),
+
     /* 시스템 관련 */
     SYSTEM_UNKNOWN_ERROR(2, HttpStatus.OK, "SYSTEM-001", "알 수 없는 오류가 발생했습니다."),
 
