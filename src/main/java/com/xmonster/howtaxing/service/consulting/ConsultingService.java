@@ -785,6 +785,7 @@ public class ConsultingService {
                         .reservationEndTime(reservationEndTime)
                         .consultingStatus(consultingReservationInfo.getConsultingStatus())
                         .consultingInflowPath(consultingReservationInfo.getConsultingInflowPath())
+                        .paymentAmount(consultingReservationInfo.getPaymentAmount())
                         .consultingRequestContent(consultingReservationInfo.getConsultingRequestContent())
                         .paymentCompleteDatetime(paymentCompleteDatetimeStr)
                         .consultingCancelDatetime(consultingCancelDatetimeStr)
