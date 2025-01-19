@@ -331,7 +331,7 @@ public class HouseService {
                             DataDetail3 dataDetail3 = (DataDetail3) response.getData();
                             if (dataDetail3 != null) {
                                 HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
-                                house.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));   //재산세 취득일자가 건축물대장보다 우선
+                                house.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));   // 재산세 취득일자가 건축물대장보다 우선
                                 house.setDetailAdr(houseAddressDto3.getDetailAddress());
                                 // house.setComplete(true);
                                 propertyComplete = true;
