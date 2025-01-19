@@ -336,6 +336,71 @@ public class ConsultingService {
                         .build());
     }
 
+    // 무료상담예약 신청
+    public Object applyConsultingReservationForFree(ConsultingReservationApplyForFreeRequest consultingReservationApplyForFreeRequest) throws Exception {
+        log.info(">> [Service]ConsultingService applyConsultingReservation - 무료상담예약 신청");
+
+        // 호출 사용자 조회
+        User findUser = userUtil.findCurrentUser();
+
+        validationCheckForApplyConsultingReservationForFree(consultingReservationApplyForFreeRequest);
+
+        log.info("무료상담예약 신청 요청 : " + consultingReservationApplyForFreeRequest);
+
+        Long consultantId = consultingReservationApplyForFreeRequest.getConsultantId();
+        String customerName = consultingReservationApplyForFreeRequest.getCustomerName();
+        String customerPhone = consultingReservationApplyForFreeRequest.getCustomerPhone();
+        LocalDate reservationDate = consultingReservationApplyForFreeRequest.getReservationDate();
+        String reservationTime = consultingReservationApplyForFreeRequest.getReservationTime();
+        String consultingInflowPath = consultingReservationApplyForFreeRequest.getConsultingInflowPath();
+        Long calcHistoryId = consultingReservationApplyForFreeRequest.getCalcHistoryId();
+        String consultingType = consultingReservationApplyForFreeRequest.getConsultingType();
+        String consultingRequestContent = consultingReservationApplyForFreeRequest.getConsultingRequestContent();
+
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        LocalTime reservationStartTime = LocalTime.parse(reservationTime, timeFormatter);
+        // TODO. 단위를 가져와서 작업 필요
+        LocalTime reservationEndTime = reservationStartTime.plusMinutes(30);
+
+        checkReservationAvailable(consultantId, reservationDate, reservationStartTime);
+
+        String consultantName = consultantUtil.findConsultantName(consultantId);
+
+        ConsultingReservationInfo consultingReservationInfo = null;
+
+        try{
+            consultingReservationInfo = consultingReservationInfoRepository.saveAndFlush(
+                    ConsultingReservationInfo.builder()
+                            .consultantId(consultantId)
+                            .userId(findUser.getId())
+                            .calcHistoryId(calcHistoryId)
+                            .consultingType(consultingType)
+                            .reservationDate(reservationDate)
+                            .reservationStartTime(reservationStartTime)
+                            .reservationEndTime(reservationEndTime)
+                            .customerName(customerName)
+                            .customerPhone(customerPhone)
+                            .consultingInflowPath(consultingInflowPath)
+                            .consultingRequestContent(consultingRequestContent)
+                            .consultingStatus(ConsultingStatus.WAITING)
+                            .paymentAmount(0L)
+                            .isCanceled(false)
+                            .lastModifier(LastModifierType.USER)
+                            .build());
+        }catch(Exception e){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_OUTPUT_ERROR, "상담예약정보 데이터 저장 중 오류 발생했어요.");
+        }
+
+        return ApiResponse.success(
+                ConsultingReservationApplyResponse.builder()
+                        .isApplyComplete(true)
+                        .consultantName(consultantName)
+                        .reservationDate(consultingReservationInfo.getReservationDate())
+                        .reservationStartTime(consultingReservationInfo.getReservationStartTime().format(timeFormatter))
+                        .reservationEndTime(consultingReservationInfo.getReservationEndTime().format(timeFormatter))
+                        .build());
+    }
+
     // 상담 예약 변경
     public Object modifyConsultingReservation(ConsultingReservationModifyRequest consultingReservationModifyRequest) throws Exception {
         log.info(">> [Service]ConsultingService modifyConsultingReservation - 상담 예약 변경");
@@ -431,63 +496,67 @@ public class ConsultingService {
         //paymentService.cancelPayment(consultingReservationId, cancelReason);    // 결제 취소
 
         PaymentHistory paymentHistory = paymentUtil.findPaymentHistoryByConsultingReservationId(consultingReservationId);
-        String paymentKey = paymentHistory.getPaymentKey();
+        
+        // 해당 상담 건에 결제정보가 존재하는 경우 결제취소(환불) 처리
+        if(paymentHistory != null){
+            String paymentKey = paymentHistory.getPaymentKey();
 
-        if(StringUtils.isBlank(paymentKey)){
-            throw new CustomException(ErrorCode.PAYMENT_CANCEL_INPUT_ERROR, "해당 상담예약에 사용된 결제정보를 찾지 못했어요.");
-        }
+            if(StringUtils.isBlank(paymentKey)){
+                throw new CustomException(ErrorCode.PAYMENT_CANCEL_INPUT_ERROR, "해당 상담예약에 사용된 결제정보를 찾지 못했어요.");
+            }
 
-        // 토스페이먼츠 API는 시크릿 키를 사용자 ID로 사용하고, 비밀번호는 사용하지 않습니다.
-        // 비밀번호가 없다는 것을 알리기 위해 시크릿 키 뒤에 콜론을 추가합니다.
-        String widgetSecretKey = "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6";
-        Base64.Encoder encoder = Base64.getEncoder();
-        byte[] encodedBytes = encoder.encode((widgetSecretKey + ":").getBytes(StandardCharsets.UTF_8));
-        String authorizations = "Basic " + new String(encodedBytes);
+            // 토스페이먼츠 API는 시크릿 키를 사용자 ID로 사용하고, 비밀번호는 사용하지 않습니다.
+            // 비밀번호가 없다는 것을 알리기 위해 시크릿 키 뒤에 콜론을 추가합니다.
+            String widgetSecretKey = "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6";
+            Base64.Encoder encoder = Base64.getEncoder();
+            byte[] encodedBytes = encoder.encode((widgetSecretKey + ":").getBytes(StandardCharsets.UTF_8));
+            String authorizations = "Basic " + new String(encodedBytes);
 
-        Map<String, Object> headerMap = new HashMap<>();
-        headerMap.put("Authorization", authorizations);
+            Map<String, Object> headerMap = new HashMap<>();
+            headerMap.put("Authorization", authorizations);
 
-        ResponseEntity<?> response = null;
+            ResponseEntity<?> response = null;
 
-        try{
-            response = paymentsConfirmApi.cancelPayment(
-                    paymentKey,
-                    headerMap,
-                    TossPaymentsCancelRequest.builder()
-                            .cancelReason(cancelReason)
-                            .build());
-        }catch(Exception e){
-            log.error("결제 취소 오류 내용 : " + e.getMessage());
-            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR, e.getMessage());
-        }
+            try{
+                response = paymentsConfirmApi.cancelPayment(
+                        paymentKey,
+                        headerMap,
+                        TossPaymentsCancelRequest.builder()
+                                .cancelReason(cancelReason)
+                                .build());
+            }catch(Exception e){
+                log.error("결제 취소 오류 내용 : " + e.getMessage());
+                throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR, e.getMessage());
+            }
 
-        log.info("confirm payment response");
-        log.info(response.toString());
+            log.info("confirm payment response");
+            log.info(response.toString());
 
-        String jsonString = EMPTY;
-        if(response.getBody() != null)  jsonString = response.getBody().toString();
-        System.out.println("jsonString : " + jsonString);
+            String jsonString = EMPTY;
+            if(response.getBody() != null)  jsonString = response.getBody().toString();
+            System.out.println("jsonString : " + jsonString);
 
-        TossPaymentsCommonResponse tossPaymentsCommonResponse = (TossPaymentsCommonResponse) convertJsonToData(jsonString);
-        System.out.println("tossPaymentsCommonResponse : " + tossPaymentsCommonResponse);
+            TossPaymentsCommonResponse tossPaymentsCommonResponse = (TossPaymentsCommonResponse) convertJsonToData(jsonString);
+            System.out.println("tossPaymentsCommonResponse : " + tossPaymentsCommonResponse);
 
-        if(tossPaymentsCommonResponse == null){
-            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR);
-        }
+            if(tossPaymentsCommonResponse == null){
+                throw new CustomException(ErrorCode.PAYMENT_CONFIRM_OUTPUT_ERROR);
+            }
 
-        PaymentStatus paymentStatus = PaymentStatus.valueOf(tossPaymentsCommonResponse.getStatus());
+            PaymentStatus paymentStatus = PaymentStatus.valueOf(tossPaymentsCommonResponse.getStatus());
 
-        // 결제승인 실패
-        if(!PaymentStatus.CANCELED.equals(paymentStatus)){
-            throw new CustomException(ErrorCode.PAYMENT_CANCEL_OUTPUT_ERROR, "결제가 취소되지 않았어요.");
-        }
+            // 결제승인 실패
+            if(!PaymentStatus.CANCELED.equals(paymentStatus)){
+                throw new CustomException(ErrorCode.PAYMENT_CANCEL_OUTPUT_ERROR, "결제가 취소되지 않았어요.");
+            }
 
-        paymentHistory.setStatus(paymentStatus);
+            paymentHistory.setStatus(paymentStatus);
 
-        try{
-            paymentHistoryRepository.save(paymentHistory);
-        }catch(Exception e){
-            throw new CustomException(ErrorCode.PAYMENT_CONFIRM_INPUT_ERROR, "결제취소 이후 결제상태 변경 중 오류 발생했어요.");
+            try{
+                paymentHistoryRepository.save(paymentHistory);
+            }catch(Exception e){
+                throw new CustomException(ErrorCode.PAYMENT_CONFIRM_INPUT_ERROR, "결제취소 이후 결제상태 변경 중 오류 발생했어요.");
+            }
         }
 
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
@@ -917,6 +986,61 @@ public class ConsultingService {
 
         if(StringUtils.isBlank(consultingRequestContent)){
             throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "상담 예약 신청을 위한 상담요청내용이 입력되지 않았습니다.");
+        }
+    }
+
+    // 무료 상담 예약 신청 유효성 검증
+    private void validationCheckForApplyConsultingReservationForFree(ConsultingReservationApplyForFreeRequest consultingReservationApplyRequestForFree){
+        if(consultingReservationApplyRequestForFree == null) throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR);
+
+        Long consultantId = consultingReservationApplyRequestForFree.getConsultantId();
+        String customerName = consultingReservationApplyRequestForFree.getCustomerName();
+        String customerPhone = consultingReservationApplyRequestForFree.getCustomerPhone();
+        LocalDate reservationDate = consultingReservationApplyRequestForFree.getReservationDate();
+        String reservationTime = consultingReservationApplyRequestForFree.getReservationTime();
+        String consultingInflowPath = consultingReservationApplyRequestForFree.getConsultingInflowPath();
+        String consultingTypeStr = consultingReservationApplyRequestForFree.getConsultingType();
+        String consultingRequestContent = consultingReservationApplyRequestForFree.getConsultingRequestContent();
+
+        if(consultantId == null){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 상담자ID가 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(customerName)){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 고객명이 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(customerPhone)){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 고객전화번호가 입력되지 않았습니다.");
+        }
+
+        if(reservationDate == null){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 예약일자가 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(reservationTime)){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 예약시간이 입력되지 않았습니다.");
+        }
+
+        if(StringUtils.isBlank(consultingInflowPath)){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 상담유입경로가 입력되지 않았습니다.");
+        }else{
+            if(!CONSULTING_TYPE_GEN.equals(consultingInflowPath) && !CONSULTING_TYPE_BUY.equals(consultingInflowPath) && !CONSULTING_TYPE_SELL.equals(consultingInflowPath)){
+                throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 상담유입경로 값이 올바르지 않습니다. (00:일반, 01:취득세 계산, 02:양도소득세 계산)");
+            }
+        }
+
+        if(!StringUtils.isBlank(consultingTypeStr)){
+            String[] consultingTypeArr = consultingTypeStr.split(COMMA);
+            for (String consultingType : consultingTypeArr) {
+                if (!CONSULTING_TYPE_BUY.equals(consultingType) && !CONSULTING_TYPE_SELL.equals(consultingType) && !CONSULTING_TYPE_INHERIT.equals(consultingType) && !CONSULTING_TYPE_PROPERTY.equals(consultingType)) {
+                    throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 상담유형 값이 올바르지 않습니다. (01:취득세, 02:양도소득세, 03:상속세, 04:재산세)");
+                }
+            }
+        }
+
+        if(StringUtils.isBlank(consultingRequestContent)){
+            throw new CustomException(ErrorCode.CONSULTING_APPLY_INPUT_ERROR, "무료상담예약 신청을 위한 상담요청내용이 입력되지 않았습니다.");
         }
     }
 

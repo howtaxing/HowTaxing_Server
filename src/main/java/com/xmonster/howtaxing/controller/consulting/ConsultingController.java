@@ -1,9 +1,6 @@
 package com.xmonster.howtaxing.controller.consulting;
 
-import com.xmonster.howtaxing.dto.consulting.ConsultingReservationApplyRequest;
-import com.xmonster.howtaxing.dto.consulting.ConsultingReservationAvailableRequest;
-import com.xmonster.howtaxing.dto.consulting.ConsultingReservationCancelRequest;
-import com.xmonster.howtaxing.dto.consulting.ConsultingReservationModifyRequest;
+import com.xmonster.howtaxing.dto.consulting.*;
 import com.xmonster.howtaxing.service.consulting.ConsultingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +38,13 @@ public class ConsultingController {
     public Object applyConsultingReservation(@RequestBody ConsultingReservationApplyRequest consultingReservationApplyRequest) throws Exception {
         log.info(">> [Controller]ConsultingController applyConsultingReservation - 상담 예약 신청");
         return consultingService.applyConsultingReservation(consultingReservationApplyRequest);
+    }
+
+    // 무료 상담 예약 신청
+    @PostMapping("/consulting/reservationApplyForFree")
+    public Object applyConsultingReservationForFree(@RequestBody ConsultingReservationApplyForFreeRequest consultingReservationApplyForFreeRequest) throws Exception {
+        log.info(">> [Controller]ConsultingController applyConsultingReservationForFree - 무료 상담 예약 신청");
+        return consultingService.applyConsultingReservationForFree(consultingReservationApplyForFreeRequest);
     }
 
     // 상담 예약 변경

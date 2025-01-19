@@ -22,7 +22,6 @@ public class PaymentUtil {
     }
 
     public PaymentHistory findPaymentHistoryByConsultingReservationId(Long consultingReservationId){
-        return paymentHistoryRepository.findByConsultingReservationId(consultingReservationId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_HISTORY_NOT_FOUND));
+        return paymentHistoryRepository.findByConsultingReservationId(consultingReservationId);
     }
 }
