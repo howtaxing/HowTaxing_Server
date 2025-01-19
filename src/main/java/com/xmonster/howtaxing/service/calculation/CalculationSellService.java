@@ -3535,7 +3535,8 @@ public class CalculationSellService {
         private boolean checkAdjustmentTargetArea(String address, LocalDate date){
             boolean isAdjustmentTargetArea = false;
 
-            HouseAddressDto houseAddressDto = houseAddressService.separateAddress(address);
+            //HouseAddressDto houseAddressDto = houseAddressService.separateAddress(address);
+            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
 
             // 지번주소
             if(houseAddressDto.getAddressType() == 1){
