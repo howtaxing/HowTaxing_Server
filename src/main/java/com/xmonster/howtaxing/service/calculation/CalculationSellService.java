@@ -3521,6 +3521,11 @@ public class CalculationSellService {
                 finalDedRate = dedRate1;        // 기본
             }
 
+            log.info("dedRate1 : " + dedRate1);
+            log.info("dedRate2 : " + dedRate2);
+            log.info("dedMethod : " + dedMethod);
+            log.info("finalDedRate : " + finalDedRate);
+
             if(finalDedRate > 1) finalDedRate = 1;  // 최종 공제율은 1을 넘지 않는다(100%)
 
             return finalDedRate;
