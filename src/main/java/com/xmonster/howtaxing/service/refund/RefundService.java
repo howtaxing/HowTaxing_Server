@@ -34,6 +34,8 @@ public class RefundService {
             throw new CustomException(ErrorCode.REFUND_APPLY_INPUT_ERROR);
         }
 
+        log.info("refundConsultingApplyInfoRequest : " + refundConsultingApplyInfoRequest);
+
         String customerPhone = refundConsultingApplyInfoRequest.getCustomerPhone();
         Boolean isRefundAvailable = refundConsultingApplyInfoRequest.getIsRefundAvailable();
 
