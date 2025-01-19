@@ -2687,12 +2687,13 @@ public class CalculationSellService {
 
                 double dedRate = 0;             // 공제율
 
-                long buyPrice = (long)(house.getBuyPrice() * proportion);                       // 취득가액
+                long buyPrice = (long)(house.getBuyPrice() * proportion);                       // 취득가액(지분율 적용)
                 LocalDate buyDate = house.getBuyDate();                                         // 취득일자
                 long totalSellPrice = calculationSellResultRequest.getSellPrice();              // 전체 양도가액
-                long sellPrice = (long)(totalSellPrice * proportion);                           // 양도가액
+                long sellPrice = (long)(totalSellPrice * proportion);                           // 양도가액(지분율 적용)
                 LocalDate sellDate = calculationSellResultRequest.getSellDate();                // 양도일자
                 long necExpensePrice = calculationSellResultRequest.getNecExpensePrice();       // 필요경비금액
+                necExpensePrice = (long)(necExpensePrice * proportion);                         // 필요경비금액(지분율 적용)
                 sellProfitPrice = sellPrice - (buyPrice + necExpensePrice);                     // 양도차익금액(양도가액 - (취득가액 + 필요경비))
 
                 // 양도차익금액이 0보다 작으면 0으로 세팅
