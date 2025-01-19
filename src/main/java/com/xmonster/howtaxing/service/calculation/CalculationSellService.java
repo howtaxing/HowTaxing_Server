@@ -2721,6 +2721,7 @@ public class CalculationSellService {
 
                     // 세율이 상수인 경우
                     if(YES.equals(taxRateInfo.getConstYn())){
+                        log.info("세율이 상수");
                         if(sellProfitPrice != 0){
                             // 과세대상양도차익금액
                             taxablePrice = sellProfitPrice;
@@ -2747,9 +2748,11 @@ public class CalculationSellService {
                     }
                     // 세율이 상수가 아닌 경우(변수)
                     else{
+                        log.info("세율이 변수");
                         if(sellProfitPrice != 0){
                             // 세율1이 비과세인지 체크(비과세대상양도차익금액 세팅여부를 확인)
                             if(NONE_AND_GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
+                                log.info("세율이 비과세");
                                 // 기준금액(12억)
                                 if(taxRateInfo.getBasePrice() != null){
                                     // 과세대상양도차익 = 양도차익 x (전체양도가액 - 12억) / 전체양도가액
@@ -2759,6 +2762,7 @@ public class CalculationSellService {
                                 // 비과세대상양도차익금액 = 양도차익 - 과세대상양도차익
                                 nonTaxablePrice = sellProfitPrice - taxablePrice;
                             }else{
+                                log.info("세율이 과세");
                                 taxablePrice = sellProfitPrice;
                             }
 
@@ -2770,6 +2774,7 @@ public class CalculationSellService {
 
                             // 공제율 및 장기보유특별공제금액(공제정보가 존재하는 경우에만 계산)
                             if(deductionInfo != null){
+                                log.info("공제율 존재");
                                 long stayPeriodYear = 0;
 
                                 List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
@@ -2788,6 +2793,7 @@ public class CalculationSellService {
 
                                 // 장기보유특별공제금액(과세대상양도차익금액 x 공제율)
                                 longDeductionPrice = (long)(taxablePrice * dedRate);
+                                log.info("장기보유특별공제금액 : " + longDeductionPrice + " (공제율 : " + dedRate + ")");
                             }
 
                             // 양도소득금액(과세대상양도차익금액 - 장기보유특별공제금액)
@@ -2804,6 +2810,8 @@ public class CalculationSellService {
                             if(taxRateInfo.getTaxRate1() != null && !taxRateInfo.getTaxRate1().isBlank()){
                                 // 세율이 2개인 경우
                                 if(taxRateInfo.getTaxRate2() != null && !taxRateInfo.getTaxRate2().isBlank()){
+                                    log.info("세율이 2개인 경우");
+
                                     // 세율1
                                     if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
                                         taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
@@ -2859,6 +2867,8 @@ public class CalculationSellService {
                                 }
                                 // 세율이 1개인 경우
                                 else{
+                                    log.info("세율이 1개인 경우");
+
                                     if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
                                         taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
                                     }else if(NONE_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
