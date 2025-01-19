@@ -2816,7 +2816,7 @@ public class CalculationSellService {
                             if(taxRateInfo.getTaxRate1() != null && !taxRateInfo.getTaxRate1().isBlank()){
                                 // 세율이 2개인 경우
                                 if(taxRateInfo.getTaxRate2() != null && !taxRateInfo.getTaxRate2().isBlank()){
-                                    log.info("세율이 2개인 경우");
+                                    log.info(">> 세율이 2개인 경우");
 
                                     // 세율1
                                     if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
@@ -2873,7 +2873,7 @@ public class CalculationSellService {
                                 }
                                 // 세율이 1개인 경우
                                 else{
-                                    log.info("세율이 1개인 경우");
+                                    log.info(">> 세율이 1개인 경우");
 
                                     if(GENERAL_TAX_RATE.equals(taxRateInfo.getTaxRate1())){
                                         taxRate1 = calculateGeneralTaxRate(taxableStdPrice);
@@ -3488,7 +3488,6 @@ public class CalculationSellService {
             double finalDedRate = 0;
 
             String dedMethod = StringUtils.defaultString(deductionInfo.getDedMethod());     // 공제함수
-            log.info(">>> dedMethod : " + dedMethod);
 
             String dedTarget1 = StringUtils.defaultString(deductionInfo.getDedTarget1());   // 공제대상1
             String unit1 = StringUtils.defaultString(deductionInfo.getUnit1());             // 단위1
@@ -3497,11 +3496,6 @@ public class CalculationSellService {
             Integer limitYear1 = deductionInfo.getLimitYear1();                             // 한도연수1
             Double limitDedRate1 = deductionInfo.getLimitDedRate1();                        // 한도공제율1
             if(limitDedRate1 == null) limitDedRate1 = 0.0;
-            log.info(">>> dedTarget1 : " + dedTarget1);
-            log.info(">>> unit1 : " + unit1);
-            log.info(">>> unitDedRate1 : " + unitDedRate1);
-            log.info(">>> limitYear1 : " + limitYear1);
-            log.info(">>> limitDedRate1 : " + limitDedRate1);
 
             String dedTarget2 = StringUtils.defaultString(deductionInfo.getDedTarget2());   // 공제대상2
             String unit2 = StringUtils.defaultString(deductionInfo.getUnit2());             // 단위2
@@ -3510,16 +3504,9 @@ public class CalculationSellService {
             Integer limitYear2 = deductionInfo.getLimitYear2();                             // 한도연수2
             Double limitDedRate2 = deductionInfo.getLimitDedRate2();                        // 한도공제율2
             if(limitDedRate2 == null) limitDedRate2 = 0.0;
-            log.info(">>> dedTarget2 : " + dedTarget2);
-            log.info(">>> unit2 : " + unit2);
-            log.info(">>> unitDedRate2 : " + unitDedRate2);
-            log.info(">>> limitYear2 : " + limitYear2);
-            log.info(">>> limitDedRate2 : " + limitDedRate2);
 
             long retentionPeriodYear = (rPeriod != null) ? rPeriod : 0;
             long stayPeriodYear = (sPeriod != null) ? sPeriod : 0;
-            log.info(">>> retentionPeriodYear : " + retentionPeriodYear);
-            log.info(">>> stayPeriodYear : " + stayPeriodYear);
 
             if(!EMPTY.equals(dedTarget1)){
                 if(UNIT_1YEAR.equals(unit1)){
@@ -3551,11 +3538,6 @@ public class CalculationSellService {
             }else{
                 finalDedRate = dedRate1;        // 기본
             }
-
-            log.info("dedRate1 : " + dedRate1);
-            log.info("dedRate2 : " + dedRate2);
-            log.info("dedMethod : " + dedMethod);
-            log.info("finalDedRate : " + finalDedRate);
 
             if(finalDedRate > 1) finalDedRate = 1;  // 최종 공제율은 1을 넘지 않는다(100%)
 
