@@ -3478,11 +3478,11 @@ public class CalculationSellService {
             int limitYear1 = deductionInfo.getLimitYear1();                                 // 한도연수1
             double limitDedRate1 = deductionInfo.getLimitDedRate1();                        // 한도공제율1
 
-            String dedTarget2 = StringUtils.defaultString(deductionInfo.getDedTarget1());   // 공제대상2
-            String unit2 = StringUtils.defaultString(deductionInfo.getUnit1());             // 단위2
-            double unitDedRate2 = deductionInfo.getUnitDedRate1();                          // 단위공제율2
-            int limitYear2 = deductionInfo.getLimitYear1();                                 // 한도연수2
-            double limitDedRate2 = deductionInfo.getLimitDedRate1();                        // 한도공제율2
+            String dedTarget2 = StringUtils.defaultString(deductionInfo.getDedTarget2());   // 공제대상2
+            String unit2 = StringUtils.defaultString(deductionInfo.getUnit2());             // 단위2
+            double unitDedRate2 = deductionInfo.getUnitDedRate2();                          // 단위공제율2
+            int limitYear2 = deductionInfo.getLimitYear2();                                 // 한도연수2
+            double limitDedRate2 = deductionInfo.getLimitDedRate2();                        // 한도공제율2
 
             long retentionPeriodYear = (rPeriod != null) ? rPeriod : 0;
             long stayPeriodYear = (sPeriod != null) ? sPeriod : 0;
