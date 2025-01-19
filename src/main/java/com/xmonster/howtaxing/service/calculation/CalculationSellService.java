@@ -3492,9 +3492,11 @@ public class CalculationSellService {
 
             String dedTarget1 = StringUtils.defaultString(deductionInfo.getDedTarget1());   // 공제대상1
             String unit1 = StringUtils.defaultString(deductionInfo.getUnit1());             // 단위1
-            double unitDedRate1 = deductionInfo.getUnitDedRate1();                          // 단위공제율1
-            int limitYear1 = deductionInfo.getLimitYear1();                                 // 한도연수1
-            double limitDedRate1 = deductionInfo.getLimitDedRate1();                        // 한도공제율1
+            Double unitDedRate1 = deductionInfo.getUnitDedRate1();                          // 단위공제율1
+            if(unitDedRate1 == null) unitDedRate1 = 0.0;
+            Integer limitYear1 = deductionInfo.getLimitYear1();                             // 한도연수1
+            Double limitDedRate1 = deductionInfo.getLimitDedRate1();                        // 한도공제율1
+            if(limitDedRate1 == null) limitDedRate1 = 0.0;
             log.info(">>> dedTarget1 : " + dedTarget1);
             log.info(">>> unit1 : " + unit1);
             log.info(">>> unitDedRate1 : " + unitDedRate1);
@@ -3503,9 +3505,11 @@ public class CalculationSellService {
 
             String dedTarget2 = StringUtils.defaultString(deductionInfo.getDedTarget2());   // 공제대상2
             String unit2 = StringUtils.defaultString(deductionInfo.getUnit2());             // 단위2
-            double unitDedRate2 = deductionInfo.getUnitDedRate2();                          // 단위공제율2
-            int limitYear2 = deductionInfo.getLimitYear2();                                 // 한도연수2
-            double limitDedRate2 = deductionInfo.getLimitDedRate2();                        // 한도공제율2
+            Double unitDedRate2 = deductionInfo.getUnitDedRate2();                          // 단위공제율2
+            if(unitDedRate2 == null) unitDedRate2 = 0.0;
+            Integer limitYear2 = deductionInfo.getLimitYear2();                             // 한도연수2
+            Double limitDedRate2 = deductionInfo.getLimitDedRate2();                        // 한도공제율2
+            if(limitDedRate2 == null) limitDedRate2 = 0.0;
             log.info(">>> dedTarget2 : " + dedTarget2);
             log.info(">>> unit2 : " + unit2);
             log.info(">>> unitDedRate2 : " + unitDedRate2);
