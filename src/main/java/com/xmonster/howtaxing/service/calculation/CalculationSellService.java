@@ -3485,21 +3485,34 @@ public class CalculationSellService {
             double finalDedRate = 0;
 
             String dedMethod = StringUtils.defaultString(deductionInfo.getDedMethod());     // 공제함수
+            log.info(">>> dedMethod : " + dedMethod);
 
             String dedTarget1 = StringUtils.defaultString(deductionInfo.getDedTarget1());   // 공제대상1
             String unit1 = StringUtils.defaultString(deductionInfo.getUnit1());             // 단위1
             double unitDedRate1 = deductionInfo.getUnitDedRate1();                          // 단위공제율1
             int limitYear1 = deductionInfo.getLimitYear1();                                 // 한도연수1
             double limitDedRate1 = deductionInfo.getLimitDedRate1();                        // 한도공제율1
+            log.info(">>> dedTarget1 : " + dedTarget1);
+            log.info(">>> unit1 : " + unit1);
+            log.info(">>> unitDedRate1 : " + unitDedRate1);
+            log.info(">>> limitYear1 : " + limitYear1);
+            log.info(">>> limitDedRate1 : " + limitDedRate1);
 
             String dedTarget2 = StringUtils.defaultString(deductionInfo.getDedTarget2());   // 공제대상2
             String unit2 = StringUtils.defaultString(deductionInfo.getUnit2());             // 단위2
             double unitDedRate2 = deductionInfo.getUnitDedRate2();                          // 단위공제율2
             int limitYear2 = deductionInfo.getLimitYear2();                                 // 한도연수2
             double limitDedRate2 = deductionInfo.getLimitDedRate2();                        // 한도공제율2
+            log.info(">>> dedTarget2 : " + dedTarget2);
+            log.info(">>> unit2 : " + unit2);
+            log.info(">>> unitDedRate2 : " + unitDedRate2);
+            log.info(">>> limitYear2 : " + limitYear2);
+            log.info(">>> limitDedRate2 : " + limitDedRate2);
 
             long retentionPeriodYear = (rPeriod != null) ? rPeriod : 0;
             long stayPeriodYear = (sPeriod != null) ? sPeriod : 0;
+            log.info(">>> retentionPeriodYear : " + retentionPeriodYear);
+            log.info(">>> stayPeriodYear : " + stayPeriodYear);
 
             if(!EMPTY.equals(dedTarget1)){
                 if(UNIT_1YEAR.equals(unit1)){
