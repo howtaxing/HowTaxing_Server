@@ -112,6 +112,12 @@ public enum ErrorCode {
     CONSULTING_RESERVATION_DUPLICATED_ERROR(1, HttpStatus.OK, "CONSULTING-013", "선택하신 날짜와 시간에 이미 예약된 내역이 있습니다."),
     CONSULTING_RESERVATION_ALREADY_ERROR(1, HttpStatus.OK, "CONSULTING-014", "선택하신 날짜에 이미 예약된 내역이 있으면 추가로 예약할 수 없습니다."),
     CONSULTING_CONSULTANT_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-015", "상담자 정보 상세 조회를 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_CONSULTANT_NOT_FOUND(1, HttpStatus.OK, "CONSULTING-016", "해당 상담자가 존재하지 않아요."),
+    CONSULTING_RESERVATION_NOT_FOUND(1, HttpStatus.OK, "CONSULTING-017", "해당 상담예약이 존재하지 않아요."),
+    CONSULTING_CREATE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-018", "상담 예약 정보 생성을 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_CREATE_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-019", "상담 예약 정보 생성 중 오류가 발생했습니다."),
+    CONSULTING_AVAILABLE_INPUT_ERROR(1, HttpStatus.OK, "CONSULTING-020", "상담 예약 가능여부 조회를 위한 입력값이 올바르지 않습니다."),
+    CONSULTING_AVAILABLE_OUTPUT_ERROR(1, HttpStatus.OK, "CONSULTING-021", "상담 예약 가능여부 조회 중 오류가 발생했습니다."),
 
     /* 리뷰 관련 */
     REVIEW_REGIST_ERROR(1, HttpStatus.OK, "REVIEW-001", "리뷰 등록 중 오류가 발생했습니다."),
@@ -126,6 +132,25 @@ public enum ErrorCode {
     SMS_MSG_INPUT_ERROR(1, HttpStatus.OK, "MESSAGE-007", "SMS 발송을 위한 입력값이 올바르지 않아요."),
     SMS_MSG_OUTPUT_ERROR(1, HttpStatus.OK, "MESSAGE-008", "SMS 발송 중 오류가 발생했어요."),
     SMS_MSG_SYSTEM_ERROR(1, HttpStatus.OK, "MESSAGE-009", "SMS 시스템에 오류가 발생하여 메시지를 발송할 수 없어요."),
+    
+    /* 상품 관련 */
+    PRODUCT_INFO_INPUT_ERROR(1, HttpStatus.OK, "PRODUCT-001", "상품정보 조회를 위한 입력값이 올바르지 않아요."),
+    PRODUCT_INFO_OUTPUT_ERROR(1, HttpStatus.OK, "PRODUCT-002", "상품정보 조회 중 오류가 발생했어요."),
+
+    /* 결제 관련 */
+    PAYMENT_REQUEST_INPUT_ERROR(1, HttpStatus.OK, "PAYMENT-001", "결제요청 임시저장을 위한 입력값이 올바르지 않아요."),
+    PAYMENT_REQUEST_OUTPUT_ERROR(1, HttpStatus.OK, "PAYMENT-002", "결제요청 임시저장 중 오류가 발생했어요."),
+    PAYMENT_CONFIRM_INPUT_ERROR(1, HttpStatus.OK, "PAYMENT-003", "결제승인 요청을 위한 입력값이 올바르지 않아요."),
+    PAYMENT_CONFIRM_OUTPUT_ERROR(1, HttpStatus.OK, "PAYMENT-004", "결제승인 요청 중 오류가 발생했어요."),
+    PAYMENT_HISTORY_NOT_FOUND(1, HttpStatus.OK, "PAYMENT-005", "해당 결제이력을 찾을 수 없어요."),
+    PAYMENT_DETAIL_INPUT_ERROR(1, HttpStatus.OK, "PAYMENT-006", "결제상세 조회를 위한 입력값이 올바르지 않아요."),
+    PAYMENT_DETAIL_OUTPUT_ERROR(1, HttpStatus.OK, "PAYMENT-006", "결제상세 조회 중 오류가 발생했어요."),
+    PAYMENT_CANCEL_INPUT_ERROR(1, HttpStatus.OK, "PAYMENT-006", "결제취소 요청을 위한 입력값이 올바르지 않아요."),
+    PAYMENT_CANCEL_OUTPUT_ERROR(1, HttpStatus.OK, "PAYMENT-006", "결제취소 요청 중 오류가 발생했어요."),
+
+    /* 환급 상담 관련 */
+    REFUND_APPLY_INPUT_ERROR(1, HttpStatus.OK, "REFUND-001", "환급 상담 신청을 위한 입력값이 올바르지 않아요."),
+    REFUND_APPLY_OUTPUT_ERROR(1, HttpStatus.OK, "REFUND-002", "환급 상담 신청 중 오류가 발생했어요."),
 
     /* 환급 상담 관련 */
     REFUND_APPLY_INPUT_ERROR(1, HttpStatus.OK, "REFUND-001", "환급 상담 신청을 위한 입력값이 올바르지 않아요."),

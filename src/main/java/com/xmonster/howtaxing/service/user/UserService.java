@@ -1,5 +1,6 @@
 package com.xmonster.howtaxing.service.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -7,6 +8,7 @@ import com.xmonster.howtaxing.CustomException;
 import com.xmonster.howtaxing.dto.common.ApiResponse;
 import com.xmonster.howtaxing.dto.sms.SmsSendMessageRequest;
 import com.xmonster.howtaxing.dto.user.*;
+import com.xmonster.howtaxing.feign.apple.AppleAuthApi;
 import com.xmonster.howtaxing.feign.kakao.KakaoUserApi;
 import com.xmonster.howtaxing.feign.naver.NaverAuthApi;
 import com.xmonster.howtaxing.feign.naver.NaverUserApi;
@@ -20,6 +22,14 @@ import com.xmonster.howtaxing.service.sms.SmsMessageService;
 import com.xmonster.howtaxing.type.*;
 import com.xmonster.howtaxing.utils.GsonLocalDateTimeAdapter;
 import com.xmonster.howtaxing.utils.UserUtil;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwsHeader;
+import io.jsonwebtoken.Jwt;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.security.KeyFactory;
+
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -30,10 +40,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.spec.RSAPublicKeySpec;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.xmonster.howtaxing.constant.CommonConstant.*;
 
@@ -55,6 +66,7 @@ public class UserService {
     private final KakaoUserApi kakaoUserApi;
     private final NaverUserApi naverUserApi;
     private final NaverAuthApi naverAuthApi;
+    private final AppleAuthApi appleAuthApi;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -211,8 +223,8 @@ public class UserService {
         SocialType socialType = findUser.getSocialType();
 
         if(logoutAndUnlinkSocialAccount(ONE, findUser, socialType)){
-            // 리프레시 토큰 초기화
-            findUser.setRefreshToken(EMPTY);
+            findUser.setRefreshToken(null);         // 하우택싱 RefreshToken 초기화
+            findUser.setSocialAccessToken(null);    // 소셜로그인 AccessToken 초기화
             userRepository.save(findUser);
         }else{
             throw new CustomException(ErrorCode.USER_LOGOUT_ERROR);
@@ -230,16 +242,21 @@ public class UserService {
 
         SocialType socialType = socialLoginRequest.getSocialType();
         String socialAccessToken = socialLoginRequest.getAccessToken();
+        String identityToken = socialLoginRequest.getIdentityToken();
 
         SocialUserResponse socialUserResponse = null;
 
         // 카카오 로그인
         if(SocialType.KAKAO.equals(socialType)){
-            socialUserResponse = this.getKakaoUserInfo(socialLoginRequest.getAccessToken());
+            socialUserResponse = this.getKakaoUserInfo(socialAccessToken);
         }
         // 네이버 로그인
         else if(SocialType.NAVER.equals(socialType)){
-            socialUserResponse = this.getNaverUserInfo(socialLoginRequest.getAccessToken());
+            socialUserResponse = this.getNaverUserInfo(socialAccessToken);
+        }
+        // 애플 로그인
+        else if(SocialType.APPLE.equals(socialType)){
+            socialUserResponse = this.getAppleUserInfo(identityToken);
         }
 
         if(socialUserResponse == null) throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 응답값이 없습니다.");
@@ -354,17 +371,24 @@ public class UserService {
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인을 위한 입력값이 존재하지 않습니다.");
         }
 
-        log.info(socialLoginRequest.toString());
+        log.info("socialLoginRequest : " + socialLoginRequest);
 
         SocialType socialType = socialLoginRequest.getSocialType();
         String socialAccessToken = socialLoginRequest.getAccessToken();
+        String socialIdentityToken = socialLoginRequest.getIdentityToken();
 
         if(socialType == null){
             throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "소셜로그인 유형이 입력되지 않았습니다.");
         }
 
-        if(StringUtils.isBlank(socialAccessToken)){
-            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "엑세스 토큰이 입력되지 않았습니다.");
+        if(SocialType.KAKAO.equals(socialType) || SocialType.NAVER.equals(socialType)){
+            if(StringUtils.isBlank(socialAccessToken)){
+                throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "AccessToken(카카오,네이버)이 입력되지 않았습니다.");
+            }
+        }else if(SocialType.APPLE.equals(socialType)){
+            if(StringUtils.isBlank(socialIdentityToken)){
+                throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "IdentityToken(애플)이 입력되지 않았습니다.");
+            }
         }
     }
 
@@ -570,6 +594,99 @@ public class UserService {
                 .build();
     }
 
+    private SocialUserResponse getAppleUserInfo(String identityToken) throws Exception {
+        Claims claims = this.verifyAppleIdentityToken(identityToken);
+        String appleUserId = claims.getSubject();
+
+        return SocialUserResponse.builder()
+                .id(appleUserId)
+                .build();
+    }
+
+    private Claims verifyAppleIdentityToken(String identityToken) throws Exception {
+        // Apple 공개 키 가져오기
+        Map<String, Object> response = appleAuthApi.getApplePublicKey();
+        List<Map<String, String>> keyArray = (List<Map<String, String>>) response.get("keys");
+
+        // identityToken의 헤더에서 kid 추출
+        String tokenKid = extractKidFromToken(identityToken);
+        log.info("[GGMANYAR]tokenKid : " + tokenKid);
+
+        // 적합한 공개 키 찾기
+        for (Map<String, String> keyData : keyArray) {
+            String kid = keyData.get("kid");
+            log.info("[GGMANYAR]kid : " + kid);
+
+            if (kid.equals(tokenKid)) {
+                PublicKey publicKey = getPublicKey(keyData);
+
+                log.info("[GGMANYAR]publicKey : " + publicKey);
+
+                if(publicKey == null){
+                    throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR, "Public Key is null");
+                }
+
+                return Jwts.parserBuilder()
+                        .setSigningKey(publicKey)
+                        .build()
+                        .parseClaimsJws(identityToken)
+                        .getBody();
+            }
+        }
+
+        throw new IllegalArgumentException("Invalid identity token");
+    }
+
+    /*private String extractKidFromToken(String identityToken) {
+        JwsHeader<?> header = Jwts.parserBuilder()
+                .build()
+                .parseClaimsJws(identityToken)
+                .getHeader();
+
+        return (String) header.get("kid");
+    }*/
+
+    /*private String extractKidFromToken(String identityToken) {
+        Jwt<?, ?> jwt = Jwts.parserBuilder()
+                .build()
+                .parse(identityToken);
+
+        JwsHeader<?> header = (JwsHeader<?>) jwt.getHeader();
+        return (String) header.get("kid");
+    }*/
+
+    private String extractKidFromToken(String identityToken) throws Exception {
+        // JWT를 '.' 기준으로 나누어 헤더 부분 추출
+        String[] jwtParts = identityToken.split("\\.");
+        if(jwtParts.length != 3){
+            throw new CustomException(ErrorCode.LOGIN_COMMON_ERROR);
+        }
+
+        // Base64 디코딩하여 JSON 형태의 헤더 추출
+        String headerJson = new String(Base64.getUrlDecoder().decode(jwtParts[0]));
+
+        // JSON 파싱하여 "kid" 값 가져오기
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> headerMap = objectMapper.readValue(headerJson, Map.class);
+
+        return (String) headerMap.get("kid");
+    }
+
+    private PublicKey getPublicKey(Map<String, String> keyData) throws Exception {
+        // Apple의 공개 키 데이터에서 n, e 값을 디코딩
+        byte[] nBytes = Base64.getUrlDecoder().decode(keyData.get("n"));
+        byte[] eBytes = Base64.getUrlDecoder().decode(keyData.get("e"));
+
+        // BigInteger로 변환
+        BigInteger modulus = new BigInteger(1, nBytes); // n
+        BigInteger exponent = new BigInteger(1, eBytes); // e
+
+        // RSA 공개 키 생성
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return keyFactory.generatePublic(spec);
+    }
+
     // 사용자 소셜계정 로그아웃 및 회원탈퇴 처리
     private boolean logoutAndUnlinkSocialAccount(String requestType, User findUser, SocialType socialType){
         ResponseEntity<?> response = null;
@@ -600,11 +717,12 @@ public class UserService {
                                     .build());
                 }else if(SocialType.NAVER.equals(socialType)){
                     log.info("소셜로그인(네이버) 계정 로그아웃");
-                    log.info("네이버는 로그아웃 기능이 없습니다.");
+                    log.info("네이버 소셜 로그아웃 기능 없음");
+                }else if(SocialType.APPLE.equals(socialType)){
+                    log.info("소셜로그인(애플) 계정 로그아웃");
+                    log.info("애플 소셜 로그아웃 기능 없음");
                 }else{
-                    // TODO : Apple 로그아웃 구현
-                    // google, apple..
-                    throw new CustomException(ErrorCode.USER_LOGOUT_ERROR, "Google과 Apple의 로그아웃 기능은 준비 중입니다.");
+                    throw new CustomException(ErrorCode.USER_LOGOUT_ERROR, "SocialType이 올바르지 않아요.");
                 }
             }
             // 회원탈퇴
@@ -623,9 +741,11 @@ public class UserService {
                     log.info("소셜로그인(네이버) 계정 회원탈퇴");
                     // 네이버 회원탈퇴는 getAccessToken과 동일(grantType만 delete로 세팅)
                     response = naverAuthApi.getAccessToken("delete", naverAppKey, naverAppSecret, null, null, socialAccessToken);
+                }else if(SocialType.APPLE.equals(socialType)){
+                    log.info("소셜로그인(애플) 계정 회원탈퇴");
+                    log.info("애플 소셜 회원탈퇴 기능 없음");
                 }else{
-                    // google, apple..
-                    throw new CustomException(ErrorCode.USER_WITHDRAW_ERROR, "Google과 Apple의 회원탈퇴 기능은 준비 중입니다.");
+                    throw new CustomException(ErrorCode.USER_WITHDRAW_ERROR, "SocialType이 올바르지 않아요.");
                 }
             }
             // 그 외(오류)
@@ -669,6 +789,9 @@ public class UserService {
                     }
                 }
             }
+        }else{
+            // SocialType : Apple
+            resultFlag = true;
         }
 
         return resultFlag;

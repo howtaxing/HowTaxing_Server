@@ -18,6 +18,7 @@ public interface ConsultingReservationInfoRepository extends JpaRepository<Consu
                     "FROM consulting_reservation_info c " +
                     "WHERE (c.user_id = :userId " +
                         "AND c.reservation_date = :reservationDate " +
+                        "AND c.consulting_status != 'PAYMENT_READY' " +
                         "AND c.is_canceled = false)", nativeQuery = true)
     Long countByUserIdAndReservationDate(@Param("userId") Long userId,
                                          @Param("reservationDate") LocalDate reservationDate);
@@ -27,6 +28,7 @@ public interface ConsultingReservationInfoRepository extends JpaRepository<Consu
                     "WHERE (c.consultant_id = :consultantId " +
                         "AND c.reservation_date = :reservationDate " +
                         "AND c.reservation_start_time = :reservationStartTime " +
+                        "AND c.consulting_status != 'PAYMENT_READY' " +
                         "AND c.is_canceled = false)", nativeQuery = true)
     Long countByReservationDateAndReservationStartTime(@Param("consultantId") Long consultantId,
                                                        @Param("reservationDate") LocalDate reservationDate,
@@ -34,7 +36,13 @@ public interface ConsultingReservationInfoRepository extends JpaRepository<Consu
 
     List<ConsultingReservationInfo> findByUserIdOrderByReservationDateDescReservationStartTimeDesc(Long userId);
 
-    //List<ConsultingReservationInfo> findByReservationDate(LocalDate reservationDate);
+    @Query(value = "SELECT * " +
+                    "FROM consulting_reservation_info c " +
+                    "WHERE (c.user_id = :userId " +
+                    "AND c.consulting_status != 'PAYMENT_READY' " +
+                    "AND c.is_canceled = false) " +
+                    "ORDER BY c.reservation_date DESC, c.reservation_start_time DESC", nativeQuery = true)
+    List<ConsultingReservationInfo> findUserReservationInfoList(Long userId);
 
     @Query(value = "SELECT * " +
                     "FROM consulting_reservation_info c " +

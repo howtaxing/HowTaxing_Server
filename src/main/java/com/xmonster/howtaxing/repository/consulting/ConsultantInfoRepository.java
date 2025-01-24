@@ -11,6 +11,6 @@ public interface ConsultantInfoRepository extends JpaRepository<ConsultantInfo, 
 
     @Query(value = "SELECT * FROM consultant_info c WHERE c.is_consulting_available = true ORDER BY consultant_id ASC", nativeQuery = true)
     List<ConsultantInfo> findAvailableConsultantList();
-    
+  
     Optional<ConsultantInfo> findByConsultantId(Long consultantId);
 }

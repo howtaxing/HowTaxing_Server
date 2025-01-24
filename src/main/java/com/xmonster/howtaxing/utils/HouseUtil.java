@@ -12,7 +12,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class HouseUtil {
-
     private final UserUtil userUtil;
     private final HouseRepository houseRepository;
 
