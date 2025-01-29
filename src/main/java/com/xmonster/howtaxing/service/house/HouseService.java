@@ -172,6 +172,8 @@ public class HouseService {
 
     // 부동산거래내역 기반 보유주택 출력
     public Object loadHouseFromRealty(HouseListSearchRequest houseListSearchRequest) {
+        log.info(">> [Service]HouseService loadHouseFromRealty - 부동산거래내역 기반 보유주택 출력");
+
         String[] activeProfiles = environment.getActiveProfiles();
         boolean isLocal = Arrays.asList(activeProfiles).contains("local");
         //boolean isDev = Arrays.asList(activeProfiles).contains("dev");
@@ -567,7 +569,7 @@ public class HouseService {
 
     // 보유주택 일괄등록
     public Object saveAllHouse(HouseSaveAllRequest houseSaveAllRequest) throws Exception {
-        log.info(">> HouseService saveAllHouse - 보유주택 일괄등록");
+        log.info(">> [Service]HouseService saveAllHouse - 보유주택 일괄등록");
 
         Long userId = userUtil.findCurrentUser().getId();   // 호출 사용자
 
@@ -1663,7 +1665,7 @@ public class HouseService {
 
     // 청약홈에서 불러온 보유주택 누락된 정보 입력
     private void fillEmptyValuesFromLists(List<DataDetail1> list1, List<DataDetail2> list2, List<DataDetail3> list3, List<House> houseList){
-        log.info(">> HouseService fillEmptyValuesFromLists - 주택정보 빈값 채워넣는 로직");
+        log.info(">>> HouseService fillEmptyValuesFromLists - 주택정보 빈값 채워넣는 로직");
         // 1. 부동산거래내역이 1개인 경우에는 주소비교 없이 세팅
         // 2. 거래내역이 여러건인 경우 거래유형 [매수]
         // 3. 거래유형 [매수] 중 보유주택 주소와 유사한 경우 세팅
@@ -1817,6 +1819,8 @@ public class HouseService {
     * ##########################################
     */
     public Object getHouseInfoForType(HyphenUserSessionRequest hyphenUserSessionRequest) {
+        log.info(">> [Service]HouseService getHouseInfoForType - 세션에서 동일한 주소정보 검색");
+
         if(hyphenUserSessionRequest == null){
             throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "세션에 저장된 주택정보를 불러오는 중 오류가 발생했습니다.");
         }
@@ -1931,6 +1935,8 @@ public class HouseService {
 
     // 재산세, 건축물대장 한번에 조회
     public Object getHouseInfo(HyphenUserSessionRequest hyphenUserSessionRequest) {
+        log.info(">> [Service]HouseService getHouseInfo - 재산세, 건축물대장 한번에 조회");
+
         if(hyphenUserSessionRequest == null){
             throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "세션에 저장된 주택정보를 불러오는 중 오류가 발생했습니다.");
         }
@@ -2063,6 +2069,8 @@ public class HouseService {
 
     // 건축물대장 기준 매매 외 취득주택 추출
     public Object getEtcHouse() {
+        log.info(">> [Service]HouseService getHouseInfo - 건축물대장 기준 매매 외 취득주택 추출");
+
         Long userId = userUtil.findCurrentUserId();
 
         // DB에서 보유주택 목록 가져오기
@@ -2120,13 +2128,16 @@ public class HouseService {
             }
         }
 
-        //return ApiResponse.success();
-        return ApiResponse.success(
+        HouseListLoadResponse houseListLoadResponse =
                 HouseListLoadResponse.builder()
                         .listCnt((houseLoadInfoResponseList != null) ? houseLoadInfoResponseList.size() : 0)
                         .list(houseLoadInfoResponseList)
-                        .build());
+                        .build();
 
+        log.info("houseListLoadResponse : " + houseListLoadResponse);
+
+        //return ApiResponse.success();
+        return ApiResponse.success(houseListLoadResponse);
     }
 
     private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse(String userNm) {

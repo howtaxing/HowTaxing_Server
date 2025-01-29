@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@ToString
 public class HouseListLoadResponse {
     private int listCnt;
     private List<HouseLoadInfoResponse> list;
@@ -20,6 +21,7 @@ public class HouseListLoadResponse {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
+    @ToString
     public static class HouseLoadInfoResponse {
         private Long houseId;               // 주택ID
         private Long userId;                // 사용자ID
