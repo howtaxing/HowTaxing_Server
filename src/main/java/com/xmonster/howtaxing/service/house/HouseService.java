@@ -2103,8 +2103,10 @@ public class HouseService {
             houseLoadInfoResponse.setDetailAdr(houseAddressDto.getDetailAddress());
             houseLoadInfoResponse.setHouseName((!houseAddressDto.formatEtcAddress().isEmpty() ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
             //etcHouse.setHouseTypeByName();
+            houseLoadInfoResponse.setHouseType(this.getHouseTypeByName(houseLoadInfoResponse.getHouseName()));
             houseLoadInfoResponse.setSourceType(ONE);
             houseLoadInfoResponse.setComplete(false);
+
 
             // 주소비교
             boolean isMatched = false;
