@@ -2105,6 +2105,7 @@ public class HouseService {
             //etcHouse.setHouseTypeByName();
             houseLoadInfoResponse.setHouseType(this.getHouseTypeByName(houseLoadInfoResponse.getHouseName()));
             houseLoadInfoResponse.setSourceType(ONE);
+
             houseLoadInfoResponse.setComplete(false);
 
 
@@ -2138,8 +2139,9 @@ public class HouseService {
 
         log.info("houseListLoadResponse : " + houseListLoadResponse);
 
-        //return ApiResponse.success();
-        return ApiResponse.success(houseListLoadResponse);
+        // TODO. 이후에 Front-End에서 받는 응답값 포맷에 대한 수정 필요
+        //return ApiResponse.success(houseListLoadResponse);
+        return ApiResponse.success(houseLoadInfoResponseList);
     }
 
     private HyphenUserHouseListResponse getMockedHyphenUserHouseListResponse(String userNm) {
