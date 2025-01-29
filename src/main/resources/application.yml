@@ -15,7 +15,7 @@ spring:
       "local" : "local, jwt, oauth, common"
       "dev" : "dev, jwt, oauth, common"
       "real" : "real, jwt, oauth, common"
-    # active: local   #활성 프로필 설정(local, dev, real)
+    active: real   #활성 프로필 설정(local, dev, real)
 
 --- # local 설정
 spring:
@@ -129,7 +129,7 @@ spring:
     job:
       enabled: false
   redis:
-    host: 172.18.0.2
+    host: 172.21.0.2
     port: 6379
     password: Xmonster11@@
   mvc:
