@@ -359,11 +359,15 @@ public class HouseService {
             throw new CustomException(ErrorCode.HOUSE_HYPHEN_OUTPUT_ERROR, "하이픈 보유주택조회 중 오류가 발생했습니다.");
         }
 
-        return ApiResponse.success(
+        HouseListLoadResponse houseListLoadResponse =
                 HouseListLoadResponse.builder()
                         .listCnt((houseLoadInfoResponseList != null) ? houseLoadInfoResponseList.size() : 0)
                         .list(houseLoadInfoResponseList)
-                        .build());
+                        .build();
+
+        // TODO. 이후에 Front-End에서 받는 응답값 포맷에 대한 수정 필요
+        //return ApiResponse.success(houseListLoadResponse);
+        return ApiResponse.success(houseLoadInfoResponseList);
     }
 
     // 보유주택 목록 조회(DB)
