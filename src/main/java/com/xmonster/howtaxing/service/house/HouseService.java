@@ -298,6 +298,8 @@ public class HouseService {
                     hyphenUserSessionRequest.setJibunAddress(houseLoadInfoResponse.getJibunAddr());
                     hyphenUserSessionRequest.setArea(houseLoadInfoResponse.getArea().toString());
 
+                    Object tempDataDetail = null;
+
                     /*
                      * ##########################################
                      * 주택정보조회 API 직접 호출하여 정보 세팅(건축물대장)
@@ -306,20 +308,17 @@ public class HouseService {
                      */
                     hyphenUserSessionRequest.setType(BUILDING);
 
-                    Object buildingResult = getHouseInfoForType(hyphenUserSessionRequest);
+                    //Object buildingResult = getHouseInfoForType(hyphenUserSessionRequest);
+                    tempDataDetail = getHouseInfoForType(hyphenUserSessionRequest);
+                    DataDetail1 dataDetail1 = null;
 
-                    if(buildingResult instanceof ApiResponse){
-                        ApiResponse<?> response = (ApiResponse<?>) buildingResult;
-                        log.debug("building response: {}", response.getData());
+                    if(tempDataDetail instanceof DataDetail1){
+                        dataDetail1 = (DataDetail1) tempDataDetail;
+                        log.debug("building response: {}", dataDetail1);
 
-                        if(NO.equals(response.getErrYn())){
-                            DataDetail1 dataDetail1 = (DataDetail1) response.getData();
-                            if (dataDetail1 != null) {
-                                houseLoadInfoResponse.setBuyDate(LocalDate.parse(dataDetail1.getOwnershipChangeDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
-                                houseLoadInfoResponse.setPubLandPrice(Long.parseLong(dataDetail1.getPublishedPrice())*1000);
-                                buildingComplete = true;
-                            }
-                        }
+                        houseLoadInfoResponse.setBuyDate(LocalDate.parse(dataDetail1.getOwnershipChangeDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));
+                        houseLoadInfoResponse.setPubLandPrice(Long.parseLong(dataDetail1.getPublishedPrice()) * 1000);
+                        buildingComplete = true;
                     }
 
                     /*
@@ -330,20 +329,18 @@ public class HouseService {
                      */
                     hyphenUserSessionRequest.setType(PROPERTY);
 
-                    Object propertyResult = getHouseInfoForType(hyphenUserSessionRequest);
-                    if(propertyResult instanceof ApiResponse){
-                        ApiResponse<?> response = (ApiResponse<?>) propertyResult;
-                        log.debug("property response: {}", response.getData());
+                    //Object propertyResult = getHouseInfoForType(hyphenUserSessionRequest);
+                    tempDataDetail = getHouseInfoForType(hyphenUserSessionRequest);
+                    DataDetail3 dataDetail3 = null;
 
-                        if(NO.equals(response.getErrYn())){
-                            DataDetail3 dataDetail3 = (DataDetail3) response.getData();
-                            if(dataDetail3 != null){
-                                HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
-                                houseLoadInfoResponse.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));   // 재산세 취득일자가 건축물대장보다 우선
-                                houseLoadInfoResponse.setDetailAdr(houseAddressDto3.getDetailAddress());
-                                propertyComplete = true;
-                            }
-                        }
+                    if(tempDataDetail instanceof DataDetail3){
+                        dataDetail3 = (DataDetail3) tempDataDetail;
+                        log.debug("property response: {}", dataDetail3);
+
+                        HouseAddressDto houseAddressDto3 = houseAddressService.parseAddress(dataDetail3.getAddress());
+                        houseLoadInfoResponse.setBuyDate(LocalDate.parse(dataDetail3.getAcquisitionDate(), DateTimeFormatter.ofPattern("yyyyMMdd")));   // 재산세 취득일자가 건축물대장보다 우선
+                        houseLoadInfoResponse.setDetailAdr(houseAddressDto3.getDetailAddress());
+                        propertyComplete = true;
                     }
 
                     if(buildingComplete && propertyComplete){
@@ -364,6 +361,8 @@ public class HouseService {
                         .listCnt((houseLoadInfoResponseList != null) ? houseLoadInfoResponseList.size() : 0)
                         .list(houseLoadInfoResponseList)
                         .build();
+
+        log.info("houseListLoadResponse : " + houseListLoadResponse);
 
         // TODO. 이후에 Front-End에서 받는 응답값 포맷에 대한 수정 필요
         //return ApiResponse.success(houseListLoadResponse);
