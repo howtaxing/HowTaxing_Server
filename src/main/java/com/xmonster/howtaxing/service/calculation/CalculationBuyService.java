@@ -1830,39 +1830,32 @@ public class CalculationBuyService {
             log.info("2. 농어촌특별세 계산");
             // 전용면적 85제곱미터 초과만 농어촌특별세 대상
             Boolean isAreaOver85 = calculationBuyResultRequest.getIsAreaOver85();
-            //double area = calculationBuyResultRequest.getArea();
-            //if(area > AREA_85){
             if(isAreaOver85){
                 // 1주택
                 if(ownHouseCount == 1){
-                    agrTaxRate = 0.002;        // 농어촌특별세율 : 0.2%
+                    agrTaxRate = 0.002;         // 농어촌특별세율 : 0.2%
                 }
                 // 2주택
                 else if(ownHouseCount == 2){
                     // 조정대상지역
                     if(isAdjustmentTargetArea){
-                        agrTaxRate = 0.006;    // 농어촌특별세율 : 0.6%
+                        agrTaxRate = 0.006;     // 농어촌특별세율 : 0.6%
                     }else{
-                        agrTaxRate = 0.002;    // 농어촌특별세율 : 0.2%
+                        agrTaxRate = 0.002;     // 농어촌특별세율 : 0.2%
                     }
                 }
                 // 3주택
                 else if(ownHouseCount == 3){
                     // 조정대상지역
                     if(isAdjustmentTargetArea){
-                        agrTaxRate = 0.01;     // 농어촌특별세율 : 1%
+                        agrTaxRate = 0.01;      // 농어촌특별세율 : 1%
                     }else{
-                        agrTaxRate = 0.006;    // 농어촌특별세율 : 0.6%
+                        agrTaxRate = 0.006;     // 농어촌특별세율 : 0.6%
                     }
                 }
                 // 4주택 이상
                 else if(ownHouseCount >= 4){
-                    // 조정대상지역
-                    if(isAdjustmentTargetArea){
-                        agrTaxRate = 0.01;     // 농어촌특별세율 : 1%
-                    }else{
-                        agrTaxRate = 0.006;    // 농어촌특별세율 : 0.6%
-                    }
+                    agrTaxRate = 0.01;          // 농어촌특별세율 : 1%
                 }
             }
 

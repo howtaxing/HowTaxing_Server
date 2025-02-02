@@ -2605,6 +2605,64 @@ public class CalculationSellService {
             return calculationSellResultResponse;
         }
 
+        /**
+         * 분기번호 : 052
+         * 분기명 : 상생임대인여부
+         * 분기설명 : (1주택)상생임대인 여부
+         */
+        public CalculationSellResultResponse branchNo052(CalculationSellResultRequest calculationSellResultRequest, House house){
+            log.info(">>> CalculationBranch branchNo052 - 양도소득세 분기번호 052 : 상생임대인여부");
+
+            CalculationSellResultResponse calculationSellResultResponse;
+            boolean hasNext = false;
+            String nextBranchNo = EMPTY;
+            String taxRateCode = EMPTY;
+            String dedCode = EMPTY;
+            int selectNo = 0;
+
+            List<CalculationProcess> list = calculationProcessRepository.findByCalcTypeAndBranchNo(CALC_TYPE_SELL, "052")
+                    .orElseThrow(() -> new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED, "양도소득세 프로세스 정보를 가져오는 중 오류가 발생했습니다."));
+
+            List<CalculationAdditionalAnswerRequest> additionalAnswerList = calculationSellResultRequest.getAdditionalAnswerList();
+            for(CalculationAdditionalAnswerRequest answer : additionalAnswerList){
+                // 상생임대인여부
+                if(Q_0006.equals(answer.getQuestionId())){
+                    if(ANSWER_VALUE_01.equals(answer.getAnswerValue())){
+                        selectNo = 1;
+                    }else{
+                        selectNo = 2;
+                    }
+                }
+            }
+
+            for(CalculationProcess calculationProcess : list){
+                if(selectNo == calculationProcess.getCalculationProcessId().getSelectNo()){
+                    log.info("selectNo : " + selectNo + ", selectContent : " + calculationProcess.getSelectContent());
+                    if(calculationProcess.isHasNextBranch()){
+                        nextBranchNo = calculationProcess.getNextBranchNo();
+                        hasNext = true;
+                    }else{
+                        taxRateCode = calculationProcess.getTaxRateCode();
+                        dedCode = calculationProcess.getDedCode();
+                    }
+                    break;
+                }
+            }
+
+            if(hasNext){
+                try{
+                    Method method = calculationBranchClass.getMethod("branchNo" + nextBranchNo, CalculationSellResultRequest.class, House.class);
+                    calculationSellResultResponse = (CalculationSellResultResponse) method.invoke(target, calculationSellResultRequest, house);
+                }catch(Exception e){
+                    throw new CustomException(ErrorCode.CALCULATION_SELL_TAX_FAILED);
+                }
+            }else{
+                calculationSellResultResponse = getCalculationSellResultResponse(calculationSellResultRequest, taxRateCode, dedCode);
+            }
+
+            return calculationSellResultResponse;
+        }
+
         /*============================================================ 양도소득세 계산 프로세스 END ============================================================*/
 
         // 양도소득세 계산 결과 조회
