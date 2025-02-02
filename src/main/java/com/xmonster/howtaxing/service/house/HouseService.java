@@ -1802,8 +1802,9 @@ public class HouseService {
                         // 잔금일자가 오늘보다 미래인 경우 매수주택에 포함하지 않음
                         if(!balancePaymentDate.isAfter(LocalDate.now())) {
                             buyTransactions.add(dataDetail2);
+                            log.info("매수거래에 해당 주소(" + address + ") 추가");
                         }else{
-                            log.debug("잔금일자가 도래하지 않은 매수거래내역 (매수일자: {})", balancePaymentDate);
+                            log.info("잔금일자가 도래하지 않은 매수거래내역 (매수일자: {})", balancePaymentDate);
                         }
                     }
                 }
