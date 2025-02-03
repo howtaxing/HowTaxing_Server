@@ -226,6 +226,7 @@ public class HouseService {
             List<DataDetail2> buyTransactions = createBuyTransactions(list2);
             this.saveTradingInfo(userId, buyTransactions);  // 매수거래내역 세션 저장
 
+            houseLoadInfoResponseList = new ArrayList<>();
             JusoDetail jusoDetail = null;
 
             /*
@@ -234,13 +235,11 @@ public class HouseService {
              * ##########################################
              */
             for(DataDetail2 dataDetail2 : buyTransactions){
-                houseLoadInfoResponseList = new ArrayList<>();
                 HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
                 String address = houseAddressDto.formatAddress();
                 String etcAddress = houseAddressDto.formatEtcAddress();
 
                 // 주택정보 입력
-                //LoadHouse house = new LoadHouse();
                 HouseLoadInfoResponse houseLoadInfoResponse = new HouseLoadInfoResponse();
                 houseLoadInfoResponse.setUserId(userId);
                 houseLoadInfoResponse.setHouseType(SIX);
