@@ -127,7 +127,7 @@ public class SmsAuthService {
         long todaySendCount = smsAuthRepository.countByPhoneNumberAndAuthTypeAndSendDatetimeBetween(phoneNumber, authType, startOfDay, endOfDay);
 
         // 인증유형 별 인증번호 10회 이상 발송 불가
-        if(todaySendCount > 10) throw new CustomException(ErrorCode.SMS_AUTH_COUNT_ERROR);
+        if(todaySendCount > 100) throw new CustomException(ErrorCode.SMS_AUTH_COUNT_ERROR);
 
         // 인증번호 생성
         String authCode = generateAuthCode();
