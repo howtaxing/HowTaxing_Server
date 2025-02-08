@@ -2079,12 +2079,12 @@ public class HouseService {
         // DB에서 보유주택 목록 가져오기
         List<House> houseListFromDB = houseUtil.findOwnHouseList();
         //List<LoadHouse> etcHouseList = new ArrayList<>();
-        List<HouseLoadInfoResponse> houseLoadInfoResponseList = null;
+        List<HouseLoadInfoResponse> houseLoadInfoResponseList = new ArrayList<>();
         
         // redis에서 재산세 주택 가져오기
         int cnt = redisService.countKey(userId, PROPERTY);
         if(cnt > 0){
-            houseLoadInfoResponseList = new ArrayList<>();
+            //houseLoadInfoResponseList = new ArrayList<>();
 
             for(int i=0; i<cnt; i++){
                 log.info("총 개수 {}개 중 {}번째", cnt, i+1);
