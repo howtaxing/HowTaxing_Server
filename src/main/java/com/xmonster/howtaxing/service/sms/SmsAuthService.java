@@ -59,6 +59,9 @@ public class SmsAuthService {
     @Value("${ncloud.sms.sender-number}")
     private String senderNumber;
 
+    @Value("${ncloud.sms.retriever-hashkey}")
+    private String retrieverHashkey;
+
     // 인증번호 발송
     public Object sendAuthCode(SmsSendAuthCodeRequest smsSendAuthCodeRequest) throws Exception {
         log.info(">> [Service]SmsAuthService sendAuthCode - 인증번호 발송");
@@ -344,7 +347,7 @@ public class SmsAuthService {
         headerMap.put("x-ncp-iam-access-key", this.accessKey);
         headerMap.put("x-ncp-apigw-signature-v2", this.makeSignature(time));
 
-        String messageContent = "[하우택싱] 인증번호는 [" + authCode + "] 입니다.";
+        String messageContent = "[하우택싱] 인증번호는 [" + authCode + "] 입니다." + retrieverHashkey;
 
         ResponseEntity<?> response = null;
         try{
