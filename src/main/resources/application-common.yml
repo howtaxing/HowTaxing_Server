@@ -59,7 +59,7 @@ ncloud:
   sms:
     service-id: ncp:sms:kr:320009612043:howtaxing
     sender-number: "07042336134"
-    retriever-hashkey: m36fZffPf8Z
+    retriever-hashkey: C1W6G0I+dcr
 
 --- # real 설정
 spring:
