@@ -59,6 +59,9 @@ public class SmsAuthService {
     @Value("${ncloud.sms.sender-number}")
     private String senderNumber;
 
+    @Value("${ncloud.sms.retriever-hashkey}")
+    private String retrieverHashkey;
+
     // 인증번호 발송
     public Object sendAuthCode(SmsSendAuthCodeRequest smsSendAuthCodeRequest) throws Exception {
         log.info(">> [Service]SmsAuthService sendAuthCode - 인증번호 발송");
@@ -127,7 +130,7 @@ public class SmsAuthService {
         long todaySendCount = smsAuthRepository.countByPhoneNumberAndAuthTypeAndSendDatetimeBetween(phoneNumber, authType, startOfDay, endOfDay);
 
         // 인증유형 별 인증번호 10회 이상 발송 불가
-        if(todaySendCount > 10) throw new CustomException(ErrorCode.SMS_AUTH_COUNT_ERROR);
+        if(todaySendCount > 100) throw new CustomException(ErrorCode.SMS_AUTH_COUNT_ERROR);
 
         // 인증번호 생성
         String authCode = generateAuthCode();
@@ -344,6 +347,7 @@ public class SmsAuthService {
         headerMap.put("x-ncp-iam-access-key", this.accessKey);
         headerMap.put("x-ncp-apigw-signature-v2", this.makeSignature(time));
 
+        //String messageContent = "[하우택싱] 인증번호는 [" + authCode + "] 입니다." + retrieverHashkey;
         String messageContent = "[하우택싱] 인증번호는 [" + authCode + "] 입니다.";
 
         ResponseEntity<?> response = null;

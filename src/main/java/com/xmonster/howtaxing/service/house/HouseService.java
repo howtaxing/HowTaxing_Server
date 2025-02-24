@@ -226,6 +226,7 @@ public class HouseService {
             List<DataDetail2> buyTransactions = createBuyTransactions(list2);
             this.saveTradingInfo(userId, buyTransactions);  // 매수거래내역 세션 저장
 
+            houseLoadInfoResponseList = new ArrayList<>();
             JusoDetail jusoDetail = null;
 
             /*
@@ -234,13 +235,11 @@ public class HouseService {
              * ##########################################
              */
             for(DataDetail2 dataDetail2 : buyTransactions){
-                houseLoadInfoResponseList = new ArrayList<>();
                 HouseAddressDto houseAddressDto = houseAddressService.parseAddress(dataDetail2.getAddress());
                 String address = houseAddressDto.formatAddress();
                 String etcAddress = houseAddressDto.formatEtcAddress();
 
                 // 주택정보 입력
-                //LoadHouse house = new LoadHouse();
                 HouseLoadInfoResponse houseLoadInfoResponse = new HouseLoadInfoResponse();
                 houseLoadInfoResponse.setUserId(userId);
                 houseLoadInfoResponse.setHouseType(SIX);
@@ -1802,8 +1801,9 @@ public class HouseService {
                         // 잔금일자가 오늘보다 미래인 경우 매수주택에 포함하지 않음
                         if(!balancePaymentDate.isAfter(LocalDate.now())) {
                             buyTransactions.add(dataDetail2);
+                            log.info("매수거래에 해당 주소(" + address + ") 추가");
                         }else{
-                            log.debug("잔금일자가 도래하지 않은 매수거래내역 (매수일자: {})", balancePaymentDate);
+                            log.info("잔금일자가 도래하지 않은 매수거래내역 (매수일자: {})", balancePaymentDate);
                         }
                     }
                 }
@@ -2079,58 +2079,59 @@ public class HouseService {
         // DB에서 보유주택 목록 가져오기
         List<House> houseListFromDB = houseUtil.findOwnHouseList();
         //List<LoadHouse> etcHouseList = new ArrayList<>();
-        List<HouseLoadInfoResponse> houseLoadInfoResponseList = null;
+        List<HouseLoadInfoResponse> houseLoadInfoResponseList = new ArrayList<>();
         
         // redis에서 재산세 주택 가져오기
         int cnt = redisService.countKey(userId, PROPERTY);
-        for(int i=0; i<cnt; i++){
-            houseLoadInfoResponseList = new ArrayList<>();
+        if(cnt > 0){
+            //houseLoadInfoResponseList = new ArrayList<>();
 
-            log.info("총 개수 {}개 중 {}번째", cnt, i+1);
-            Map<Object, Object> getRedis = redisService.getHashMap(userId, PROPERTY, String.valueOf(i + 1));
-            String address = getRedis.get("address").toString();
+            for(int i=0; i<cnt; i++){
+                log.info("총 개수 {}개 중 {}번째", cnt, i+1);
+                Map<Object, Object> getRedis = redisService.getHashMap(userId, PROPERTY, String.valueOf(i + 1));
+                String address = getRedis.get("address").toString();
 
-            //LoadHouse etcHouse = new LoadHouse();   // 재산세 내역 중 기타주소 담을 엔티티
-            HouseLoadInfoResponse houseLoadInfoResponse = new HouseLoadInfoResponse();
-            houseLoadInfoResponse.setUserId(userId);
+                //LoadHouse etcHouse = new LoadHouse();   // 재산세 내역 중 기타주소 담을 엔티티
+                HouseLoadInfoResponse houseLoadInfoResponse = new HouseLoadInfoResponse();
+                houseLoadInfoResponse.setUserId(userId);
 
-            // 가져온 주택정보 HouseAddressDto로 전환
-            HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
-            if(houseAddressDto.getAddressType() == 1){
-                houseLoadInfoResponse.setJibunAddr(houseAddressDto.formatAddress());
-            }else{
-                houseLoadInfoResponse.setRoadAddr(houseAddressDto.formatAddress());
-            }
+                // 가져온 주택정보 HouseAddressDto로 전환
+                HouseAddressDto houseAddressDto = houseAddressService.parseAddress(address);
+                if(houseAddressDto.getAddressType() == 1){
+                    houseLoadInfoResponse.setJibunAddr(houseAddressDto.formatAddress());
+                }else{
+                    houseLoadInfoResponse.setRoadAddr(houseAddressDto.formatAddress());
+                }
 
-            houseLoadInfoResponse.setArea(new BigDecimal(getRedis.get("area").toString()));
-            houseLoadInfoResponse.setDetailAdr(houseAddressDto.getDetailAddress());
-            houseLoadInfoResponse.setHouseName((!houseAddressDto.formatEtcAddress().isEmpty() ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
-            //etcHouse.setHouseTypeByName();
-            houseLoadInfoResponse.setHouseType(this.getHouseTypeByName(houseLoadInfoResponse.getHouseName()));
-            houseLoadInfoResponse.setSourceType(ONE);
+                houseLoadInfoResponse.setArea(new BigDecimal(getRedis.get("area").toString()));
+                houseLoadInfoResponse.setDetailAdr(houseAddressDto.getDetailAddress());
+                houseLoadInfoResponse.setHouseName((!houseAddressDto.formatEtcAddress().isEmpty() ? houseAddressDto.formatEtcAddress() : houseAddressDto.getSiDo() + "주택"));
+                //etcHouse.setHouseTypeByName();
+                houseLoadInfoResponse.setHouseType(this.getHouseTypeByName(houseLoadInfoResponse.getHouseName()));
+                houseLoadInfoResponse.setSourceType(ONE);
 
-            houseLoadInfoResponse.setComplete(false);
+                houseLoadInfoResponse.setComplete(false);
 
+                // 주소비교
+                boolean isMatched = false;
+                if(houseListFromDB != null){
+                    isMatched = houseListFromDB.stream().anyMatch(house -> {
+                        HouseAddressDto hasHouseAddressDto;
+                        if (houseAddressDto.getAddressType() == 1) {
+                            hasHouseAddressDto = houseAddressService.parseAddress(house.getJibunAddr());
+                        } else {
+                            hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
+                        }
+                        log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
+                        return houseAddressDto.isSameAddress(hasHouseAddressDto);
+                    });
+                }
 
-            // 주소비교
-            boolean isMatched = false;
-            if(houseListFromDB != null){
-                isMatched = houseListFromDB.stream().anyMatch(house -> {
-                    HouseAddressDto hasHouseAddressDto;
-                    if (houseAddressDto.getAddressType() == 1) {
-                        hasHouseAddressDto = houseAddressService.parseAddress(house.getJibunAddr());
-                    } else {
-                        hasHouseAddressDto = houseAddressService.parseAddress(house.getRoadAddr());
-                    }
-                    log.debug("보유주택과 주소비교: {}, {}", houseAddressDto.formatAddress(), hasHouseAddressDto.formatAddress());
-                    return houseAddressDto.isSameAddress(hasHouseAddressDto);
-                });
-            }
-
-            // 일치하지 않으면 기타주소 리스트에 추가
-            if(!isMatched){
-                houseLoadInfoResponseList.add(houseLoadInfoResponse);
-                log.info("기타 주택으로 추가: {}", houseLoadInfoResponse.getHouseName());
+                // 일치하지 않으면 기타주소 리스트에 추가
+                if(!isMatched){
+                    houseLoadInfoResponseList.add(houseLoadInfoResponse);
+                    log.info("기타 주택으로 추가: {}", houseLoadInfoResponse.getHouseName());
+                }
             }
         }
 

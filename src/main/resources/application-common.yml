@@ -20,13 +20,6 @@ jusogov:
     road_addr_detail : U01TX0FVVEgyMDI0MDcyMDIzNDkwNTExNDk0Mzk=
 vworld:
   key: E3422A28-9B67-3BCF-912F-5B7BBE6C8318
-ncloud:
-  access-key: ncp_iam_BPAMKR5zEQh9xkdLuEnK
-  secret-key: ncp_iam_BPKMKRQtK5PXemzBhIHaJOPXM5ZbpGilYa
-  sms:
-    service-id: ncp:sms:kr:320009612043:howtaxing
-    sender-number: "07042336134"
-    #sender-number: 01084781689
 
 social:
   kakao:
@@ -40,3 +33,43 @@ feign:
       default:
         connectTimeout: 5000
         readTimeout: 60000
+
+--- # local 설정
+spring:
+  config:
+    activate:
+      on-profile: "local"
+ncloud:
+  access-key: ncp_iam_BPAMKR5zEQh9xkdLuEnK
+  secret-key: ncp_iam_BPKMKRQtK5PXemzBhIHaJOPXM5ZbpGilYa
+  sms:
+    service-id: ncp:sms:kr:320009612043:howtaxing
+    sender-number: "07042336134"
+    retriever-hashkey: C1W6G0I+dcr
+
+
+--- # dev 설정
+spring:
+  config:
+    activate:
+      on-profile: "dev"
+ncloud:
+  access-key: ncp_iam_BPAMKR5zEQh9xkdLuEnK
+  secret-key: ncp_iam_BPKMKRQtK5PXemzBhIHaJOPXM5ZbpGilYa
+  sms:
+    service-id: ncp:sms:kr:320009612043:howtaxing
+    sender-number: "07042336134"
+    retriever-hashkey: C1W6G0I+dcr
+
+--- # real 설정
+spring:
+  config:
+    activate:
+      on-profile: "real"
+ncloud:
+  access-key: ncp_iam_BPAMKR5zEQh9xkdLuEnK
+  secret-key: ncp_iam_BPKMKRQtK5PXemzBhIHaJOPXM5ZbpGilYa
+  sms:
+    service-id: ncp:sms:kr:320009612043:howtaxing
+    sender-number: "07042336134"
+    retriever-hashkey: m36fZffPf8Z
