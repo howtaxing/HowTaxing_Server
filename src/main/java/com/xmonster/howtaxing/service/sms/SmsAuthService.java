@@ -347,7 +347,8 @@ public class SmsAuthService {
         headerMap.put("x-ncp-iam-access-key", this.accessKey);
         headerMap.put("x-ncp-apigw-signature-v2", this.makeSignature(time));
 
-        String messageContent = "[하우택싱] 인증번호는 [" + authCode + "] 입니다." + retrieverHashkey;
+        //String messageContent = "[하우택싱] 인증번호는 [" + authCode + "] 입니다." + retrieverHashkey;
+        String messageContent = "[하우택싱] 인증번호는 [" + authCode + "] 입니다.";
 
         ResponseEntity<?> response = null;
         try{
